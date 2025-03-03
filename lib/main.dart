@@ -1,4 +1,4 @@
-import 'package:accelerator_squared/projectsview.dart';
+import 'package:accelerator_squared/orgprojectsview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
