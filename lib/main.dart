@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/login.dart';
 import 'package:accelerator_squared/orgprojectsview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(useMaterial3: true),
       darkTheme: ThemeData.dark(useMaterial3: true),
-      home: HomePage(),
+      home: LoginPage(),
     );
   }
 }
