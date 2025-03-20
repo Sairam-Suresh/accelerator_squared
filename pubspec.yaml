@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   url_launcher: ^6.3.1
   side_sheet_material3: ^0.0.2
+  flutter_expandable_fab: ^2.3.0
 
 dev_dependencies:
   flutter_test:

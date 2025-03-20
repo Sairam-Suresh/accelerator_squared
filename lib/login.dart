@@ -44,7 +44,13 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         Image.asset("../assets/google.png", height: 30),
                         SizedBox(width: 10),
-                        Text("Log in with Google"),
+                        Text(
+                          "Log in with Google",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                       mainAxisSize: MainAxisSize.min,
                     ),
