@@ -1,5 +1,6 @@
 import 'package:accelerator_squared/login.dart';
 import 'package:accelerator_squared/orgprojectsview.dart';
+import 'package:accelerator_squared/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -15,6 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true),
       darkTheme: ThemeData.dark(useMaterial3: true),
       home: LoginPage(),
@@ -60,7 +62,6 @@ class _HomePageState extends State<HomePage> {
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: ExpandableFab(
         distance: 70,
-
         type: ExpandableFabType.up,
         children: [
           Row(
@@ -69,10 +70,11 @@ class _HomePageState extends State<HomePage> {
               SizedBox(width: 20),
               FloatingActionButton(
                 onPressed: () {
-                  var orgmemberlist = [];
                   showDialog(
                     context: context,
                     builder: (context) {
+                      var orgmemberlist = [];
+
                       TextEditingController orgnamecontroller =
                           TextEditingController();
                       TextEditingController orgdesccontroller =
@@ -80,21 +82,21 @@ class _HomePageState extends State<HomePage> {
                       TextEditingController emailaddingcontroller =
                           TextEditingController();
 
-                      return AlertDialog(
-                        content: SizedBox(
-                          width: MediaQuery.of(context).size.width / 2,
-                          height: MediaQuery.of(context).size.height / 1.5,
-                          child: Column(
-                            children: [
-                              Text(
-                                "Create new project",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 30,
-                                ),
+                      return StatefulBuilder(
+                        builder: (context, StateSetter setState) {
+                          return AlertDialog(
+                            scrollable: true,
+                            title: Text(
+                              "Create new project",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 30,
                               ),
-                              Spacer(),
-                              Column(
+                            ),
+                            content: SizedBox(
+                              width: MediaQuery.of(context).size.width / 2,
+                              height: MediaQuery.of(context).size.height / 1.5,
+                              child: Column(
                                 children: [
                                   TextField(
                                     controller: orgnamecontroller,
@@ -206,7 +208,6 @@ class _HomePageState extends State<HomePage> {
                                           orgmemberlist.add(
                                             emailaddingcontroller.text,
                                           );
-                                          print(orgmemberlist);
                                           emailaddingcontroller.clear();
                                           setState(() {});
                                         },
@@ -227,37 +228,49 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                   SizedBox(height: 10),
                                   !orgmemberlist.isEmpty
-                                      ? ListView.builder(
-                                        itemBuilder: (context, index) {
-                                          return Card(
-                                            child: Text(orgmemberlist[index]),
-                                          );
-                                        },
-                                        itemCount: orgmemberlist.length,
+                                      ? Expanded(
+                                        child: ListView.builder(
+                                          itemBuilder: (context, index) {
+                                            return Card(
+                                              child: Padding(
+                                                padding: EdgeInsets.all(10),
+                                                child: Text(
+                                                  orgmemberlist[index],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          itemCount: orgmemberlist.length,
+                                        ),
                                       )
                                       : Text("No members added yet"),
-                                ],
-                              ),
-                              Spacer(),
-                              ElevatedButton(
-                                onPressed: () {
-                                  // create project
-                                  Navigator.of(context).pop();
-                                },
-                                child: Padding(
-                                  padding: EdgeInsets.fromLTRB(5, 15, 5, 15),
-                                  child: Text(
-                                    "Create organisation",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                  SizedBox(height: 20),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      // create project
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        5,
+                                        15,
+                                        5,
+                                        15,
+                                      ),
+                                      child: Text(
+                                        "Create organisation",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
@@ -278,10 +291,12 @@ class _HomePageState extends State<HomePage> {
                       TextEditingController orgcodecontroller =
                           TextEditingController();
                       return AlertDialog(
+                        scrollable: true,
                         content: SizedBox(
                           width: MediaQuery.of(context).size.width / 2,
-                          height: MediaQuery.of(context).size.height / 2,
+                          height: MediaQuery.of(context).size.height / 4,
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
                                 "Join organisation",
@@ -344,6 +359,23 @@ class _HomePageState extends State<HomePage> {
           "Accelerator^2",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 15),
+            child: IconButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  CupertinoPageRoute(
+                    builder: (context) {
+                      return SettingsPage();
+                    },
+                  ),
+                );
+              },
+              icon: Icon(Icons.settings),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
