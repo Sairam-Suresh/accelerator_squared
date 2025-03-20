@@ -191,7 +191,12 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                   await showModalSideSheet(
                                     context,
                                     body: Padding(
-                                      padding: EdgeInsets.all(10),
+                                      padding: EdgeInsets.fromLTRB(
+                                        20,
+                                        10,
+                                        20,
+                                        10,
+                                      ),
                                       child: Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.start,
@@ -265,9 +270,103 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                       Navigator.of(
                                                         context,
                                                       ).pop();
+
                                                       await showModalSideSheet(
                                                         context,
-                                                        body: Placeholder(),
+                                                        body: Padding(
+                                                          padding:
+                                                              EdgeInsets.fromLTRB(
+                                                                20,
+                                                                10,
+                                                                20,
+                                                                10,
+                                                              ),
+                                                          child: Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .start,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                sampleTasksList[index],
+                                                                style: TextStyle(
+                                                                  fontSize: 30,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 10,
+                                                              ),
+                                                              Text(
+                                                                sampleMilestoneDescriptions[index],
+                                                              ),
+                                                              SizedBox(
+                                                                height: 10,
+                                                              ),
+                                                              Divider(),
+                                                              SizedBox(
+                                                                height: 10,
+                                                              ),
+                                                              Text(
+                                                                "Due on X April 2025",
+                                                              ),
+                                                              SizedBox(
+                                                                height: 10,
+                                                              ),
+                                                              ElevatedButton(
+                                                                onPressed: () {
+                                                                  Navigator.of(
+                                                                    context,
+                                                                  ).pop();
+                                                                },
+                                                                child: Padding(
+                                                                  padding:
+                                                                      EdgeInsets.fromLTRB(
+                                                                        20,
+                                                                        10,
+                                                                        20,
+                                                                        10,
+                                                                      ),
+                                                                  child: Row(
+                                                                    children: [
+                                                                      Icon(
+                                                                        Icons
+                                                                            .check,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        width:
+                                                                            10,
+                                                                      ),
+                                                                      Text(
+                                                                        "Mark as completed",
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 10,
+                                                              ),
+                                                              Divider(),
+                                                              SizedBox(
+                                                                height: 10,
+                                                              ),
+                                                              // Text(
+                                                              //   "Comments",
+                                                              //   style: TextStyle(
+                                                              //     fontSize: 22,
+                                                              //     fontWeight:
+                                                              //         FontWeight
+                                                              //             .bold,
+                                                              //   ),
+                                                              // ),
+                                                            ],
+                                                          ),
+                                                        ),
                                                         header:
                                                             "Sample task view",
                                                       );
@@ -295,8 +394,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       ),
                                     ),
                                     header: "Milestone",
-                                    addCloseIconButton: false,
-                                    addBackIconButton: true,
                                   );
                                 },
                                 title: Text(
