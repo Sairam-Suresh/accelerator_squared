@@ -31,6 +31,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat',
   ];
 
+  var sampleTasksList = ["Task 1", "Task 2"];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,12 +50,125 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.projectName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 60,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.projectName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 60,
+                            ),
+                          ),
+                          SizedBox(width: 20),
+                          IconButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  bool? backupFileHistory = false;
+
+                                  return StatefulBuilder(
+                                    builder: (context, setState) {
+                                      return AlertDialog(
+                                        title: Text(
+                                          "Project settings",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 30,
+                                          ),
+                                        ),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextField(
+                                              decoration: InputDecoration(
+                                                hintText: "Edit project name",
+                                                label: Text(
+                                                  "Organisation name",
+                                                ),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(height: 10),
+                                            TextField(
+                                              minLines: 3,
+                                              maxLines: 1000,
+                                              decoration: InputDecoration(
+                                                hintText:
+                                                    "Edit project description",
+                                                label: Text(
+                                                  "Project description",
+                                                ),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(height: 10),
+                                            Card(
+                                              child: Padding(
+                                                padding: EdgeInsets.fromLTRB(
+                                                  20,
+                                                  10,
+                                                  20,
+                                                  10,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Text(
+                                                      "Back up version history to Google Drive",
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Checkbox(
+                                                      value: backupFileHistory,
+                                                      onChanged: (value) {
+                                                        setState(() {
+                                                          backupFileHistory =
+                                                              value;
+                                                        });
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(height: 20),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: Padding(
+                                                padding: EdgeInsets.fromLTRB(
+                                                  5,
+                                                  15,
+                                                  5,
+                                                  15,
+                                                ),
+                                                child: Text(
+                                                  "Update settings",
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                            icon: Icon(Icons.settings, size: 50),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 10),
                       SizedBox(
@@ -110,7 +225,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                             sampleMilestoneDescriptions[index],
                                           ),
                                           SizedBox(height: 15),
-                                          TextButton(
+                                          ElevatedButton(
                                             onPressed: () {
                                               Navigator.of(context).pop();
                                             },
@@ -133,6 +248,49 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                           SizedBox(height: 10),
                                           Divider(),
                                           SizedBox(height: 10),
+                                          Text(
+                                            "Tasks",
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 10),
+                                          Expanded(
+                                            child: ListView.separated(
+                                              itemBuilder: (context, index) {
+                                                return Card(
+                                                  child: ListTile(
+                                                    onTap: () async {
+                                                      Navigator.of(
+                                                        context,
+                                                      ).pop();
+                                                      await showModalSideSheet(
+                                                        context,
+                                                        body: Placeholder(),
+                                                        header:
+                                                            "Sample task view",
+                                                      );
+                                                    },
+                                                    title: Text(
+                                                      sampleTasksList[index],
+                                                    ),
+                                                    subtitle: Text(
+                                                      sampleMilestoneDescriptions[index],
+                                                      maxLines: 2,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              separatorBuilder: (
+                                                context,
+                                                index,
+                                              ) {
+                                                return SizedBox(height: 10);
+                                              },
+                                              itemCount: sampleTasksList.length,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),

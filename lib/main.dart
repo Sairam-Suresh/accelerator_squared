@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> {
                           return AlertDialog(
                             scrollable: true,
                             title: Text(
-                              "Create new project",
+                              "Create new organisation",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 30,
@@ -101,8 +101,8 @@ class _HomePageState extends State<HomePage> {
                                   TextField(
                                     controller: orgnamecontroller,
                                     decoration: InputDecoration(
-                                      label: Text("Project Name"),
-                                      hintText: "Enter project name",
+                                      label: Text("Organisation Name"),
+                                      hintText: "Enter organisation name",
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(10),
                                       ),
@@ -114,8 +114,9 @@ class _HomePageState extends State<HomePage> {
                                     minLines: 3,
                                     maxLines: 20,
                                     decoration: InputDecoration(
-                                      label: Text("Project description"),
-                                      hintText: "Enter project description",
+                                      label: Text("Organisation description"),
+                                      hintText:
+                                          "Enter organisation description",
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(10),
                                       ),
