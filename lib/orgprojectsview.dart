@@ -249,8 +249,9 @@ class _ProjectPageState extends State<ProjectPage> {
           child: Column(
             children: [
               Expanded(
-                child: ListView.builder(
-                  itemBuilder: (context, index) {
+                child: GridView.count(
+                  crossAxisCount: 3,
+                  children: List.generate(sampleProjectList.length, (index) {
                     return Card(
                       child: Padding(
                         padding: EdgeInsets.all(10),
@@ -275,14 +276,13 @@ class _ProjectPageState extends State<ProjectPage> {
                             ),
                             subtitle: Text(
                               sampleProjectDescriptions[index],
-                              maxLines: 1,
+                              maxLines: 5,
                             ),
                           ),
                         ),
                       ),
                     );
-                  },
-                  itemCount: sampleProjectList.length,
+                  }),
                 ),
               ),
             ],
