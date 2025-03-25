@@ -1,4 +1,4 @@
-import 'package:accelerator_squared/main.dart';
+import 'package:accelerator_squared/Home%20Page/home.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +13,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Welcome"), leading: SizedBox()),
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20),
@@ -28,8 +27,6 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(height: 25),
                 ElevatedButton(
                   onPressed: () {
-                    print("Logging in...");
-                    // add login action here
                     Navigator.of(context).pushReplacement(
                       CupertinoPageRoute(
                         builder: (context) {
@@ -41,8 +38,9 @@ class _LoginPageState extends State<LoginPage> {
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(20, 12.5, 20, 12.5),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Image.asset("../assets/google.png", height: 30),
+                        Image.asset("../../assets/google.png", height: 30),
                         SizedBox(width: 10),
                         Text(
                           "Log in with Google",
@@ -52,7 +50,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ],
-                      mainAxisSize: MainAxisSize.min,
                     ),
                   ),
                 ),
