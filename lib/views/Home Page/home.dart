@@ -1,6 +1,6 @@
-import 'package:accelerator_squared/Home%20Page/settings.dart';
-import 'package:accelerator_squared/Home%20Page/Add%20Organisation/add_organisation_button.dart';
-import 'package:accelerator_squared/Project/project_page.dart';
+import 'package:accelerator_squared/views/Home%20Page/settings.dart';
+import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/add_organisation_button.dart';
+import 'package:accelerator_squared/views/Project/project_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';

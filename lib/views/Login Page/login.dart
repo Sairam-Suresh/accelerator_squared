@@ -1,4 +1,4 @@
-import 'package:accelerator_squared/Home%20Page/home.dart';
+import 'package:accelerator_squared/views/Home%20Page/home.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 

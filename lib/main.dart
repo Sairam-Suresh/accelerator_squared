@@ -1,4 +1,4 @@
-import 'package:accelerator_squared/Login%20Page/login.dart';
+import 'package:accelerator_squared/views/Login%20Page/login.dart';
 import 'package:flutter/material.dart';
 
 void main() {

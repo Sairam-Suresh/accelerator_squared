@@ -1,5 +1,5 @@
-import 'package:accelerator_squared/Home%20Page/Add%20Organisation/create_organisation_dialog.dart';
-import 'package:accelerator_squared/Home%20Page/Add%20Organisation/join_organisation_dialog.dart';
+import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/create_organisation_dialog.dart';
+import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/join_organisation_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 
