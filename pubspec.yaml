@@ -38,6 +38,9 @@ dependencies:
   side_sheet_material3: ^0.0.2
   flutter_expandable_fab: ^2.3.0
   firebase_core: ^3.12.1
+  bloc: ^9.0.0
+  flutter_bloc: ^9.0.0
+  firebase_auth: ^5.5.1
 
 dev_dependencies:
   flutter_test:
