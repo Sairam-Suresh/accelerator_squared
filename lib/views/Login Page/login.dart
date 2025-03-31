@@ -1,6 +1,9 @@
+import 'package:accelerator_squared/blocs/bloc/user_bloc.dart';
 import 'package:accelerator_squared/views/Home%20Page/home.dart';
+import 'package:accelerator_squared/views/Login%20Page/signup.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -54,6 +57,19 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 SizedBox(height: 25),
+                Divider(),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      CupertinoPageRoute(
+                        builder: (context) {
+                          return SignupPage();
+                        },
+                      ),
+                    );
+                  },
+                  child: Text("Sign up"),
+                ),
                 // Row(
                 //   children: [
                 //     Text("Don't have an account?"),
