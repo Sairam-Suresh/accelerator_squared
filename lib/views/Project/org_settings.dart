@@ -59,6 +59,5 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
         ],
       ),
     );
-    ();
   }
 }

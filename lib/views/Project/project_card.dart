@@ -49,6 +49,5 @@ class _ProjectCardState extends State<ProjectCard> {
         ),
       ),
     );
-    ();
   }
 }

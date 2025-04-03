@@ -1,6 +1,4 @@
-import 'package:accelerator_squared/organisations/joinorganizationdialog.dart';
 import 'package:accelerator_squared/blocs/bloc/user_bloc.dart';
-import 'package:accelerator_squared/organisations/orgcreationdialog.dart';
 import 'package:accelerator_squared/firebase_options.dart';
 import 'package:accelerator_squared/views/Login%20Page/login.dart';
 import 'package:firebase_core/firebase_core.dart';
