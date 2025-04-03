@@ -1,4 +1,6 @@
+import 'package:accelerator_squared/organisations/joinorganizationdialog.dart';
 import 'package:accelerator_squared/login.dart';
+import 'package:accelerator_squared/organisations/orgcreationdialog.dart';
 import 'package:accelerator_squared/orgprojectsview.dart';
 import 'package:accelerator_squared/settings.dart';
 import 'package:flutter/cupertino.dart';
@@ -32,13 +34,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  var sampleOrgList = [
-    'Organisation 1',
-    'Organisation 2',
-    'Organisation 3',
-    'Organisation 4',
-    'Organisation 5',
-  ];
+  var sampleOrgList = ['Organisation 1', 'Organisation 2', 'Organisation 3'];
 
   var sampleStatusList = [
     'Student',
@@ -73,206 +69,7 @@ class _HomePageState extends State<HomePage> {
                   showDialog(
                     context: context,
                     builder: (context) {
-                      var orgmemberlist = [];
-
-                      TextEditingController orgnamecontroller =
-                          TextEditingController();
-                      TextEditingController orgdesccontroller =
-                          TextEditingController();
-                      TextEditingController emailaddingcontroller =
-                          TextEditingController();
-
-                      return StatefulBuilder(
-                        builder: (context, StateSetter setState) {
-                          return AlertDialog(
-                            scrollable: true,
-                            title: Text(
-                              "Create new organisation",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 30,
-                              ),
-                            ),
-                            content: SizedBox(
-                              width: MediaQuery.of(context).size.width / 2,
-                              height: MediaQuery.of(context).size.height / 1.5,
-                              child: Column(
-                                children: [
-                                  TextField(
-                                    controller: orgnamecontroller,
-                                    decoration: InputDecoration(
-                                      label: Text("Organisation Name"),
-                                      hintText: "Enter organisation name",
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: orgdesccontroller,
-                                    minLines: 3,
-                                    maxLines: 20,
-                                    decoration: InputDecoration(
-                                      label: Text("Organisation description"),
-                                      hintText:
-                                          "Enter organisation description",
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 20),
-                                  ElevatedButton(
-                                    style: ButtonStyle(
-                                      shape: MaterialStateProperty.all(
-                                        RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            11,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      // open google account selector
-                                    },
-                                    child: Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        0,
-                                        20,
-                                        0,
-                                        20,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Image.asset(
-                                            "../assets/drive.png",
-                                            height: 30,
-                                          ),
-                                          SizedBox(width: 15),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                "dummyemail@gmail.com",
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              Text(
-                                                "Click to change account",
-                                                style: TextStyle(fontSize: 15),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 20),
-                                  Text("Member list"),
-                                  SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width /
-                                            3,
-                                        child: TextField(
-                                          controller: emailaddingcontroller,
-                                          decoration: InputDecoration(
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            hintText: "Enter email to add",
-                                            label: Text("Add members' email"),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 10),
-                                      ElevatedButton(
-                                        style: ButtonStyle(
-                                          shape: MaterialStateProperty.all(
-                                            RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(11),
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          orgmemberlist.add(
-                                            emailaddingcontroller.text,
-                                          );
-                                          emailaddingcontroller.clear();
-                                          setState(() {});
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                            0,
-                                            13,
-                                            0,
-                                            13,
-                                          ),
-                                          child: Text(
-                                            "Add",
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 10),
-                                  !orgmemberlist.isEmpty
-                                      ? Expanded(
-                                        child: ListView.builder(
-                                          itemBuilder: (context, index) {
-                                            return Card(
-                                              child: Padding(
-                                                padding: EdgeInsets.all(10),
-                                                child: Text(
-                                                  orgmemberlist[index],
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                          itemCount: orgmemberlist.length,
-                                        ),
-                                      )
-                                      : Text("No members added yet"),
-                                  SizedBox(height: 20),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      // create project
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        5,
-                                        15,
-                                        5,
-                                        15,
-                                      ),
-                                      child: Text(
-                                        "Create organisation",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
+                      return OrgCreationDialog();
                     },
                   );
                 },
@@ -289,63 +86,7 @@ class _HomePageState extends State<HomePage> {
                   showDialog(
                     context: context,
                     builder: (context) {
-                      TextEditingController orgcodecontroller =
-                          TextEditingController();
-                      return AlertDialog(
-                        scrollable: true,
-                        content: SizedBox(
-                          width: MediaQuery.of(context).size.width / 2,
-                          height: MediaQuery.of(context).size.height / 4,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Join organisation",
-                                style: TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Spacer(),
-                              Center(
-                                child: TextField(
-                                  controller: orgcodecontroller,
-                                  decoration: InputDecoration(
-                                    hintText: "Enter join code",
-                                    label: Text("Organisation code"),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Spacer(),
-                              ElevatedButton(
-                                style: ButtonStyle(
-                                  shape: MaterialStateProperty.all(
-                                    RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: Padding(
-                                  padding: EdgeInsets.fromLTRB(5, 15, 5, 15),
-                                  child: Text(
-                                    "Send join request",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                      return JoinOrganizationDialog();
                     },
                   );
                 },
