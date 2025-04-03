@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:side_sheet_material3/side_sheet_material3.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProjectDetails extends StatefulWidget {
-  ProjectDetails({
+  const ProjectDetails({
     super.key,
     required this.projectName,
     required this.projectDescription,
   });
 
-  String projectName;
-  String projectDescription;
+  final String projectName;
+  final String projectDescription;
 
   @override
   State<ProjectDetails> createState() => _ProjectDetailsState();
 }
 
 class _ProjectDetailsState extends State<ProjectDetails> {
-  Future<void> _launchUrl() async {
-    if (!await launchUrl(
-      Uri.parse('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
-    )) {
-      throw Exception("hyperlink broken");
-    }
-  }
-
   var sampleMilestoneList = ['Milestone 1', 'Milestone 2'];
   var sampleMilestoneDescriptions = [
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat',

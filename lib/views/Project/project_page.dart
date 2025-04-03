@@ -1,11 +1,11 @@
-import 'package:accelerator_squared/projectdetails.dart';
+import 'package:accelerator_squared/views/Project/project_details.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class ProjectPage extends StatefulWidget {
-  ProjectPage({super.key, required this.orgName});
+  const ProjectPage({super.key, required this.orgName});
 
-  String orgName;
+  final String orgName;
 
   @override
   State<ProjectPage> createState() => _ProjectPageState();
