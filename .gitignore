@@ -46,6 +46,9 @@ app.*.map.json
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
+macos/Runner/GoogleService-Info.plist
+firebase.json
+macos/Runner.xcodeproj/project.pbxproj
 
 # FVM Version Cache
 .fvm/
