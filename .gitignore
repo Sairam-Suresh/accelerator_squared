@@ -49,3 +49,6 @@ lib/firebase_options.dart
 macos/Runner/GoogleService-Info.plist
 firebase.json
 macos/Runner.xcodeproj/project.pbxproj
+
+# FVM Version Cache
+.fvm/

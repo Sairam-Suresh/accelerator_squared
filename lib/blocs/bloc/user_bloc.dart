@@ -10,6 +10,8 @@ class UserBloc extends Bloc<UserEvent, UserState> {
 
   UserBloc() : super(UserInitial()) {
     on<UserRegisterEvent>(_onUserRegisterEvent);
+    on<UserLogsInWithGoogleEvent>(_onUserLogInWithGoogleEvent);
+    // on<UserLoginEvent>(_onUserLoginEvent);
   }
 
   Future<void> _onUserRegisterEvent(
@@ -37,7 +39,59 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         photoUrl: credential.user!.photoURL,
       ),
     );
-
-    print("hi");
   }
+
+  Future<void> _onUserLogInWithGoogleEvent(
+    UserLogsInWithGoogleEvent event,
+    Emitter<UserState> emit,
+  ) async {
+    late UserCredential credential;
+
+    try {
+      // Simulate Google Sign-In process
+      // In a real app, you would use the Google Sign-In package
+      // and get the credential from there.
+      credential = await firebaseAuth.signInWithPopup(GoogleAuthProvider());
+    } catch (e) {
+      // Handle error
+      print("Error during Google login: $e");
+      return;
+    }
+
+    emit(
+      UserLoggedIn(
+        userId: credential.user!.uid,
+        email: credential.user!.email!,
+        displayName: credential.user!.displayName,
+        photoUrl: credential.user!.photoURL,
+      ),
+    );
+  }
+
+  // Future<void> _onUserLoginEvent(
+  //   UserLoginEvent event,
+  //   Emitter<UserState> emit,
+  // ) async {
+  //   late UserCredential credential;
+
+  //   try {
+  //     credential = await firebaseAuth.signInWithEmailAndPassword(
+  //       email: event.email,
+  //       password: event.password,
+  //     );
+  //   } catch (e) {
+  //     // Handle error
+  //     print("Error during login: $e");
+  //     return;
+  //   }
+
+  //   emit(
+  //     UserLoggedIn(
+  //       userId: credential.user!.uid,
+  //       email: credential.user!.email!,
+  //       displayName: credential.user!.displayName,
+  //       photoUrl: credential.user!.photoURL,
+  //     ),
+  //   );
+  // }
 }

@@ -15,3 +15,11 @@ class UserRegisterEvent extends UserEvent {
 }
 
 class UserLinkWithGoogleEvent extends UserEvent {}
+class UserSignInEvent extends UserEvent {
+  final String email;
+  final String password;
+
+  UserSignInEvent({required this.email, required this.password});
+}
+
+final class UserLogsInWithGoogleEvent extends UserEvent {}
