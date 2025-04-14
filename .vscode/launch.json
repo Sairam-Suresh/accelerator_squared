@@ -14,6 +14,16 @@
               "chrome",
               "--web-experimental-hot-reload",
             ]
-          }
+        },
+        {
+          "name": "Flutter for web (stable)",
+          "type": "dart",
+          "request": "launch",
+          "program": "lib/main.dart",
+          "args": [
+            "-d",
+            "chrome",
+          ]
+      }, 
     ]
 }
