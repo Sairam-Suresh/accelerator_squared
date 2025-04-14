@@ -11,6 +11,7 @@ class AddOrganisationButton extends StatelessWidget {
     return ExpandableFab(
       distance: 70,
       type: ExpandableFabType.up,
+      
       children: [
         Row(
           children: [
