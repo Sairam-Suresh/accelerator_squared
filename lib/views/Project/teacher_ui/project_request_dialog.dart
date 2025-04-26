@@ -51,9 +51,8 @@ class _RequestDialogState extends State<RequestDialog> {
                       trailing: Checkbox(
                         value: checkBoxStates[sampleProjects[index]],
                         onChanged: (value) {
-                          checkBoxStates[sampleProjects[index]] = value!;
                           setState(() {
-                            print(value);
+                            checkBoxStates[sampleProjects[index]] = value!;
                           });
                         },
                       ),

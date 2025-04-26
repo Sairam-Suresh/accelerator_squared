@@ -34,11 +34,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
             SizedBox(height: 10),
             Divider(),
             SizedBox(height: 10),
-            Text("Due on X April 2025"),
-            SizedBox(height: 10),
             Text("Assigned by X"),
-            SizedBox(height: 10),
-            Text("Directed to X"),
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
