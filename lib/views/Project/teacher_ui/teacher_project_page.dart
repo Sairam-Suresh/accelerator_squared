@@ -75,7 +75,11 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
               showDialog(
                 context: context,
                 builder: (context) {
-                  return OrganisationMembersDialog();
+                  return StatefulBuilder(
+                    builder: (context, StateSetter setState) {
+                      return OrganisationMembersDialog();
+                    },
+                  );
                 },
               );
             },
