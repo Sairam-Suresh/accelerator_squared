@@ -5,8 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:side_sheet_material3/side_sheet_material3.dart';
 
-class ProjectDetails extends StatefulWidget {
-  const ProjectDetails({
+class TeacherProjectDetails extends StatefulWidget {
+  const TeacherProjectDetails({
     super.key,
     required this.projectName,
     required this.projectDescription,
@@ -16,10 +16,10 @@ class ProjectDetails extends StatefulWidget {
   final String projectDescription;
 
   @override
-  State<ProjectDetails> createState() => _ProjectDetailsState();
+  State<TeacherProjectDetails> createState() => _TeacherProjectDetailsState();
 }
 
-class _ProjectDetailsState extends State<ProjectDetails> {
+class _TeacherProjectDetailsState extends State<TeacherProjectDetails> {
   var sampleMilestoneList = ['Milestone 1', 'Milestone 2'];
   var sampleMilestoneDescriptions = [
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat',
@@ -33,23 +33,11 @@ class _ProjectDetailsState extends State<ProjectDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Project', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          'Project (teacher)',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                CupertinoPageRoute(
-                  builder: (context) {
-                    return TeacherProjectDetails(
-                      projectName: widget.projectName,
-                      projectDescription: widget.projectDescription,
-                    );
-                  },
-                ),
-              );
-            },
-            icon: Icon(Icons.school),
-          ),
           IconButton(
             onPressed: () {
               showDialog(

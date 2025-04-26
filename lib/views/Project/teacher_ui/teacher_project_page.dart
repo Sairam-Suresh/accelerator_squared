@@ -1,20 +1,21 @@
 import 'package:accelerator_squared/views/Project/create_new_project.dart';
 import 'package:accelerator_squared/views/Project/org_settings.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_page.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/org_members_dialog.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/org_stats_dialog.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/project_request_dialog.dart';
 import 'package:flutter/material.dart';
 
-class ProjectPage extends StatefulWidget {
-  const ProjectPage({super.key, required this.orgName});
+class TeacherProjectPage extends StatefulWidget {
+  const TeacherProjectPage({super.key, required this.orgName});
 
   final String orgName;
 
   @override
-  State<ProjectPage> createState() => _ProjectPageState();
+  State<TeacherProjectPage> createState() => _TeacherProjectPageState();
 }
 
-class _ProjectPageState extends State<ProjectPage> {
+class _TeacherProjectPageState extends State<TeacherProjectPage> {
   var sampleProjectList = ['Project 1', 'Project 2', 'Project 3', 'Project 4'];
   var sampleProjectDescriptions = [
     'This project is killing me',
@@ -39,21 +40,46 @@ class _ProjectPageState extends State<ProjectPage> {
       ),
       appBar: AppBar(
         title: Text(
-          widget.orgName,
+          '${widget.orgName} (teacher)',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.of(context).push(
-                CupertinoPageRoute(
-                  builder: (context) {
-                    return TeacherProjectPage(orgName: widget.orgName);
-                  },
-                ),
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return OrgStatisticsDialog();
+                },
               );
             },
-            icon: Icon(Icons.school),
+            icon: Icon(Icons.list),
+          ),
+          IconButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return StatefulBuilder(
+                    builder: (context, StateSetter setState) {
+                      return RequestDialog();
+                    },
+                  );
+                },
+              );
+            },
+            icon: Icon(Icons.inbox),
+          ),
+          IconButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return OrganisationMembersDialog();
+                },
+              );
+            },
+            icon: Icon(Icons.groups),
           ),
           Padding(
             padding: EdgeInsets.only(right: 15),
