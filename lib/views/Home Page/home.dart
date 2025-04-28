@@ -32,9 +32,9 @@ class _HomePageState extends State<HomePage> {
   var sampleDescriptionList = [
     "Project description goes here or something",
     "This is a very fun project trust",
-    "Why am I doing this",
-    "somebody send help rn",
-    "no",
+    "Is this a project description?",
+    "Procrastinating this project right now",
+    "No longer procrastinating",
   ];
 
   @override

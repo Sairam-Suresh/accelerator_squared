@@ -1,11 +1,9 @@
 import 'package:accelerator_squared/views/Project/comments_dialog.dart';
-import 'package:accelerator_squared/views/Project/comments_sheet.dart';
 import 'package:accelerator_squared/views/Project/milestone_sheet.dart';
 import 'package:accelerator_squared/views/Project/project_files.dart';
 import 'package:accelerator_squared/views/Project/project_settings.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/create_milestone_dialog.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_members.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:side_sheet_material3/side_sheet_material3.dart';
 
