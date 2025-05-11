@@ -74,7 +74,7 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
               ),
               SizedBox(height: 10),
 
-              Align(child: Text("Students"), alignment: Alignment.centerLeft),
+              Align(alignment: Alignment.centerLeft, child: Text("Students")),
               SizedBox(height: 5),
               ListView.builder(
                 itemBuilder: (context, index) {

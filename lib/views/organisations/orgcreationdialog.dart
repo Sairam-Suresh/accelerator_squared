@@ -55,7 +55,7 @@ class _OrgCreationDialogState extends State<OrgCreationDialog> {
                 SizedBox(height: 20),
                 ElevatedButton(
                   style: ButtonStyle(
-                    shape: MaterialStateProperty.all(
+                    shape: WidgetStateProperty.all(
                       RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(11),
                       ),
@@ -113,7 +113,7 @@ class _OrgCreationDialogState extends State<OrgCreationDialog> {
                     SizedBox(width: 10),
                     ElevatedButton(
                       style: ButtonStyle(
-                        shape: MaterialStateProperty.all(
+                        shape: WidgetStateProperty.all(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(11),
                           ),
@@ -132,7 +132,7 @@ class _OrgCreationDialogState extends State<OrgCreationDialog> {
                   ],
                 ),
                 SizedBox(height: 10),
-                !orgmemberlist.isEmpty
+                orgmemberlist.isNotEmpty
                     ? Expanded(
                       child: ListView.builder(
                         itemBuilder: (context, index) {

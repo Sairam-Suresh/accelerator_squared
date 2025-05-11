@@ -1,6 +1,7 @@
+import 'package:accelerator_squared/models/organisation.dart';
 import 'package:accelerator_squared/views/Home%20Page/settings.dart';
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/add_organisation_button.dart';
-import 'package:accelerator_squared/views/Project/project_page.dart';
+import 'package:accelerator_squared/widgets/organisation_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -13,28 +14,50 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  var sampleOrgList = [
-    'Organisation 1',
-    'Organisation 2',
-    'Organisation 3',
-    'Organisation 4',
-    'Organisation 5',
-  ];
-
-  var sampleStatusList = [
-    'Student',
-    'Teacher',
-    'Student',
-    'Student',
-    'Student',
-  ];
-
-  var sampleDescriptionList = [
-    "Project description goes here or something",
-    "This is a very fun project trust",
-    "Why am I doing this",
-    "somebody send help rn",
-    "no",
+  final List<Organisation> organisations = [
+    Organisation(
+      name: "Tech Innovators Inc.",
+      description: "Leading the way in tech innovation.",
+      students: [
+        StudentInOrganisation(
+          name: "Alice Johnson",
+          email: "alice@techinnovators.com",
+          photoUrl: null,
+          type: UserInOrganisationType.student,
+        ),
+        StudentInOrganisation(
+          name: "Bob Smith",
+          email: "bob@techinnovators.com",
+          photoUrl: null,
+          type: UserInOrganisationType.teacher,
+        ),
+      ],
+      projects: [
+        Project(
+          name: "AI Research",
+          description: "Exploring advancements in artificial intelligence.",
+          studentsInvolved: [
+            Student(
+              name: "Alice Johnson",
+              email: "alice@techinnovators.com",
+              photoUrl: null,
+            ),
+          ],
+        ),
+      ],
+    ),
+    Organisation(
+      name: "Green Future Solutions",
+      description: "Sustainable solutions for a better tomorrow.",
+      students: [],
+      projects: [],
+    ),
+    Organisation(
+      name: "HealthTech Innovations",
+      description: "Revolutionizing healthcare through technology.",
+      students: [],
+      projects: [],
+    ),
   ];
 
   @override
@@ -44,7 +67,7 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: AddOrganisationButton(),
       appBar: AppBar(
         title: Text(
-          "Accelerator^2",
+          "Organisations",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -67,67 +90,20 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Text(
-                "Organisations",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+          padding: EdgeInsets.all(10),
+          child: Expanded(
+            child: GridView.builder(
+              itemCount: organisations.length,
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 500,
+                childAspectRatio: 3 / 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
               ),
-              SizedBox(height: 10),
-              Expanded(
-                child: ListView.separated(
-                  itemBuilder: (context, index) {
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                SizedBox(width: 18),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(sampleStatusList[index]),
-                                ),
-                              ],
-                            ),
-                            ListTile(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  CupertinoPageRoute(
-                                    builder: (context) {
-                                      return ProjectPage(
-                                        orgName: sampleOrgList[index],
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                              title: Text(
-                                sampleOrgList[index],
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                sampleDescriptionList[index],
-                                style: TextStyle(fontSize: 18),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  separatorBuilder: (context, index) {
-                    return SizedBox(height: 10);
-                  },
-                  itemCount: sampleOrgList.length,
-                ),
-              ),
-            ],
+              itemBuilder:
+                  (context, index) =>
+                      OrganisationCard(organisation: organisations[index]),
+            ),
           ),
         ),
       ),
