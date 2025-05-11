@@ -10,10 +10,10 @@ class CreateMilestoneDialog extends StatefulWidget {
 class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
   var projectsList = ["Project 1", "Project 2"];
   var projectStates = {};
+  var allSelected = false;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     for (var x in projectsList) {
       projectStates[x] = false;
@@ -65,7 +65,36 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                 ),
               ),
               SizedBox(height: 20),
-              Align(alignment: Alignment.centerLeft, child: Text("Assign to")),
+              Row(
+                children: [
+                  Text("Assign to"),
+                  Spacer(),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (!allSelected) {
+                        projectStates.forEach((key, value) {
+                          setState(() {
+                            projectStates[key] = true;
+                            allSelected = true;
+                          });
+                        });
+                      } else if (allSelected) {
+                        projectStates.forEach((key, value) {
+                          setState(() {
+                            projectStates[key] = false;
+                            allSelected = false;
+                          });
+                        });
+                      }
+                    },
+                    child: Text(
+                      allSelected
+                          ? "Deselect all projects"
+                          : "Select all projects",
+                    ),
+                  ),
+                ],
+              ),
               SizedBox(height: 5),
               ListView.builder(
                 itemBuilder: (context, index) {
@@ -80,6 +109,21 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                         onChanged: (value) {
                           setState(() {
                             projectStates[projectsList[index]] = value!;
+                          });
+                          var alloptionsselect = true;
+                          if (value == true) {
+                            alloptionsselect = true;
+                            projectStates.forEach((key, value) {
+                              if (value == false) {
+                                alloptionsselect = false;
+                              }
+                            });
+                            print(alloptionsselect);
+                          } else if (value == false) {
+                            alloptionsselect = false;
+                          }
+                          setState(() {
+                            allSelected = alloptionsselect;
                           });
                         },
                       ),

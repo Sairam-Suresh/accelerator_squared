@@ -17,8 +17,8 @@ class ProjectPage extends StatefulWidget {
 class _ProjectPageState extends State<ProjectPage> {
   var sampleProjectList = ['Project 1', 'Project 2', 'Project 3', 'Project 4'];
   var sampleProjectDescriptions = [
-    'This project is killing me',
-    'Why did i decide to do this',
+    'I should stop procrastinating this project',
+    'Very fun project trust',
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
     'Sigma sigma boy sigma boy sigma sigma boy',
   ];

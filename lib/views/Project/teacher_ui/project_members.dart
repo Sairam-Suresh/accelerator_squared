@@ -19,7 +19,7 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        "Organisation members",
+        "Project members",
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
       ),
       content: SizedBox(
