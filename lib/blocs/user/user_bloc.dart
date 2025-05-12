@@ -11,6 +11,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   UserBloc() : super(UserInitial()) {
     on<UserRegisterEvent>(_onUserRegisterEvent);
     on<UserLogsInWithGoogleEvent>(_onUserLogInWithGoogleEvent);
+    on<CheckIfUserIsLoggedInEvent>(_checkIfUserIsLoggedIn);
+
+    add(CheckIfUserIsLoggedInEvent());
     // on<UserLoginEvent>(_onUserLoginEvent);
   }
 
@@ -66,6 +69,23 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         photoUrl: credential.user!.photoURL,
       ),
     );
+  }
+
+  Future<void> _checkIfUserIsLoggedIn(
+    CheckIfUserIsLoggedInEvent event,
+    Emitter<UserState> emit,
+  ) async {
+    User? user = firebaseAuth.currentUser;
+    if (user != null) {
+      emit(
+        UserLoggedIn(
+          userId: user.uid,
+          email: user.email!,
+          displayName: user.displayName,
+          photoUrl: user.photoURL,
+        ),
+      );
+    }
   }
 
   // Future<void> _onUserLoginEvent(

@@ -7,6 +7,8 @@ class UserLoginEvent extends UserEvent {}
 
 class UserLogoutEvent extends UserEvent {}
 
+class CheckIfUserIsLoggedInEvent extends UserEvent {}
+
 class UserRegisterEvent extends UserEvent {
   final String email;
   final String password;

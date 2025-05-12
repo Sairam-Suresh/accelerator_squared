@@ -1,4 +1,5 @@
-import 'package:accelerator_squared/blocs/bloc/user_bloc.dart';
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:accelerator_squared/firebase_options.dart';
 import 'package:accelerator_squared/views/Login%20Page/login.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -18,8 +19,13 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => UserBloc(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<UserBloc>(create: (context) => UserBloc()),
+        BlocProvider<OrganisationsBloc>(
+          create: (context) => OrganisationsBloc(),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: "Accelerator Squared",
