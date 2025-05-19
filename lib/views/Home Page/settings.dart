@@ -1,6 +1,8 @@
-import 'package:accelerator_squared/login.dart';
+import 'package:accelerator_squared/blocs/user/user_bloc.dart';
+import 'package:accelerator_squared/views/Login%20Page/login.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,6 +14,8 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
+    var userState = context.read<UserBloc>().state as UserLoggedIn;
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Settings", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -28,7 +32,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       TextButton(
                         onPressed: () {},
-                        child: Icon(Icons.person, size: 160),
+                        child:
+                            userState.photoUrl == null
+                                ? Icon(Icons.person, size: 160)
+                                : Image.network(
+                                  userState.photoUrl!,
+                                  width: 160,
+                                  height: 160,
+                                  fit: BoxFit.cover,
+                                ),
                       ),
                       SizedBox(height: 10),
                     ],
@@ -38,16 +50,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Username",
+                        userState.displayName ?? "Dummy Name",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 24,
                         ),
                       ),
-                      Text(
-                        "dummyemail@gmail.com",
-                        style: TextStyle(fontSize: 18),
-                      ),
+                      Text(userState.email, style: TextStyle(fontSize: 18)),
                       SizedBox(height: 15),
                       Text(
                         "Stats",
