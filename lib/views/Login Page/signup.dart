@@ -1,4 +1,4 @@
-import 'package:accelerator_squared/blocs/bloc/user_bloc.dart';
+import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

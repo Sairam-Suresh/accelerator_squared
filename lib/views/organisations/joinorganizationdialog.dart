@@ -40,7 +40,7 @@ class _JoinOrganizationDialogState extends State<JoinOrganizationDialog> {
             Spacer(),
             ElevatedButton(
               style: ButtonStyle(
-                shape: MaterialStateProperty.all(
+                shape: WidgetStateProperty.all(
                   RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),

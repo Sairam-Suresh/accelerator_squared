@@ -1,9 +1,12 @@
+import 'package:accelerator_squared/models/organisation.dart';
 import 'package:accelerator_squared/views/Home%20Page/settings.dart';
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/add_organisation_button.dart';
-import 'package:accelerator_squared/views/Project/project_page.dart';
+import 'package:accelerator_squared/widgets/organisation_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,29 +16,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  var sampleOrgList = [
-    'Organisation 1',
-    'Organisation 2',
-    'Organisation 3',
-    'Organisation 4',
-    'Organisation 5',
-  ];
+  List<Organisation> organisations = [];
 
-  var sampleStatusList = [
-    'Student',
-    'Teacher',
-    'Student',
-    'Student',
-    'Student',
-  ];
+  @override
+  void initState() {
+    super.initState();
 
-  var sampleDescriptionList = [
-    "Project description goes here or something",
-    "This is a very fun project trust",
-    "Is this a project description?",
-    "Procrastinating this project right now",
-    "No longer procrastinating",
-  ];
+    // Trigger the fetch organisations event
+    context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +34,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         title: Text(
-          "Accelerator^2",
+          "Organisations",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -68,67 +57,31 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Text(
-                "Organisations",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
-              ),
-              SizedBox(height: 10),
-              Expanded(
-                child: ListView.separated(
-                  itemBuilder: (context, index) {
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                SizedBox(width: 18),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(sampleStatusList[index]),
-                                ),
-                              ],
-                            ),
-                            ListTile(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  CupertinoPageRoute(
-                                    builder: (context) {
-                                      return ProjectPage(
-                                        orgName: sampleOrgList[index],
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                              title: Text(
-                                sampleOrgList[index],
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                sampleDescriptionList[index],
-                                style: TextStyle(fontSize: 18),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  separatorBuilder: (context, index) {
-                    return SizedBox(height: 10);
-                  },
-                  itemCount: sampleOrgList.length,
-                ),
-              ),
-            ],
+          padding: EdgeInsets.all(10),
+          child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
+            builder: (context, state) {
+              if (state is OrganisationsLoading) {
+                return Center(child: CircularProgressIndicator());
+              } else if (state is OrganisationsLoaded) {
+                organisations = state.organisations;
+                return GridView.builder(
+                  itemCount: organisations.length,
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 500,
+                    childAspectRatio: 3 / 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemBuilder:
+                      (context, index) =>
+                          OrganisationCard(organisation: organisations[index]),
+                );
+              } else if (state is OrganisationsError) {
+                return Center(child: Text(state.message));
+              } else {
+                return Center(child: Text("No organisations found"));
+              }
+            },
           ),
         ),
       ),

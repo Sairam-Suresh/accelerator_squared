@@ -55,7 +55,7 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                   SizedBox(height: 20),
                   ElevatedButton(
                     style: ButtonStyle(
-                      shape: MaterialStateProperty.all(
+                      shape: WidgetStateProperty.all(
                         RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(11),
                         ),
