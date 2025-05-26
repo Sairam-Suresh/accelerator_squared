@@ -43,6 +43,7 @@ class _HomePageState extends State<HomePage> {
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: AddOrganisationButton(),
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         title: Text(
           "Accelerator^2",
           style: TextStyle(fontWeight: FontWeight.bold),
