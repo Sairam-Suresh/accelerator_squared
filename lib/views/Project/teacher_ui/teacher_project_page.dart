@@ -49,7 +49,7 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
               showDialog(
                 context: context,
                 builder: (context) {
-                  return OrgStatisticsDialog();
+                  return OrgStatisticsDialog(projectsList: sampleProjectList);
                 },
               );
             },

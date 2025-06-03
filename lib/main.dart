@@ -30,8 +30,20 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: "Accelerator Squared",
-        theme: ThemeData(),
-        darkTheme: ThemeData.dark(),
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: lightColorScheme,
+          appBarTheme: AppBarTheme(
+            backgroundColor: lightColorScheme.primaryContainer,
+          ),
+        ),
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          colorScheme: darkColorScheme,
+          appBarTheme: AppBarTheme(
+            backgroundColor: darkColorScheme.primaryContainer,
+          ),
+        ),
         home: ResponsiveBreakpoints.builder(
           breakpoints: [
             const Breakpoint(start: 0, end: 450, name: MOBILE),
