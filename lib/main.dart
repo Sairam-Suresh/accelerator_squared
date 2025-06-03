@@ -31,6 +31,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: "Accelerator Squared",
         theme: ThemeData(
+          fontFamily: 'IBMPlexSans',
           useMaterial3: true,
           colorScheme: lightColorScheme,
           appBarTheme: AppBarTheme(
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         darkTheme: ThemeData(
+          fontFamily: 'IBMPlexSans',
           useMaterial3: true,
           colorScheme: darkColorScheme,
           appBarTheme: AppBarTheme(
