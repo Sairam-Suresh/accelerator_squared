@@ -1,6 +1,7 @@
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:accelerator_squared/firebase_options.dart';
+import 'package:accelerator_squared/theme.dart';
 import 'package:accelerator_squared/views/Login%20Page/login.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -29,8 +30,22 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: "Accelerator Squared",
-        theme: ThemeData(),
-        darkTheme: ThemeData.dark(),
+        theme: ThemeData(
+          fontFamily: 'IBMPlexSans',
+          useMaterial3: true,
+          colorScheme: lightColorScheme,
+          appBarTheme: AppBarTheme(
+            backgroundColor: lightColorScheme.primaryContainer,
+          ),
+        ),
+        darkTheme: ThemeData(
+          fontFamily: 'IBMPlexSans',
+          useMaterial3: true,
+          colorScheme: darkColorScheme,
+          appBarTheme: AppBarTheme(
+            backgroundColor: darkColorScheme.primaryContainer,
+          ),
+        ),
         home: ResponsiveBreakpoints.builder(
           breakpoints: [
             const Breakpoint(start: 0, end: 450, name: MOBILE),

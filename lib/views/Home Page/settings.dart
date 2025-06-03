@@ -32,15 +32,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       TextButton(
                         onPressed: () {},
-                        child:
-                            userState.photoUrl == null
-                                ? Icon(Icons.person, size: 160)
-                                : Image.network(
-                                  userState.photoUrl!,
-                                  width: 160,
-                                  height: 160,
-                                  fit: BoxFit.cover,
-                                ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child:
+                              userState.photoUrl == null
+                                  ? Icon(Icons.person, size: 160)
+                                  : Image.network(
+                                    userState.photoUrl!,
+                                    width: 160,
+                                    height: 160,
+                                    fit: BoxFit.cover,
+                                  ),
+                        ),
                       ),
                       SizedBox(height: 10),
                     ],
@@ -76,14 +79,6 @@ class _SettingsPageState extends State<SettingsPage> {
               Row(
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(5, 15, 5, 15),
-                      child: Text("Change username"),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pushReplacement(
                         CupertinoPageRoute(
@@ -97,9 +92,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       padding: const EdgeInsets.fromLTRB(5, 15, 5, 15),
                       child: Row(
                         children: [
-                          Icon(Icons.exit_to_app),
+                          Icon(Icons.exit_to_app, color: Colors.red, size: 18),
                           SizedBox(width: 10),
-                          Text("Log Out"),
+                          Text(
+                            "Log Out",
+                            style: TextStyle(color: Colors.red, fontSize: 18),
+                          ),
                         ],
                       ),
                     ),
