@@ -12,6 +12,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<UserRegisterEvent>(_onUserRegisterEvent);
     on<UserLogsInWithGoogleEvent>(_onUserLogInWithGoogleEvent);
     on<CheckIfUserIsLoggedInEvent>(_checkIfUserIsLoggedIn);
+    on<UserLogoutEvent>(_onUserLogoutEvent);
 
     add(CheckIfUserIsLoggedInEvent());
     // on<UserLoginEvent>(_onUserLoginEvent);
@@ -85,6 +86,21 @@ class UserBloc extends Bloc<UserEvent, UserState> {
           photoUrl: user.photoURL,
         ),
       );
+    }
+  }
+
+  Future<void> _onUserLogoutEvent(
+    UserLogoutEvent event,
+    Emitter<UserState> emit,
+  ) async {
+    try {
+      await firebaseAuth.signOut();
+      emit(UserInitial());
+    } catch (e) {
+      print("Error during logout: $e");
+      // Even if there's an error, we should still emit UserInitial
+      // as we want to force the user back to login screen
+      emit(UserInitial());
     }
   }
 
