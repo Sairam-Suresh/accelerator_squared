@@ -92,9 +92,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       padding: const EdgeInsets.fromLTRB(5, 15, 5, 15),
                       child: Row(
                         children: [
-                          Icon(Icons.exit_to_app, color: Colors.red),
+                          Icon(Icons.exit_to_app, color: Colors.red, size: 18),
                           SizedBox(width: 10),
-                          Text("Log Out", style: TextStyle(color: Colors.red)),
+                          Text(
+                            "Log Out",
+                            style: TextStyle(color: Colors.red, fontSize: 18),
+                          ),
                         ],
                       ),
                     ),

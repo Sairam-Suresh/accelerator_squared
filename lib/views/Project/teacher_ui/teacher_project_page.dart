@@ -1,8 +1,8 @@
 import 'package:accelerator_squared/views/Project/create_new_project.dart';
-import 'package:accelerator_squared/views/Project/org_settings.dart';
+import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/org_members_dialog.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/org_stats_dialog.dart';
+import 'package:accelerator_squared/views/organisations/org_members_dialog.dart';
+import 'package:accelerator_squared/views/organisations/org_stats_dialog.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_request_dialog.dart';
 import 'package:flutter/material.dart';
 

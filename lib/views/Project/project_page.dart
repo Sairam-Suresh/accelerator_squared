@@ -1,5 +1,5 @@
 import 'package:accelerator_squared/views/Project/create_new_project.dart';
-import 'package:accelerator_squared/views/Project/org_settings.dart';
+import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_page.dart';
 import 'package:flutter/cupertino.dart';
