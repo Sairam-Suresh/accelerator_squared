@@ -1,3 +1,5 @@
+import 'package:accelerator_squared/models/projects.dart';
+
 class Organisation {
   final String name;
   final String description;
@@ -34,17 +36,5 @@ class StudentInOrganisation extends Student {
     required super.email,
     required super.photoUrl,
     required this.type,
-  });
-}
-
-class Project {
-  final String name;
-  final String description;
-  final List<Student> studentsInvolved;
-
-  Project({
-    required this.name,
-    required this.description,
-    required this.studentsInvolved,
   });
 }

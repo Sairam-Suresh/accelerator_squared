@@ -10,7 +10,6 @@ class OrganisationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
       child: InkWell(

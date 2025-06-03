@@ -1,18 +1,19 @@
+import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/views/Project/project_details.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class ProjectCard extends StatefulWidget {
-  ProjectCard({
+  const ProjectCard({
     super.key,
     required this.sampleProjectDescriptions,
     required this.sampleProjectList,
     required this.index,
   });
 
-  List sampleProjectList;
-  List sampleProjectDescriptions;
-  int index;
+  final List sampleProjectList;
+  final List sampleProjectDescriptions;
+  final int index;
 
   @override
   State<ProjectCard> createState() => _ProjectCardState();
@@ -45,6 +46,52 @@ class _ProjectCardState extends State<ProjectCard> {
           subtitle: Text(
             widget.sampleProjectDescriptions[widget.index],
             maxLines: 5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// New ProjectCard class that accepts Project objects directly
+class ProjectCardNew extends StatelessWidget {
+  final Project project;
+
+  const ProjectCardNew({super.key, required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Card(
+        child: InkWell(
+          splashFactory: InkSparkle.splashFactory,
+          borderRadius: BorderRadius.circular(16), // Same as Card
+          onTap: () {
+            Navigator.of(context).push(
+              CupertinoPageRoute(
+                builder: (context) {
+                  return ProjectDetails(
+                    projectName: project.name,
+                    projectDescription: project.description,
+                  );
+                },
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  project.name,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                Text(project.description, maxLines: 5),
+              ],
+            ),
           ),
         ),
       ),
