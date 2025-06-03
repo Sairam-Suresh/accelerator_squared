@@ -1,4 +1,6 @@
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateOrganisationDialog extends StatefulWidget {
   const CreateOrganisationDialog({
@@ -154,7 +156,12 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // create project
+                context.read<OrganisationsBloc>().add(
+                  CreateOrganisationEvent(
+                    name: widget.orgnamecontroller.text,
+                    description: widget.orgdesccontroller.text,
+                  ),
+                );
                 Navigator.of(context).pop();
               },
               child: Padding(
