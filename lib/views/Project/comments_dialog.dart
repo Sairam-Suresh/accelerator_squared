@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:side_sheet_material3/side_sheet_material3.dart';
 
 class CommentsDialog extends StatefulWidget {
-  CommentsDialog({
+  const CommentsDialog({
     super.key,
     required this.commentsContents,
     required this.commentsList,
   });
 
-  List commentsList;
-  List commentsContents;
+  final List commentsList;
+  final List commentsContents;
 
   @override
   State<CommentsDialog> createState() => _CommentsDialogState();

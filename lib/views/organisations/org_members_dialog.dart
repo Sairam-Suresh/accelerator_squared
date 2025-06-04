@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class OrganisationMembersDialog extends StatefulWidget {
-  OrganisationMembersDialog({super.key});
+  const OrganisationMembersDialog({super.key});
 
-  String organisationCode = "ABCD";
+  final String organisationCode = "ABCD";
 
   @override
   State<OrganisationMembersDialog> createState() =>

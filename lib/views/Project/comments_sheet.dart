@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class CommentsSheet extends StatefulWidget {
-  CommentsSheet({
+  const CommentsSheet({
     super.key,
     required this.sampleCommentsList,
     required this.sampleMilestoneDescriptions,
     required this.index,
   });
 
-  List sampleCommentsList;
-  List sampleMilestoneDescriptions;
-  int index;
+  final List sampleCommentsList;
+  final List sampleMilestoneDescriptions;
+  final int index;
 
   @override
   State<CommentsSheet> createState() => _CommentsSheetState();

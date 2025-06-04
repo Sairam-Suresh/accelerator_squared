@@ -1,23 +1,109 @@
 import 'package:flutter/material.dart';
 
 class OrgStatisticsDialog extends StatefulWidget {
-  OrgStatisticsDialog({super.key, required this.projectsList});
+  const OrgStatisticsDialog({super.key, required this.projectsList});
 
-  List<String> projectsList;
+  final List<String> projectsList;
 
   @override
   State<OrgStatisticsDialog> createState() => _OrgStatisticsDialogState();
 }
 
 class _OrgStatisticsDialogState extends State<OrgStatisticsDialog> {
-  var sampleMilestonesList = [
-    "Milestone 1",
-    "Milestone 2",
-    "Milestone 3",
-    "Milestone 4",
-  ];
+  var sampleMilestonesDict = {
+    "Milestone 1": ["Completed", "100%"],
+    "Milestone 2": ["Incomplete", "75%"],
+    "Milestone 3": ["Incomplete", "Pending further review"],
+    "Milestone 4": ["Completed", "100%"],
+    "Milestone 5": ["Incomplete", "50%"],
+    "Milestone 6": ["Completed", "100%"],
+    "Milestone 7": ["Completed", "100%"],
+    "Milestone 8": ["Completed", "100%"],
+  };
 
   bool isMilestoneCompleted = false;
+
+  List<TableRow> rows = [];
+  List<Widget> milestones = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    milestones.add(SizedBox());
+
+    // Takes the names of milestones and adds them to the table
+    for (int x = 0; x < sampleMilestonesDict.length; x++) {
+      milestones.add(
+        Padding(
+          padding: EdgeInsets.all(10),
+          child: Text(
+            sampleMilestonesDict.keys.elementAt(x),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    rows.add(
+      TableRow(
+        decoration: BoxDecoration(border: Border.all()),
+        children: milestones,
+      ),
+    );
+
+    // Takes the individual milestones of each organization and adds them to the table
+
+    for (int i = 0; i < widget.projectsList.length; i++) {
+      List<Widget> tempRow = [];
+      tempRow.add(
+        Padding(
+          padding: EdgeInsets.all(10),
+          child: Text(
+            widget.projectsList[i],
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+
+      // Gets data of each organization's specific milestone and adds it to the table row
+      for (int y = 0; y < sampleMilestonesDict.length; y++) {
+        List<Widget> tempCellData = [];
+        for (
+          int z = 0;
+          z < sampleMilestonesDict.values.elementAt(y).length;
+          z++
+        ) {
+          tempCellData.add(
+            Padding(
+              padding: EdgeInsets.all(5),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  sampleMilestonesDict.values.elementAt(y).elementAt(z),
+                  textAlign: TextAlign.start,
+                ),
+              ),
+            ),
+          );
+        }
+        tempRow.add(
+          Padding(
+            padding: const EdgeInsets.all(5),
+            child: Column(children: tempCellData),
+          ),
+        );
+      }
+      rows.add(
+        TableRow(
+          decoration: BoxDecoration(border: Border.all()),
+          children: tempRow,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,58 +113,18 @@ class _OrgStatisticsDialogState extends State<OrgStatisticsDialog> {
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
       ),
       content: SizedBox(
-        width: MediaQuery.of(context).size.width / 2,
+        width: MediaQuery.of(context).size.width - 50,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListView.builder(
-              itemBuilder: (context, index) {
-                return Card(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          widget.projectsList[index],
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 24,
-                          ),
-                        ),
-                        SizedBox(width: 30),
-                        Container(
-                          height: 100,
-                          width: MediaQuery.of(context).size.width / 3,
-                          child: ListView.separated(
-                            separatorBuilder: (context, index) {
-                              return SizedBox(width: 20);
-                            },
-                            scrollDirection: Axis.horizontal,
-                            itemBuilder: (context, index) {
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(sampleMilestonesList[index]),
-                                  SizedBox(height: 10),
-                                  Checkbox(
-                                    value: isMilestoneCompleted,
-                                    onChanged: (value) {},
-                                  ),
-                                ],
-                              );
-                            },
-                            itemCount: sampleMilestonesList.length,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-              itemCount: widget.projectsList.length,
-              shrinkWrap: true,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Table(
+                  border: TableBorder.all(),
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: rows,
+                ),
+              ),
             ),
           ],
         ),

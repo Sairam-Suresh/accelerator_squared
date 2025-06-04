@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:side_sheet_material3/side_sheet_material3.dart';
 
 class MilestoneSheet extends StatefulWidget {
-  MilestoneSheet({
+  const MilestoneSheet({
     super.key,
     required this.sampleMilestoneList,
     required this.sampleMilestoneDescriptions,
@@ -10,10 +10,10 @@ class MilestoneSheet extends StatefulWidget {
     required this.index,
   });
 
-  List sampleMilestoneList;
-  List sampleMilestoneDescriptions;
-  List sampleTasksList;
-  int index;
+  final List sampleMilestoneList;
+  final List sampleMilestoneDescriptions;
+  final List sampleTasksList;
+  final int index;
 
   @override
   State<MilestoneSheet> createState() => _MilestoneSheetState();
