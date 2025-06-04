@@ -23,6 +23,7 @@
           "args": [
             "-d",
             "chrome",
+            "--web-experimental-hot-reload"
           ]
       }, 
     ]

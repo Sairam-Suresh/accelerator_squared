@@ -2,8 +2,9 @@ import 'package:accelerator_squared/views/Project/create_new_project.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
 import 'package:accelerator_squared/views/organisations/org_members_dialog.dart';
-import 'package:accelerator_squared/views/organisations/org_stats_dialog.dart';
+import 'package:accelerator_squared/views/organisations/org_stats.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_request_dialog.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class TeacherProjectPage extends StatefulWidget {
@@ -25,6 +26,8 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
     'Project 6',
     'Project 7',
     'Project 8',
+    'Project 9',
+    'Project 10',
   ];
 
   var sampleProjectDescriptions = [
@@ -32,6 +35,8 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
     'Why did i decide to do this',
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
     'Sigma sigma boy sigma boy sigma sigma boy',
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
@@ -60,11 +65,12 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
         actions: [
           IconButton(
             onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return OrgStatisticsDialog(projectsList: sampleProjectList);
-                },
+              Navigator.of(context).push(
+                CupertinoPageRoute(
+                  builder: (context) {
+                    return OrgStatistics(projectsList: sampleProjectList);
+                  },
+                ),
               );
             },
             icon: Icon(Icons.list),

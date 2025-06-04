@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class OrgStatisticsDialog extends StatefulWidget {
-  const OrgStatisticsDialog({super.key, required this.projectsList});
+class OrgStatistics extends StatefulWidget {
+  const OrgStatistics({super.key, required this.projectsList});
 
   final List<String> projectsList;
 
   @override
-  State<OrgStatisticsDialog> createState() => _OrgStatisticsDialogState();
+  State<OrgStatistics> createState() => _OrgStatisticsState();
 }
 
-class _OrgStatisticsDialogState extends State<OrgStatisticsDialog> {
+class _OrgStatisticsState extends State<OrgStatistics> {
   var sampleMilestonesDict = {
     "Milestone 1": ["Completed", "100%"],
     "Milestone 2": ["Incomplete", "75%"],
@@ -107,26 +107,38 @@ class _OrgStatisticsDialogState extends State<OrgStatisticsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        "Organisation statistics",
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          "Organisation statistics",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+        ),
       ),
-      content: SizedBox(
-        width: MediaQuery.of(context).size.width - 50,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Table(
-                  border: TableBorder.all(),
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  children: rows,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: Scrollbar(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: Table(
+                        defaultColumnWidth: FixedColumnWidth(175),
+                        border: TableBorder.all(color: Colors.grey, width: 2),
+                        defaultVerticalAlignment:
+                            TableCellVerticalAlignment.middle,
+                        children: rows,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
