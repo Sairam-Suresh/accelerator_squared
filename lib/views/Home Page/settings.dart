@@ -21,7 +21,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (state is UserInitial) {
           Navigator.of(context).pushReplacement(
             PageTransition(
-              type: PageTransitionType.rightToLeft,
+              type: PageTransitionType.leftToRight,
               child: PopScope(canPop: false, child: LoginPage()),
               duration: Duration(milliseconds: 400),
               curve: Curves.easeInOut,

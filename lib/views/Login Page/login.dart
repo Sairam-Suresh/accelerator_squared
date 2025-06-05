@@ -68,25 +68,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                // SizedBox(height: 20),
-                // ElevatedButton(
-                //   onPressed: () {
-                //     context.read<UserBloc>().add(UserLogsInWithGoogleEvent());
-                //   },
-                //   child: Text("Sign up"),
-                // ),
-                // Row(
-                //   children: [
-                //     Text("Don't have an account?"),
-                //     ElevatedButton(
-                //       onPressed: () {},
-                //       child: Padding(
-                //         padding: EdgeInsets.all(10),
-                //         child: Text("Sign up"),
-                //       ),
-                //     ),
-                //   ],
-                // ),
               ],
             ),
           ),

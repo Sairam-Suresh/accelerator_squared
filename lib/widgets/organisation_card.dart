@@ -44,7 +44,11 @@ class _OrganisationCardState extends State<OrganisationCard> {
             context,
             MaterialPageRoute(
               builder:
-                  (context) => ProjectPage(orgName: widget.organisation.name),
+                  (context) => ProjectPage(
+                    orgName: widget.organisation.name,
+                    orgDescription: widget.organisation.description,
+                    // orgDescription: widget.organisation.description,
+                  ),
             ),
           );
         },

@@ -107,37 +107,23 @@ class _OrgStatisticsState extends State<OrgStatistics> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Organisation statistics",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: Scrollbar(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: Table(
-                        defaultColumnWidth: FixedColumnWidth(175),
-                        border: TableBorder.all(color: Colors.grey, width: 2),
-                        defaultVerticalAlignment:
-                            TableCellVerticalAlignment.middle,
-                        children: rows,
-                      ),
-                    ),
-                  ),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(15),
+        child: Expanded(
+          child: Scrollbar(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Table(
+                  defaultColumnWidth: FixedColumnWidth(175),
+                  border: TableBorder.all(color: Colors.grey, width: 2),
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: rows,
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
