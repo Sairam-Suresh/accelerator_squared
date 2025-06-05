@@ -35,7 +35,8 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           colorScheme: lightColorScheme,
           appBarTheme: AppBarTheme(
-            backgroundColor: lightColorScheme.primaryContainer,
+            backgroundColor: lightColorScheme.surface,
+            centerTitle: false,
           ),
         ),
         darkTheme: ThemeData(
@@ -43,7 +44,8 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           colorScheme: darkColorScheme,
           appBarTheme: AppBarTheme(
-            backgroundColor: darkColorScheme.primaryContainer,
+            backgroundColor: darkColorScheme.surface,
+            centerTitle: false,
           ),
         ),
         home: ResponsiveBreakpoints.builder(

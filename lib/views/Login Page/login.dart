@@ -42,10 +42,10 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "Log In",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 40),
+                  "Accelerator^2",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 50),
                 ),
-                SizedBox(height: 25),
+                SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
                     context.read<UserBloc>().add(UserLogsInWithGoogleEvent());
@@ -68,14 +68,13 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 25),
-                Divider(),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<UserBloc>().add(UserLogsInWithGoogleEvent());
-                  },
-                  child: Text("Sign up"),
-                ),
+                // SizedBox(height: 20),
+                // ElevatedButton(
+                //   onPressed: () {
+                //     context.read<UserBloc>().add(UserLogsInWithGoogleEvent());
+                //   },
+                //   child: Text("Sign up"),
+                // ),
                 // Row(
                 //   children: [
                 //     Text("Don't have an account?"),

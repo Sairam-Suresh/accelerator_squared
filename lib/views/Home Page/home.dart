@@ -26,62 +26,83 @@ class _HomePageState extends State<HomePage> {
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
   }
 
+  int _selectedIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: AddOrganisationButton(),
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         title: Text(
           "Organisations",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: 15),
-            child: IconButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  CupertinoPageRoute(
-                    builder: (context) {
-                      return SettingsPage();
-                    },
-                  ),
-                );
-              },
-              icon: Icon(Icons.settings),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(10),
-          child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
-            builder: (context, state) {
-              if (state is OrganisationsLoading) {
-                return Center(child: CircularProgressIndicator());
-              } else if (state is OrganisationsLoaded) {
-                organisations = state.organisations;
-                return GridView.builder(
-                  itemCount: organisations.length,
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 500,
-                    childAspectRatio: 3 / 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              NavigationRail(
+                destinations: [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.home),
+                    label: Text("Organisations"),
                   ),
-                  itemBuilder:
-                      (context, index) =>
-                          OrganisationCard(organisation: organisations[index]),
-                );
-              } else if (state is OrganisationsError) {
-                return Center(child: Text(state.message));
-              } else {
-                return Center(child: Text("No organisations found"));
-              }
-            },
+                  NavigationRailDestination(
+                    icon: Icon(Icons.settings),
+                    label: Text("Settings"),
+                  ),
+                ],
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (value) {
+                  setState(() {
+                    _selectedIndex = value;
+                  });
+                },
+                labelType: NavigationRailLabelType.all,
+              ),
+              _selectedIndex == 0
+                  ? SizedBox(
+                    width: MediaQuery.of(context).size.width - 150,
+                    child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
+                      builder: (context, state) {
+                        if (state is OrganisationsLoading) {
+                          return Center(child: CircularProgressIndicator());
+                        } else if (state is OrganisationsLoaded) {
+                          organisations = state.organisations;
+                          return Expanded(
+                            child: GridView.builder(
+                              itemCount: organisations.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: 500,
+                                    childAspectRatio: 3 / 2,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                  ),
+                              itemBuilder:
+                                  (context, index) => OrganisationCard(
+                                    organisation: organisations[index],
+                                  ),
+                              shrinkWrap: true,
+                            ),
+                          );
+                        } else if (state is OrganisationsError) {
+                          return Center(child: Text(state.message));
+                        } else {
+                          return Center(child: Text("No organisations found"));
+                        }
+                      },
+                    ),
+                  )
+                  : SizedBox(
+                    width: MediaQuery.of(context).size.width - 150,
+                    child: SettingsPage(),
+                  ),
+            ],
           ),
         ),
       ),

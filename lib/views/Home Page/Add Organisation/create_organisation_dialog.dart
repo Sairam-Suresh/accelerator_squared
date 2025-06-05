@@ -1,4 +1,5 @@
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,6 +25,8 @@ class CreateOrganisationDialog extends StatefulWidget {
 class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
   @override
   Widget build(BuildContext context) {
+    var userState = context.read<UserBloc>().state as UserLoggedIn;
+
     return AlertDialog(
       scrollable: true,
       title: Text(
@@ -58,7 +61,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 10),
             ElevatedButton(
               style: ButtonStyle(
                 shape: WidgetStateProperty.all(
@@ -81,16 +84,16 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "dummyemail@gmail.com",
+                          userState.email,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
-                          "Click to change account",
-                          style: TextStyle(fontSize: 15),
-                        ),
+                        // Text(
+                        //   "Click to change account",
+                        //   style: TextStyle(fontSize: 15),
+                        // ),
                       ],
                     ),
                   ],
@@ -160,6 +163,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                   CreateOrganisationEvent(
                     name: widget.orgnamecontroller.text,
                     description: widget.orgdesccontroller.text,
+                    memberEmails: List<String>.from(widget.orgmemberlist),
                   ),
                 );
                 Navigator.of(context).pop();

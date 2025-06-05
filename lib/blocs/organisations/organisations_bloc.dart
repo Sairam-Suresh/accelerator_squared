@@ -105,12 +105,31 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         DocumentReference orgRef = firestore
             .collection('organisations')
             .doc(orgId);
+
+        // Create the organization document
         await orgRef.set({
           'name': event.name,
           'description': event.description,
         });
+
         // Add the current user to the members subcollection
         await orgRef.collection('members').doc(uid).set({'role': 'owner'});
+
+        // Add other members to the organization
+        for (String email in event.memberEmails) {
+          // Skip if the email is the same as the owner
+          if (email == auth.currentUser?.email) continue;
+
+          // Create a document with the member's email
+          await orgRef.collection('members').doc().set({
+            'role': 'member',
+            'email': email,
+            // 'addedAt': FieldValue.serverTimestamp(),
+            // 'addedBy': uid,
+            'status': 'pending', // They need to accept the invitation
+          });
+        }
+
         // Fetch the updated list
         add(FetchOrganisationsEvent());
       } catch (e) {

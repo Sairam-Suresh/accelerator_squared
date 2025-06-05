@@ -46,6 +46,7 @@ dependencies:
   cloud_firestore: ^5.6.7
   equatable: ^2.0.7
   uuid: ^4.5.1
+  page_transition: ^2.2.1
 
 dev_dependencies:
   flutter_test:

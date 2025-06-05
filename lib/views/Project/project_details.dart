@@ -1,4 +1,4 @@
-import 'package:accelerator_squared/views/Project/comments_dialog.dart';
+import 'package:accelerator_squared/views/Project/comments/comments_dialog.dart';
 import 'package:accelerator_squared/views/Project/milestone_sheet.dart';
 import 'package:accelerator_squared/views/Project/project_files.dart';
 import 'package:accelerator_squared/views/Project/project_settings.dart';

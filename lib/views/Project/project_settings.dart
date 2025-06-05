@@ -23,7 +23,7 @@ class _ProjectSettingsState extends State<ProjectSettings> {
           TextField(
             decoration: InputDecoration(
               hintText: "Edit project name",
-              label: Text("Organisation name"),
+              label: Text("Project name"),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
