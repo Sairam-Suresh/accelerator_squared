@@ -10,13 +10,26 @@ class JoinOrganisationDialog extends StatefulWidget {
 }
 
 class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
+  var sampleOrgTitles = [
+    "SST Inc",
+    "SST Hack Club",
+    "NUS High Rejects",
+    "sigma club",
+  ];
+  var sampleOrgDescriptions = [
+    "The ict talent development programme of the school of science and technology, singapore. lorem ipsum dolor sit amet",
+    "A rip off of sst inc, surely this is able to do better than it and lorem ipsum dolor sit amet, hirhg iurhfiuwrhf uiwhfouhw",
+    "Bums",
+    "we love not doing work 100",
+  ];
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       scrollable: true,
       content: SizedBox(
         width: MediaQuery.of(context).size.width / 2,
-        height: MediaQuery.of(context).size.height / 4,
+        height: MediaQuery.of(context).size.height / 1.5,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -24,7 +37,7 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
               "Join organisation",
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
-            Spacer(),
+            SizedBox(height: 20),
             Center(
               child: TextField(
                 controller: widget.orgcodecontroller,
@@ -37,24 +50,44 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                 ),
               ),
             ),
-            Spacer(),
-            ElevatedButton(
-              style: ButtonStyle(
-                shape: WidgetStateProperty.all(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(5, 15, 5, 15),
-                child: Text(
-                  "Send join request",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
+            SizedBox(height: 10),
+            Expanded(
+              child: ListView.builder(
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: ListTile(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                      },
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sampleOrgTitles[index],
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            sampleOrgDescriptions[index],
+                            style: TextStyle(fontSize: 14),
+                            maxLines: 1,
+                          ),
+                          SizedBox(height: 10),
+                        ],
+                      ),
+                      subtitle: Row(
+                        children: [
+                          Text("17 members"),
+                          VerticalDivider(),
+                          Text("4 projects"),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                itemCount: sampleOrgDescriptions.length,
               ),
             ),
           ],

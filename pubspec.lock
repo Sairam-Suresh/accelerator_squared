@@ -296,6 +296,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
+  pattern_box:
+    dependency: "direct main"
+    description:
+      name: pattern_box
+      sha256: "3d1cdbbb903704bf77c539f3ff77e2a8351a46d95a863fdb0e72016ce0a066a8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.4"
   plugin_platform_interface:
     dependency: transitive
     description:

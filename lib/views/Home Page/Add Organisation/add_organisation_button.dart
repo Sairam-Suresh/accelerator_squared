@@ -22,23 +22,9 @@ class AddOrganisationButton extends StatelessWidget {
                 showDialog(
                   context: context,
                   builder: (context) {
-                    var orgmemberlist = [];
-
-                    TextEditingController orgnamecontroller =
-                        TextEditingController();
-                    TextEditingController orgdesccontroller =
-                        TextEditingController();
-                    TextEditingController emailaddingcontroller =
-                        TextEditingController();
-
                     return StatefulBuilder(
                       builder: (context, StateSetter setState) {
-                        return CreateOrganisationDialog(
-                          orgnamecontroller: orgnamecontroller,
-                          orgdesccontroller: orgdesccontroller,
-                          emailaddingcontroller: emailaddingcontroller,
-                          orgmemberlist: orgmemberlist,
-                        );
+                        return CreateOrganisationDialog();
                       },
                     );
                   },

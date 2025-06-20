@@ -4,18 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateOrganisationDialog extends StatefulWidget {
-  const CreateOrganisationDialog({
-    super.key,
-    required this.orgnamecontroller,
-    required this.orgdesccontroller,
-    required this.emailaddingcontroller,
-    required this.orgmemberlist,
-  });
-
-  final TextEditingController orgnamecontroller;
-  final TextEditingController orgdesccontroller;
-  final TextEditingController emailaddingcontroller;
-  final List orgmemberlist;
+  const CreateOrganisationDialog({super.key});
 
   @override
   State<CreateOrganisationDialog> createState() =>
@@ -23,6 +12,12 @@ class CreateOrganisationDialog extends StatefulWidget {
 }
 
 class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
+  var emailAddingController = TextEditingController();
+  var orgNameController = TextEditingController();
+  var orgDescController = TextEditingController();
+
+  var orgMemberList = [];
+
   @override
   Widget build(BuildContext context) {
     var userState = context.read<UserBloc>().state as UserLoggedIn;
@@ -39,7 +34,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
         child: Column(
           children: [
             TextField(
-              controller: widget.orgnamecontroller,
+              controller: orgNameController,
               decoration: InputDecoration(
                 label: Text("Organisation Name"),
                 hintText: "Enter organisation name",
@@ -50,7 +45,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
             ),
             SizedBox(height: 10),
             TextField(
-              controller: widget.orgdesccontroller,
+              controller: orgDescController,
               minLines: 3,
               maxLines: 20,
               decoration: InputDecoration(
@@ -107,9 +102,9 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: MediaQuery.of(context).size.width / 3,
+                  width: MediaQuery.of(context).size.width / 2.5 + 20,
                   child: TextField(
-                    controller: widget.emailaddingcontroller,
+                    controller: emailAddingController,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -129,9 +124,34 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                     ),
                   ),
                   onPressed: () {
-                    widget.orgmemberlist.add(widget.emailaddingcontroller.text);
-                    widget.emailaddingcontroller.clear();
-                    setState(() {});
+                    if (!emailAddingController.text.isEmpty) {
+                      orgMemberList.add(emailAddingController.text);
+                      emailAddingController.clear();
+                      setState(() {});
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text("Email provided is empty!"),
+                            content: Text(
+                              "Email field cannot be empty when adding a new user",
+                            ),
+                            actions: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text(
+                                  "OK",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }
                   },
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(0, 13, 0, 13),
@@ -141,18 +161,25 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
               ],
             ),
             SizedBox(height: 10),
-            widget.orgmemberlist.isNotEmpty
+            orgMemberList.isNotEmpty
                 ? Expanded(
                   child: ListView.builder(
                     itemBuilder: (context, index) {
                       return Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Text(widget.orgmemberlist[index]),
+                        child: ListTile(
+                          title: Text(orgMemberList[index]),
+                          trailing: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                orgMemberList.removeAt(index);
+                              });
+                            },
+                            icon: Icon(Icons.cancel, color: Colors.red),
+                          ),
                         ),
                       );
                     },
-                    itemCount: widget.orgmemberlist.length,
+                    itemCount: orgMemberList.length,
                   ),
                 )
                 : Text("No members added yet"),
@@ -161,9 +188,9 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
               onPressed: () {
                 context.read<OrganisationsBloc>().add(
                   CreateOrganisationEvent(
-                    name: widget.orgnamecontroller.text,
-                    description: widget.orgdesccontroller.text,
-                    memberEmails: List<String>.from(widget.orgmemberlist),
+                    name: orgNameController.text,
+                    description: orgDescController.text,
+                    memberEmails: List<String>.from(orgMemberList),
                   ),
                 );
                 Navigator.of(context).pop();

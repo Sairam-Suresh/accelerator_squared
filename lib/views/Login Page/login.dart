@@ -3,6 +3,7 @@ import 'package:accelerator_squared/views/Home%20Page/home.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pattern_box/pattern_box.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -33,46 +34,98 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final userBloc = context.watch<UserBloc>();
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Accelerator^2",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 50),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<UserBloc>().add(UserLogsInWithGoogleEvent());
-                  },
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 12.5, 20, 12.5),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+    return Stack(
+      children: [
+        PatternBoxWidget(
+          pattern: PlusPainter(),
+          backgroundGradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.onPrimaryFixedVariant,
+              Theme.of(context).colorScheme.surfaceContainerHighest,
+            ],
+            stops: [0.1, 0.4, 0.8],
+          ),
+        ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        color: Theme.of(context).colorScheme.surface,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withAlpha(150),
+                            blurRadius: 8,
+                            spreadRadius: 10,
+                          ),
+                        ],
+                      ),
+                      width: MediaQuery.of(context).size.width / 2.5,
+                      height: MediaQuery.of(context).size.height / 2.5,
+                    ),
+                  ),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset("../../assets/google.png", height: 30),
-                        SizedBox(width: 10),
                         Text(
-                          "Log in with Google",
+                          "Accelerator^2",
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 50,
+                          ),
+                        ),
+                        SizedBox(height: 5),
+                        Text(
+                          "The project management solution for schools",
+                          style: TextStyle(fontSize: 20),
+                        ),
+                        SizedBox(height: 25),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<UserBloc>().add(
+                              UserLogsInWithGoogleEvent(),
+                            );
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(20, 12.5, 20, 12.5),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  "../../assets/google.png",
+                                  height: 30,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  "Log in with Google",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
