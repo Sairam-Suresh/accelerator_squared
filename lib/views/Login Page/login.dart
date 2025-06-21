@@ -90,30 +90,45 @@ class _LoginPageState extends State<LoginPage> {
                           style: TextStyle(fontSize: 20),
                         ),
                         SizedBox(height: 25),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<UserBloc>().add(
-                              UserLogsInWithGoogleEvent(),
-                            );
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(20, 12.5, 20, 12.5),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image.asset(
-                                  "../../assets/google.png",
-                                  height: 30,
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  "Log in with Google",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(40),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withAlpha(150),
+                                blurRadius: 8,
+                                spreadRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              context.read<UserBloc>().add(
+                                UserLogsInWithGoogleEvent(),
+                              );
+                            },
+
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(20, 12.5, 20, 12.5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image.asset(
+                                    "../../assets/google.png",
+                                    height: 30,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(width: 10),
+                                  Text(
+                                    "Log in with Google",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

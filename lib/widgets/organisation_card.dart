@@ -1,6 +1,3 @@
-import 'dart:math';
-
-import 'package:accelerator_squared/icons.dart';
 import 'package:accelerator_squared/models/organisation.dart';
 import 'package:accelerator_squared/views/Project/project_page.dart';
 import 'package:flutter/material.dart';
@@ -15,22 +12,6 @@ class OrganisationCard extends StatefulWidget {
 }
 
 class _OrganisationCardState extends State<OrganisationCard> {
-  var random = Random();
-
-  var randomIcon1 = Icons.error;
-  var randomIcon2 = Icons.error;
-  var randomIcon3 = Icons.error;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    var shuffledIcons = List.from(materialIcons)..shuffle(random);
-    randomIcon1 = shuffledIcons[0];
-    randomIcon2 = shuffledIcons[1];
-    randomIcon3 = shuffledIcons[2];
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -73,18 +54,17 @@ class _OrganisationCardState extends State<OrganisationCard> {
               ),
               SizedBox(height: 10),
               Divider(thickness: 2),
-              Spacer(),
+              SizedBox(height: 10),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Opacity(opacity: 0.4, child: Icon(randomIcon1, size: 80)),
-                  SizedBox(width: 40),
-                  Opacity(opacity: 0.4, child: Icon(randomIcon2, size: 80)),
-                  SizedBox(width: 40),
-                  Opacity(opacity: 0.4, child: Icon(randomIcon3, size: 80)),
+                  Text("56 members", style: TextStyle(fontSize: 14)),
+                  VerticalDivider(),
+                  Text("9 projects", style: TextStyle(fontSize: 14)),
                 ],
               ),
               Spacer(),
+              Text("Status: Teacher", style: TextStyle(fontSize: 14)),
             ],
           ),
         ),

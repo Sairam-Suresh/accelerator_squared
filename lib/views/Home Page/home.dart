@@ -1,8 +1,8 @@
 import 'package:accelerator_squared/models/organisation.dart';
+import 'package:accelerator_squared/views/Home%20Page/invites.dart';
 import 'package:accelerator_squared/views/Home%20Page/settings.dart';
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/add_organisation_button.dart';
 import 'package:accelerator_squared/widgets/organisation_card.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -52,6 +52,10 @@ class _HomePageState extends State<HomePage> {
                     label: Text("Organisations"),
                   ),
                   NavigationRailDestination(
+                    icon: Icon(Icons.mail),
+                    label: Text("Invites"),
+                  ),
+                  NavigationRailDestination(
                     icon: Icon(Icons.settings),
                     label: Text("Settings"),
                   ),
@@ -98,6 +102,8 @@ class _HomePageState extends State<HomePage> {
                       },
                     ),
                   )
+                  : _selectedIndex == 1
+                  ? OrgInvitesPage()
                   : SizedBox(
                     width: MediaQuery.of(context).size.width - 150,
                     child: SettingsPage(),

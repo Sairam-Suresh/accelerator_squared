@@ -62,7 +62,6 @@ class _RequestDialogState extends State<ProjectRequests> {
           ElevatedButton(
             onPressed: () {
               // create project
-              Navigator.of(context).pop();
             },
             child: Padding(
               padding: EdgeInsets.fromLTRB(5, 15, 5, 15),

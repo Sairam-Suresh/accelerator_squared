@@ -118,7 +118,10 @@ class _OrgStatisticsState extends State<OrgStatistics> {
                 scrollDirection: Axis.vertical,
                 child: Table(
                   defaultColumnWidth: FixedColumnWidth(175),
-                  border: TableBorder.all(color: Colors.grey, width: 2),
+                  border: TableBorder.all(
+                    color: Color.fromRGBO(255, 255, 255, 0.4),
+                    width: 1.25,
+                  ),
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                   children: rows,
                 ),

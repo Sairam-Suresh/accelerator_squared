@@ -1,6 +1,6 @@
 import 'package:accelerator_squared/views/Project/create_new_project.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_requests.dart';
-import 'package:accelerator_squared/views/organisations/org_members_dialog.dart';
+import 'package:accelerator_squared/views/organisations/org_members.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_page.dart';
@@ -62,7 +62,7 @@ class _ProjectPageState extends State<ProjectPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: teacherView ? 4 : 2,
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {
@@ -129,74 +129,91 @@ class _ProjectPageState extends State<ProjectPage> {
                       Tab(icon: Icon(Icons.groups), text: "Members"),
                     ],
                   )
-                  : PreferredSize(preferredSize: Size.zero, child: SizedBox()),
+                  : TabBar(
+                    tabs: [
+                      Tab(icon: Icon(Icons.list), text: "Projects"),
+                      Tab(icon: Icon(Icons.groups), text: "Members"),
+                    ],
+                  ),
         ),
         body:
             !teacherView
-                ? SafeArea(
-                  child: Padding(
-                    padding: EdgeInsets.all(10),
-                    child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
-                      builder: (context, state) {
-                        if (state is OrganisationsLoading) {
-                          return Center(child: CircularProgressIndicator());
-                        } else if (state is OrganisationsLoaded) {
-                          // Find the organisation matching the name
-                          final organisation =
-                              state.organisations
-                                  .where((org) => org.name == widget.orgName)
-                                  .toList();
+                ? TabBarView(
+                  children: [
+                    SafeArea(
+                      child: Padding(
+                        padding: EdgeInsets.all(10),
+                        child: BlocBuilder<
+                          OrganisationsBloc,
+                          OrganisationsState
+                        >(
+                          builder: (context, state) {
+                            if (state is OrganisationsLoading) {
+                              return Center(child: CircularProgressIndicator());
+                            } else if (state is OrganisationsLoaded) {
+                              // Find the organisation matching the name
+                              final organisation =
+                                  state.organisations
+                                      .where(
+                                        (org) => org.name == widget.orgName,
+                                      )
+                                      .toList();
 
-                          // If no organisation found with the given name
-                          if (organisation.isEmpty) {
-                            return Center(
-                              child: Text(
-                                'Organisation not found',
-                                style: TextStyle(fontSize: 18),
-                              ),
-                            );
-                          }
+                              // If no organisation found with the given name
+                              if (organisation.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    'Organisation not found',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                );
+                              }
 
-                          // Get the projects from the organisation
-                          final projects = organisation.first.projects;
+                              // Get the projects from the organisation
+                              final projects = organisation.first.projects;
 
-                          if (projects.isEmpty) {
-                            return Center(
-                              child: Text(
-                                'No projects found',
-                                style: TextStyle(fontSize: 18),
-                              ),
-                            );
-                          }
+                              if (projects.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    'No projects found',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                );
+                              }
 
-                          return Column(
-                            children: [
-                              Expanded(
-                                child: GridView.count(
-                                  childAspectRatio: 1.5,
-                                  crossAxisCount: 3,
-                                  children:
-                                      projects.map((project) {
-                                        return ProjectCardNew(project: project);
-                                      }).toList(),
+                              return Column(
+                                children: [
+                                  Expanded(
+                                    child: GridView.count(
+                                      childAspectRatio: 1.5,
+                                      crossAxisCount: 3,
+                                      children:
+                                          projects.map((project) {
+                                            return ProjectCardNew(
+                                              project: project,
+                                            );
+                                          }).toList(),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            } else if (state is OrganisationsError) {
+                              return Center(
+                                child: Text(
+                                  'Error: ${state.message}',
+                                  style: TextStyle(color: Colors.red),
                                 ),
-                              ),
-                            ],
-                          );
-                        } else if (state is OrganisationsError) {
-                          return Center(
-                            child: Text(
-                              'Error: ${state.message}',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          );
-                        }
+                              );
+                            }
 
-                        // Initial state or unknown state
-                        return Center(child: CircularProgressIndicator());
-                      },
+                            // Initial state or unknown state
+                            return Center(child: CircularProgressIndicator());
+                          },
+                        ),
+                      ),
                     ),
-                  ),
+                    OrgMembers(teacherView: false),
+                  ],
                 )
                 : TabBarView(
                   children: [
@@ -207,7 +224,7 @@ class _ProjectPageState extends State<ProjectPage> {
                     ),
                     OrgStatistics(projectsList: sampleProjectList),
                     ProjectRequests(),
-                    OrgMembers(),
+                    OrgMembers(teacherView: true),
                   ],
                 ),
       ),
