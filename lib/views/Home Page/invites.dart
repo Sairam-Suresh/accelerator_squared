@@ -42,43 +42,57 @@ class _OrgInvitesPageState extends State<OrgInvitesPage> {
                   children: [
                     Card(
                       child: ListTile(
-                        title: Text(
-                          sampleOrgInvites[index],
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        subtitle: Row(
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("34 members"),
-                            VerticalDivider(),
-                            Text("5 projects"),
+                            Text(
+                              sampleOrgInvites[index],
+                              style: TextStyle(fontSize: 20),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  "34 members",
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                VerticalDivider(),
+                                Text(
+                                  "5 projects",
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Row(
+                            children: [
+                              TextButton.icon(
+                                onPressed: () {},
+                                label: Text(
+                                  "Accept",
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                                icon: Icon(Icons.check, color: Colors.green),
+                              ),
+                              SizedBox(height: 5),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    sampleOrgInvites.removeAt(index);
+                                  });
+                                },
+                                label: Text(
+                                  "Decline",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                                icon: Icon(Icons.cancel, color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () {},
-                          label: Text(
-                            "Accept",
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          icon: Icon(Icons.check, color: Colors.green),
-                        ),
-                        SizedBox(height: 5),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              sampleOrgInvites.removeAt(index);
-                            });
-                          },
-                          label: Text(
-                            "Decline",
-                            style: TextStyle(color: Colors.red),
-                          ),
-                          icon: Icon(Icons.cancel, color: Colors.red),
-                        ),
-                      ],
                     ),
                   ],
                 );
@@ -105,43 +119,45 @@ class _OrgInvitesPageState extends State<OrgInvitesPage> {
                   children: [
                     Card(
                       child: ListTile(
-                        title: Text(
-                          sampleProjectInvites[index],
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        subtitle: Row(
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("34 members"),
-                            VerticalDivider(),
-                            Text("5 projects"),
+                            Text(
+                              sampleProjectInvites[index],
+                              style: TextStyle(fontSize: 20),
+                            ),
+                            Text("5 members", style: TextStyle(fontSize: 16)),
                           ],
                         ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Row(
+                            children: [
+                              TextButton.icon(
+                                onPressed: () {},
+                                label: Text(
+                                  "Accept",
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                                icon: Icon(Icons.check, color: Colors.green),
+                              ),
+                              SizedBox(height: 5),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    sampleOrgInvites.removeAt(index);
+                                  });
+                                },
+                                label: Text(
+                                  "Decline",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                                icon: Icon(Icons.cancel, color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () {},
-                          label: Text(
-                            "Accept",
-                            style: TextStyle(color: Colors.green),
-                          ),
-                          icon: Icon(Icons.check, color: Colors.green),
-                        ),
-                        SizedBox(height: 5),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              sampleProjectInvites.removeAt(index);
-                            });
-                          },
-                          label: Text(
-                            "Decline",
-                            style: TextStyle(color: Colors.red),
-                          ),
-                          icon: Icon(Icons.cancel, color: Colors.red),
-                        ),
-                      ],
                     ),
                   ],
                 );
