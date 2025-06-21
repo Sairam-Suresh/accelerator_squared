@@ -77,11 +77,28 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          "Accelerator^2",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 50,
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: "Accelerator",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 50,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              ),
+                              TextSpan(
+                                text: "^2",
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  fontFeatures: [FontFeature.superscripts()],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         SizedBox(height: 5),
@@ -98,8 +115,8 @@ class _LoginPageState extends State<LoginPage> {
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.primary.withAlpha(150),
-                                blurRadius: 8,
-                                spreadRadius: 10,
+                                blurRadius: 10,
+                                spreadRadius: 6,
                               ),
                             ],
                           ),

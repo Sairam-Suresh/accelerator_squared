@@ -23,10 +23,12 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(10),
       child: GridView.count(
         childAspectRatio: 1.5,
         crossAxisCount: 3,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
         children: List.generate(widget.sampleProjectList.length, (index) {
           return ProjectCard(
             sampleProjectDescriptions: widget.sampleProjectDescriptions,

@@ -187,6 +187,8 @@ class _ProjectPageState extends State<ProjectPage> {
                                     child: GridView.count(
                                       childAspectRatio: 1.5,
                                       crossAxisCount: 3,
+                                      crossAxisSpacing: 10,
+                                      mainAxisSpacing: 10,
                                       children:
                                           projects.map((project) {
                                             return ProjectCardNew(
