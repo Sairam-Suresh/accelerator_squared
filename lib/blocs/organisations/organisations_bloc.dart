@@ -50,14 +50,22 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
                     .collection('projects')
                     .get();
 
+            // Fetch members count for this organisation
+            QuerySnapshot membersCountSnapshot =
+                await firestore
+                    .collection('organisations')
+                    .doc(doc.id)
+                    .collection('members')
+                    .get();
+
             List<Project> projects =
                 projectsSnapshot.docs.map((projectDoc) {
                   final projectData = projectDoc.data() as Map<String, dynamic>;
                   // Add id field if not present in Firestore
                   return Project(
                     id: projectDoc.id,
-                    name: projectData['Name'] ?? '',
-                    description: projectData['Description'] ?? '',
+                    name: projectData['title'] ?? projectData['Name'] ?? '',
+                    description: projectData['description'] ?? projectData['Description'] ?? '',
                     createdAt:
                         projectData['createdAt'] != null
                             ? (projectData['createdAt'] is String
@@ -77,10 +85,12 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
 
             organisations.add(
               Organisation(
+                id: doc.id,
                 name: data['name'] ?? '',
                 description: data['description'] ?? '',
                 students: [], // Adjust this if students data is nested
                 projects: projects,
+                memberCount: membersCountSnapshot.docs.length,
               ),
             );
           }
@@ -129,6 +139,42 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             'status': 'pending', // They need to accept the invitation
           });
         }
+
+        // Fetch the updated list
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<CreateProjectEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Generate a random UUID for the project document ID
+        String projectId = const Uuid().v4();
+        DocumentReference projectRef = firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(projectId);
+
+        // Create the project document
+        await projectRef.set({
+          'title': event.title,
+          'description': event.description,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'createdBy': uid,
+        });
+
+        // Add the current user to the project members subcollection
+        await projectRef.collection('members').doc(uid).set({'role': 'owner'});
 
         // Fetch the updated list
         add(FetchOrganisationsEvent());

@@ -14,3 +14,15 @@ class CreateOrganisationEvent extends OrganisationsEvent {
     required this.memberEmails,
   });
 }
+
+class CreateProjectEvent extends OrganisationsEvent {
+  final String organisationId;
+  final String title;
+  final String description;
+
+  CreateProjectEvent({
+    required this.organisationId,
+    required this.title,
+    required this.description,
+  });
+}

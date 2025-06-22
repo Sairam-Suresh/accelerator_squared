@@ -1,16 +1,20 @@
 import 'package:accelerator_squared/models/projects.dart';
 
 class Organisation {
+  final String id;
   final String name;
   final String description;
   final List<StudentInOrganisation> students;
   final List<Project> projects;
+  final int memberCount;
 
   Organisation({
+    required this.id,
     required this.name,
     required this.description,
     required this.students,
     required this.projects,
+    required this.memberCount,
   });
 }
 

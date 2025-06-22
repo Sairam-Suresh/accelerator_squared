@@ -38,9 +38,10 @@ class _OrganisationCardState extends State<OrganisationCard> {
               MaterialPageRoute(
                 builder:
                     (context) => ProjectPage(
+                      organisationId: widget.organisation.id,
                       orgName: widget.organisation.name,
                       orgDescription: widget.organisation.description,
-                      // orgDescription: widget.organisation.description,
+                      projects: widget.organisation.projects,
                     ),
               ),
             );
@@ -70,9 +71,9 @@ class _OrganisationCardState extends State<OrganisationCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text("56 members", style: TextStyle(fontSize: 14)),
+                    Text("${widget.organisation.memberCount} members", style: TextStyle(fontSize: 14)),
                     VerticalDivider(),
-                    Text("9 projects", style: TextStyle(fontSize: 14)),
+                    Text("${widget.organisation.projects.length} projects", style: TextStyle(fontSize: 14)),
                   ],
                 ),
                 Spacer(),

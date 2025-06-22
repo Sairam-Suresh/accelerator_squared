@@ -1,9 +1,12 @@
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class NewProjectDialog extends StatefulWidget {
-  const NewProjectDialog({super.key});
+  const NewProjectDialog({super.key, required this.organisationId});
+
+  final String organisationId;
 
   @override
   State<NewProjectDialog> createState() => _NewProjectDialogState();
@@ -118,7 +121,34 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                 ElevatedButton(
                   onPressed: () {
                     // create project
-                    Navigator.of(context).pop();
+                    if (projectNameController.text.isNotEmpty && 
+                        descriptionController.text.isNotEmpty) {
+                      context.read<OrganisationsBloc>().add(
+                        CreateProjectEvent(
+                          organisationId: widget.organisationId,
+                          title: projectNameController.text,
+                          description: descriptionController.text,
+                        ),
+                      );
+                      Navigator.of(context).pop();
+                      
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Project "${projectNameController.text}" created successfully!'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    } else {
+                      // Show error message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Please fill in all fields'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(5, 15, 5, 15),

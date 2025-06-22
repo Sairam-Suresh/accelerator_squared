@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class OrgMembers extends StatefulWidget {
-  const OrgMembers({super.key, required this.teacherView});
+  const OrgMembers({
+    super.key, 
+    required this.teacherView,
+    required this.organisationId,
+    required this.organisationName,
+  });
 
-  final String organisationCode = "ABCD";
   final bool teacherView;
+  final String organisationId;
+  final String organisationName;
 
   @override
   State<OrgMembers> createState() => _OrganisationMembersDialogState();
@@ -12,17 +20,103 @@ class OrgMembers extends StatefulWidget {
 
 class _OrganisationMembersDialogState extends State<OrgMembers> {
   TextEditingController memberEmailController = TextEditingController();
-  var orgTeachersList = {
-    "Aurelius Yeo": "aurelius_yeo@sst.edu.sg",
-    "Jovita Tang": "jovita_tang@sst.edu.sg",
-  };
-  var orgStudentsList = [
-    "chay_yu_hung@s2021.ssts.edu.sg",
-    "sairam_suresh@s2021.ssts.edu.sg",
-  ];
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  FirebaseAuth auth = FirebaseAuth.instance;
+  
+  List<Map<String, dynamic>> members = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchMembers();
+  }
+
+  Future<void> fetchMembers() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      QuerySnapshot membersSnapshot = await firestore
+          .collection('organisations')
+          .doc(widget.organisationId)
+          .collection('members')
+          .get();
+
+      List<Map<String, dynamic>> membersList = [];
+      for (var doc in membersSnapshot.docs) {
+        Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
+        membersList.add({
+          'id': doc.id,
+          'email': memberData['email'] ?? 'Unknown',
+          'role': memberData['role'] ?? 'member',
+          'status': memberData['status'] ?? 'active',
+        });
+      }
+
+      setState(() {
+        members = membersList;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      print('Error fetching members: $e');
+    }
+  }
+
+  Future<void> addMember() async {
+    if (memberEmailController.text.isEmpty) return;
+
+    try {
+      // Add member to Firestore
+      await firestore
+          .collection('organisations')
+          .doc(widget.organisationId)
+          .collection('members')
+          .doc()
+          .set({
+        'email': memberEmailController.text,
+        'role': 'member',
+        'status': 'pending',
+        'addedAt': FieldValue.serverTimestamp(),
+        'addedBy': auth.currentUser?.uid,
+      });
+
+      memberEmailController.clear();
+      fetchMembers(); // Refresh the list
+    } catch (e) {
+      print('Error adding member: $e');
+    }
+  }
+
+  Future<void> removeMember(String memberId) async {
+    try {
+      await firestore
+          .collection('organisations')
+          .doc(widget.organisationId)
+          .collection('members')
+          .doc(memberId)
+          .delete();
+
+      fetchMembers(); // Refresh the list
+    } catch (e) {
+      print('Error removing member: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    // Separate owners and members
+    List<Map<String, dynamic>> owners = members.where((m) => m['role'] == 'owner').toList();
+    List<Map<String, dynamic>> regularMembers = members.where((m) => m['role'] == 'member').toList();
+
     return Padding(
       padding: const EdgeInsets.all(15),
       child: SingleChildScrollView(
@@ -33,8 +127,8 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                 ? Column(
                   children: [
                     Text(
-                      "Organisation code: ${widget.organisationCode}",
-                      style: TextStyle(fontSize: 20),
+                      "Organisation: ${widget.organisationName}",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 20),
                     SizedBox(
@@ -54,13 +148,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                     SizedBox(
                       width: MediaQuery.of(context).size.width / 2.5,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Add member to member list of org
-                          setState(() {
-                            orgStudentsList.add(memberEmailController.text);
-                            memberEmailController.clear();
-                          });
-                        },
+                        onPressed: addMember,
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(5, 15, 5, 15),
                           child: Row(
@@ -84,46 +172,63 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                 )
                 : SizedBox(),
             SizedBox(height: 10),
-            Align(alignment: Alignment.centerLeft, child: Text("Teachers")),
+            Align(alignment: Alignment.centerLeft, child: Text("Owners", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
             SizedBox(height: 5),
-            ListView.builder(
-              itemBuilder: (context, index) {
-                var keysList = orgTeachersList.keys.toList();
-                return Card(
-                  child: ListTile(
-                    title: Text(
-                      keysList[index],
-                      style: TextStyle(fontWeight: FontWeight.bold),
+            owners.isEmpty 
+                ? Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text("No owners found", style: TextStyle(fontStyle: FontStyle.italic)),
                     ),
-                    subtitle: Text(orgTeachersList[keysList[index]]!),
+                  )
+                : ListView.builder(
+                    itemBuilder: (context, index) {
+                      return Card(
+                        child: ListTile(
+                          leading: Icon(Icons.person, color: Colors.blue),
+                          title: Text(
+                            owners[index]['email'],
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text("Owner"),
+                          trailing: owners[index]['id'] == auth.currentUser?.uid
+                              ? Chip(label: Text("You"), backgroundColor: Colors.green.shade100)
+                              : null,
+                        ),
+                      );
+                    },
+                    itemCount: owners.length,
+                    shrinkWrap: true,
                   ),
-                );
-              },
-              itemCount: orgTeachersList.length,
-              shrinkWrap: true,
-            ),
-            SizedBox(height: 10),
-            Align(alignment: Alignment.centerLeft, child: Text("Students")),
+            SizedBox(height: 20),
+            Align(alignment: Alignment.centerLeft, child: Text("Members", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
             SizedBox(height: 5),
-            ListView.builder(
-              itemBuilder: (context, index) {
-                return Card(
-                  child: ListTile(
-                    title: Text(orgStudentsList[index]),
-                    trailing: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          orgStudentsList.remove(orgStudentsList[index]);
-                        });
-                      },
-                      icon: Icon(Icons.remove, color: Colors.red),
+            regularMembers.isEmpty 
+                ? Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text("No members found", style: TextStyle(fontStyle: FontStyle.italic)),
                     ),
+                  )
+                : ListView.builder(
+                    itemBuilder: (context, index) {
+                      return Card(
+                        child: ListTile(
+                          leading: Icon(Icons.person_outline),
+                          title: Text(regularMembers[index]['email']),
+                          subtitle: Text(regularMembers[index]['status'] ?? 'active'),
+                          trailing: widget.teacherView
+                              ? IconButton(
+                                  onPressed: () => removeMember(regularMembers[index]['id']),
+                                  icon: Icon(Icons.remove, color: Colors.red),
+                                )
+                              : null,
+                        ),
+                      );
+                    },
+                    itemCount: regularMembers.length,
+                    shrinkWrap: true,
                   ),
-                );
-              },
-              itemCount: orgStudentsList.length,
-              shrinkWrap: true,
-            ),
           ],
         ),
       ),
