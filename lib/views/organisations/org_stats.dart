@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:accelerator_squared/models/projects.dart';
 
 class OrgStatistics extends StatefulWidget {
-  const OrgStatistics({super.key, required this.projectsList});
+  const OrgStatistics({super.key, required this.projects});
 
-  final List<String> projectsList;
+  final List<Project> projects;
 
   @override
   State<OrgStatistics> createState() => _OrgStatisticsState();
@@ -55,13 +56,13 @@ class _OrgStatisticsState extends State<OrgStatistics> {
 
     // Takes the individual milestones of each organization and adds them to the table
 
-    for (int i = 0; i < widget.projectsList.length; i++) {
+    for (int i = 0; i < widget.projects.length; i++) {
       List<Widget> tempRow = [];
       tempRow.add(
         Padding(
           padding: EdgeInsets.all(10),
           child: Text(
-            widget.projectsList[i],
+            widget.projects[i].name,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             textAlign: TextAlign.center,
           ),

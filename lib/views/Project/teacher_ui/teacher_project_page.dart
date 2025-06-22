@@ -1,4 +1,5 @@
 import 'package:accelerator_squared/views/Project/project_card.dart';
+import 'package:accelerator_squared/models/projects.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -6,14 +7,11 @@ class TeacherProjectPage extends StatefulWidget {
   const TeacherProjectPage({
     super.key,
     required this.orgName,
-    required this.sampleProjectDescriptions,
-    required this.sampleProjectList,
+    required this.projects,
   });
 
   final String orgName;
-
-  final List sampleProjectList;
-  final List sampleProjectDescriptions;
+  final List<Project> projects;
 
   @override
   State<TeacherProjectPage> createState() => _TeacherProjectPageState();
@@ -22,6 +20,15 @@ class TeacherProjectPage extends StatefulWidget {
 class _TeacherProjectPageState extends State<TeacherProjectPage> {
   @override
   Widget build(BuildContext context) {
+    if (widget.projects.isEmpty) {
+      return Center(
+        child: Text(
+          'No projects found',
+          style: TextStyle(fontSize: 18),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(10),
       child: GridView.count(
@@ -29,13 +36,9 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
         crossAxisCount: 3,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        children: List.generate(widget.sampleProjectList.length, (index) {
-          return ProjectCard(
-            sampleProjectDescriptions: widget.sampleProjectDescriptions,
-            sampleProjectList: widget.sampleProjectList,
-            index: index,
-          );
-        }),
+        children: widget.projects.map((project) {
+          return ProjectCardNew(project: project);
+        }).toList(),
       ),
     );
   }

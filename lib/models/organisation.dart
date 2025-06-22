@@ -6,7 +6,9 @@ class Organisation {
   final String description;
   final List<StudentInOrganisation> students;
   final List<Project> projects;
+  final List<ProjectRequest> projectRequests;
   final int memberCount;
+  final String userRole; // 'teacher', 'student_teacher', or 'member'
 
   Organisation({
     required this.id,
@@ -14,11 +16,13 @@ class Organisation {
     required this.description,
     required this.students,
     required this.projects,
+    required this.projectRequests,
     required this.memberCount,
+    required this.userRole,
   });
 }
 
-enum UserInOrganisationType { student, teacher, studentteacher }
+enum UserInOrganisationType { student, teacher, studentTeacher }
 
 class Student {
   final String name;

@@ -42,6 +42,8 @@ class _OrganisationCardState extends State<OrganisationCard> {
                       orgName: widget.organisation.name,
                       orgDescription: widget.organisation.description,
                       projects: widget.organisation.projects,
+                      projectRequests: widget.organisation.projectRequests,
+                      userRole: widget.organisation.userRole,
                     ),
               ),
             );
@@ -77,12 +79,25 @@ class _OrganisationCardState extends State<OrganisationCard> {
                   ],
                 ),
                 Spacer(),
-                Text("Status: Teacher", style: TextStyle(fontSize: 14)),
+                Text("Status: ${_getRoleDisplayName(widget.organisation.userRole)}", style: TextStyle(fontSize: 14)),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _getRoleDisplayName(String role) {
+    switch (role) {
+      case 'teacher':
+        return 'Teacher';
+      case 'student_teacher':
+        return 'Student Teacher';
+      case 'member':
+        return 'Member';
+      default:
+        return role;
+    }
   }
 }

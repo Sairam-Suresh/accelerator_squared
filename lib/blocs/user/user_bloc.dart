@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:meta/meta.dart';
+import 'dart:async';
 
 part 'user_event.dart';
 part 'user_state.dart';
@@ -8,13 +9,16 @@ part 'user_state.dart';
 class UserBloc extends Bloc<UserEvent, UserState> {
   FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
-  UserBloc() : super(UserInitial()) {
+  UserBloc() : super(UserLoading()) {
     on<UserRegisterEvent>(_onUserRegisterEvent);
     on<UserLogsInWithGoogleEvent>(_onUserLogInWithGoogleEvent);
     on<CheckIfUserIsLoggedInEvent>(_checkIfUserIsLoggedIn);
     on<UserLogoutEvent>(_onUserLogoutEvent);
 
-    add(CheckIfUserIsLoggedInEvent());
+    // Check authentication immediately when bloc is created
+    Timer.run(() {
+      add(CheckIfUserIsLoggedInEvent());
+    });
     // on<UserLoginEvent>(_onUserLoginEvent);
   }
 
@@ -86,6 +90,8 @@ class UserBloc extends Bloc<UserEvent, UserState> {
           photoUrl: user.photoURL,
         ),
       );
+    } else {
+      emit(UserInitial());
     }
   }
 

@@ -17,12 +17,16 @@ class ProjectPage extends StatefulWidget {
     required this.orgName,
     required this.orgDescription,
     required this.projects,
+    required this.projectRequests,
+    required this.userRole,
   });
 
   final String organisationId;
   final String orgName;
   final String orgDescription;
   final List<Project> projects;
+  final List<ProjectRequest> projectRequests;
+  final String userRole;
 
   @override
   State<ProjectPage> createState() => _ProjectPageState();
@@ -30,42 +34,18 @@ class ProjectPage extends StatefulWidget {
 
 class _ProjectPageState extends State<ProjectPage> {
   late List<Project> projects;
-
-  var sampleProjectList = [
-    'Project 1',
-    'Project 2',
-    'Project 3',
-    'Project 4',
-    'Project 5',
-    'Project 6',
-    'Project 7',
-    'Project 8',
-    'Project 9',
-    'Project 10',
-  ];
-
-  var sampleProjectDescriptions = [
-    'This project is killing me',
-    'Why did i decide to do this',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
-    'Sigma sigma boy sigma boy sigma sigma boy',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
-  ];
+  late List<ProjectRequest> projectRequests;
+  late String userRole;
 
   @override
   void initState() {
     super.initState();
     projects = List.from(widget.projects);
-    // Fetch organisations when the page initializes
+    projectRequests = List.from(widget.projectRequests);
+    userRole = widget.userRole;
+    // Get user role from the organization data
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
   }
-
-  bool teacherView = false;
 
   @override
   Widget build(BuildContext context) {
@@ -79,19 +59,24 @@ class _ProjectPageState extends State<ProjectPage> {
           if (updatedOrg != null && mounted) {
             setState(() {
               projects = List.from(updatedOrg.projects);
+              projectRequests = List.from(updatedOrg.projectRequests);
+              userRole = updatedOrg.userRole;
             });
           }
         }
       },
       child: DefaultTabController(
-        length: teacherView ? 4 : 2,
+        length: (userRole == 'teacher' || userRole == 'student_teacher') ? 4 : 2,
         child: Scaffold(
           floatingActionButton: FloatingActionButton(
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (context) {
-                  return NewProjectDialog(organisationId: widget.organisationId);
+                  return NewProjectDialog(
+                    organisationId: widget.organisationId,
+                    isTeacher: userRole == 'teacher',
+                  );
                 },
               );
             },
@@ -114,7 +99,7 @@ class _ProjectPageState extends State<ProjectPage> {
                           return OrgSettingsDialog(
                             orgDescription: widget.orgDescription,
                             orgName: widget.orgName,
-                            isTeacher: teacherView,
+                            isTeacher: userRole == 'teacher' || userRole == 'student_teacher',
                           );
                         },
                       );
@@ -122,27 +107,63 @@ class _ProjectPageState extends State<ProjectPage> {
                     icon: Icon(Icons.info_outline),
                   ),
                 ),
+                if (userRole == 'teacher')
+                  Container(
+                    margin: EdgeInsets.only(left: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Teacher',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                  )
+                else if (userRole == 'student_teacher')
+                  Container(
+                    margin: EdgeInsets.only(left: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Student Teacher',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    margin: EdgeInsets.only(left: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Member',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
               ],
             ),
             actions: [
-              IconButton(
-                onPressed: () {
-                  context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
-                },
-                icon: Icon(Icons.refresh),
-              ),
-              Text("Teacher View"),
-              Checkbox(
-                value: teacherView,
-                onChanged: (value) {
-                  setState(() {
-                    teacherView = value!;
-                  });
-                },
-              ),
             ],
             bottom:
-                teacherView
+                (userRole == 'teacher' || userRole == 'student_teacher')
                     ? TabBar(
                         tabs: [
                           Tab(icon: Icon(Icons.list), text: "Projects"),
@@ -165,7 +186,7 @@ class _ProjectPageState extends State<ProjectPage> {
                       ),
           ),
           body:
-              !teacherView
+              userRole == 'member'
                   ? TabBarView(
                       children: [
                         SafeArea(
@@ -208,11 +229,13 @@ class _ProjectPageState extends State<ProjectPage> {
                       children: [
                         TeacherProjectPage(
                           orgName: widget.orgName,
-                          sampleProjectDescriptions: sampleProjectDescriptions,
-                          sampleProjectList: sampleProjectList,
+                          projects: projects,
                         ),
-                        OrgStatistics(projectsList: sampleProjectList),
-                        ProjectRequests(),
+                        OrgStatistics(projects: projects),
+                        ProjectRequests(
+                          organisationId: widget.organisationId,
+                          projectRequests: projectRequests,
+                        ),
                         OrgMembers(
                           teacherView: true,
                           organisationId: widget.organisationId,
