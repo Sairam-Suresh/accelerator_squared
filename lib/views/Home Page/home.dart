@@ -77,6 +77,37 @@ class _HomePageState extends State<HomePage> {
                           return Center(child: CircularProgressIndicator());
                         } else if (state is OrganisationsLoaded) {
                           organisations = state.organisations;
+                          if (organisations.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.domain_disabled,
+                                    size: 64,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No organisations found',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'You are not a member of any organisations yet.',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
                           return Expanded(
                             child: GridView.builder(
                               itemCount: organisations.length,

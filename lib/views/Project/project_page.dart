@@ -194,9 +194,32 @@ class _ProjectPageState extends State<ProjectPage> {
                             padding: EdgeInsets.all(10),
                             child: projects.isEmpty
                                 ? Center(
-                                    child: Text(
-                                      'No projects found',
-                                      style: TextStyle(fontSize: 18),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.folder_off,
+                                          size: 64,
+                                          color: Colors.grey,
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'No projects found',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'There are no projects in this organisation yet.',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   )
                                 : Column(
