@@ -20,7 +20,6 @@ class ProjectRequests extends StatefulWidget {
 class _RequestDialogState extends State<ProjectRequests> {
   @override
   Widget build(BuildContext context) {
-    // Filter only pending requests
     final pendingRequests = widget.projectRequests;
 
     if (pendingRequests.isEmpty) {

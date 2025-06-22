@@ -34,3 +34,9 @@ final class UserCreated extends UserState {
     this.photoUrl,
   });
 }
+
+final class UserError extends UserState {
+  final String message;
+
+  UserError(this.message);
+}

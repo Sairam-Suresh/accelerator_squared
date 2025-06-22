@@ -3,6 +3,7 @@ import 'package:accelerator_squared/views/Home%20Page/invites.dart';
 import 'package:accelerator_squared/views/Home%20Page/settings.dart';
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/add_organisation_button.dart';
 import 'package:accelerator_squared/widgets/organisation_card.dart';
+import 'package:accelerator_squared/views/Project/project_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -21,8 +22,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-
-    // Trigger the fetch organisations event
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
   }
 
@@ -35,31 +34,32 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: AddOrganisationButton(),
       appBar: AppBar(
         title: Text(
-          "Organisations",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          _getPageTitle(),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              NavigationRail(
-                destinations: [
-                  NavigationRailDestination(
-                    icon: Icon(Icons.home),
-                    label: Text("Organisations"),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                border: Border(
+                  right: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    width: 1,
                   ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.mail),
-                    label: Text("Invites"),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.settings),
-                    label: Text("Settings"),
-                  ),
-                ],
+                ),
+              ),
+              child: NavigationRail(
+                backgroundColor: Colors.transparent,
                 selectedIndex: _selectedIndex,
                 onDestinationSelected: (value) {
                   setState(() {
@@ -67,81 +67,277 @@ class _HomePageState extends State<HomePage> {
                   });
                 },
                 labelType: NavigationRailLabelType.all,
-              ),
-              _selectedIndex == 0
-                  ? SizedBox(
-                    width: MediaQuery.of(context).size.width - 150,
-                    child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
-                      builder: (context, state) {
-                        if (state is OrganisationsLoading) {
-                          return Center(child: CircularProgressIndicator());
-                        } else if (state is OrganisationsLoaded) {
-                          organisations = state.organisations;
-                          if (organisations.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.domain_disabled,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'No organisations found',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'You are not a member of any organisations yet.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                          return Expanded(
-                            child: GridView.builder(
-                              itemCount: organisations.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithMaxCrossAxisExtent(
-                                    maxCrossAxisExtent: 500,
-                                    childAspectRatio: 3 / 2,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 10,
-                                  ),
-                              itemBuilder:
-                                  (context, index) => OrganisationCard(
-                                    organisation: organisations[index],
-                                  ),
-                              shrinkWrap: true,
-                            ),
-                          );
-                        } else if (state is OrganisationsError) {
-                          return Center(child: Text(state.message));
-                        } else {
-                          return Center(child: Text("No organisations found"));
-                        }
-                      },
-                    ),
-                  )
-                  : _selectedIndex == 1
-                  ? OrgInvitesPage()
-                  : SizedBox(
-                    width: MediaQuery.of(context).size.width - 150,
-                    child: SettingsPage(),
+                destinations: [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.business_outlined),
+                    selectedIcon: Icon(Icons.business),
+                    label: Text("Organisations"),
                   ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.mail_outline),
+                    selectedIcon: Icon(Icons.mail),
+                    label: Text("Invites"),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Icon(Icons.settings),
+                    label: Text("Settings"),
+                  ),
+                ],
+              ),
+            ),
+            
+            Expanded(
+              child: Container(
+                color: Theme.of(context).colorScheme.surfaceDim,
+                child: _buildContent(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getPageTitle() {
+    switch (_selectedIndex) {
+      case 0:
+        return "Organisations";
+      case 1:
+        return "Invites";
+      case 2:
+        return "Settings";
+      default:
+        return "Organisations";
+    }
+  }
+
+  Widget _buildContent() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildOrganisationsContent();
+      case 1:
+        return OrgInvitesPage();
+      case 2:
+        return SettingsPage();
+      default:
+        return _buildOrganisationsContent();
+    }
+  }
+
+  Widget _buildOrganisationsContent() {
+    return BlocBuilder<OrganisationsBloc, OrganisationsState>(
+      builder: (context, state) {
+        if (state is OrganisationsLoading) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading organisations...',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else if (state is OrganisationsLoaded) {
+          organisations = state.organisations;
+          if (organisations.isEmpty) {
+            return _buildEmptyState();
+          }
+          return _buildOrganisationsGrid();
+        } else if (state is OrganisationsError) {
+          return _buildErrorState(state.message);
+        } else {
+          return _buildEmptyState();
+        }
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(60),
+              ),
+              child: Icon(
+                Icons.business_outlined,
+                size: 60,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No organisations found',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You are not a member of any organisations yet.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                
+              },
+              icon: const Icon(Icons.add),
+              label: const Text("Create Organisation"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(60),
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 60,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Something went wrong',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text("Try Again"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrganisationsGrid() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.business,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Your Organisations',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '${organisations.length} organisation${organisations.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 24),
+          
+          Expanded(
+            child: GridView.builder(
+              itemCount: organisations.length,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 500,
+                childAspectRatio: 3 / 2,
+                crossAxisSpacing: 24,
+                mainAxisSpacing: 24,
+              ),
+              itemBuilder: (context, index) => OrganisationCard(
+                organisation: organisations[index],
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProjectPage(
+                        organisationId: organisations[index].id,
+                        orgName: organisations[index].name,
+                        orgDescription: organisations[index].description,
+                        projects: organisations[index].projects,
+                        projectRequests: organisations[index].projectRequests,
+                        userRole: organisations[index].userRole,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

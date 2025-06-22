@@ -40,8 +40,8 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
           Icon(Icons.business, color: Theme.of(context).colorScheme.primary),
           SizedBox(width: 10),
           Text(
-            "Organization Info",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+            "Organisation Info",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
           ),
         ],
       ),
@@ -51,7 +51,6 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Organization Name Section
             Card(
               elevation: 2,
               child: Padding(
@@ -64,8 +63,8 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
                         Icon(Icons.label, color: Theme.of(context).colorScheme.primary),
                         SizedBox(width: 8),
                         Text(
-                          "Organization Name",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          "Organisation Name",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                         ),
                         Spacer(),
                         if (widget.isTeacher)
@@ -85,7 +84,7 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
                         ? TextField(
                             controller: nameFieldController,
                             decoration: InputDecoration(
-                              hintText: "Enter organization name",
+                              hintText: "Enter organisation name",
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -102,7 +101,6 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
             ),
             SizedBox(height: 16),
             
-            // Organization Description Section
             Card(
               elevation: 2,
               child: Padding(
@@ -116,7 +114,7 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
                         SizedBox(width: 8),
                         Text(
                           "Description",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                         ),
                         Spacer(),
                         if (widget.isTeacher)
@@ -138,7 +136,7 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
                             minLines: 3,
                             maxLines: 5,
                             decoration: InputDecoration(
-                              hintText: "Enter organization description",
+                              hintText: "Enter organisation description",
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -160,7 +158,6 @@ class _OrgSettingsDialogState extends State<OrgSettingsDialog> {
             ),
             SizedBox(height: 24),
             
-            // Action Buttons
             if (widget.isTeacher)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,

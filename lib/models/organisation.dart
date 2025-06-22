@@ -9,6 +9,7 @@ class Organisation {
   final List<ProjectRequest> projectRequests;
   final int memberCount;
   final String userRole; // 'teacher', 'student_teacher', or 'member'
+  final String joinCode; // 6-character join code
 
   Organisation({
     required this.id,
@@ -19,6 +20,7 @@ class Organisation {
     required this.projectRequests,
     required this.memberCount,
     required this.userRole,
+    required this.joinCode,
   });
 }
 

@@ -47,7 +47,6 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
                 width: MediaQuery.of(context).size.width / 2.5,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Add member to member list of org
                     setState(() {
                       orgStudentsList.add(memberEmailController.text);
                       memberEmailController.clear();

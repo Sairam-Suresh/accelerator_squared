@@ -7,6 +7,7 @@ import 'package:accelerator_squared/views/loading_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,10 +39,9 @@ class _MyAppState extends State<MyApp> {
         });
       }
     } catch (e) {
-      // Handle Firebase initialization error
       if (mounted) {
         setState(() {
-          _firebaseInitialized = true; // Still set to true to show app
+          _firebaseInitialized = true;
         });
       }
     }
@@ -50,25 +50,21 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     if (!_firebaseInitialized) {
-      // Show loading screen while Firebase initializes
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: "Accelerator Squared",
-        theme: ThemeData(
-          fontFamily: 'IBMPlexSans',
-          useMaterial3: true,
-          colorScheme: lightColorScheme,
+      return ChangeNotifierProvider(
+        create: (_) => ThemeProvider(),
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: "Accelerator Squared",
+              theme: themeProvider.theme,
+              home: const LoadingScreen(),
+            );
+          },
         ),
-        darkTheme: ThemeData(
-          fontFamily: 'IBMPlexSans',
-          useMaterial3: true,
-          colorScheme: darkColorScheme,
-        ),
-        home: const LoadingScreen(),
       );
     }
 
-    // Show main app once Firebase is initialized
     return MultiBlocProvider(
       providers: [
         BlocProvider<UserBloc>(create: (context) => UserBloc()),
@@ -76,28 +72,18 @@ class _MyAppState extends State<MyApp> {
           create: (context) => OrganisationsBloc(),
         ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: "Accelerator Squared",
-        theme: ThemeData(
-          fontFamily: 'IBMPlexSans',
-          useMaterial3: true,
-          colorScheme: lightColorScheme,
-          appBarTheme: AppBarTheme(
-            backgroundColor: lightColorScheme.surface,
-            centerTitle: false,
-          ),
+      child: ChangeNotifierProvider(
+        create: (_) => ThemeProvider(),
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: "Accelerator Squared",
+              theme: themeProvider.theme,
+              home: const AuthWrapper(),
+            );
+          },
         ),
-        darkTheme: ThemeData(
-          fontFamily: 'IBMPlexSans',
-          useMaterial3: true,
-          colorScheme: darkColorScheme,
-          appBarTheme: AppBarTheme(
-            backgroundColor: darkColorScheme.surface,
-            centerTitle: false,
-          ),
-        ),
-        home: const AuthWrapper(),
       ),
     );
   }

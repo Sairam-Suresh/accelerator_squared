@@ -1,7 +1,7 @@
-import 'package:accelerator_squared/views/Project/project_card.dart';
 import 'package:accelerator_squared/models/projects.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:accelerator_squared/views/Project/project_card.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_details.dart';
 
 class TeacherProjectPage extends StatefulWidget {
   const TeacherProjectPage({
@@ -22,9 +22,32 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
   Widget build(BuildContext context) {
     if (widget.projects.isEmpty) {
       return Center(
-        child: Text(
-          'No projects found',
-          style: TextStyle(fontSize: 18),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.folder_off_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No projects found',
+              style: TextStyle(
+                fontSize: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Create your first project to get started',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -37,7 +60,19 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
         children: widget.projects.map((project) {
-          return ProjectCardNew(project: project);
+          return ProjectCard(
+            project: project,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => TeacherProjectDetails(
+                    projectName: project.name,
+                    projectDescription: project.description,
+                  ),
+                ),
+              );
+            },
+          );
         }).toList(),
       ),
     );

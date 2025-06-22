@@ -15,11 +15,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<CheckIfUserIsLoggedInEvent>(_checkIfUserIsLoggedIn);
     on<UserLogoutEvent>(_onUserLogoutEvent);
 
-    // Check authentication immediately when bloc is created
     Timer.run(() {
       add(CheckIfUserIsLoggedInEvent());
     });
-    // on<UserLoginEvent>(_onUserLoginEvent);
   }
 
   Future<void> _onUserRegisterEvent(
@@ -34,8 +32,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         password: event.password,
       );
     } catch (e) {
-      // Handle error
-      print("Error during registration: $e");
+      emit(UserError("Registration failed: $e"));
       return;
     }
 
@@ -56,13 +53,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     late UserCredential credential;
 
     try {
-      // Simulate Google Sign-In process
-      // In a real app, you would use the Google Sign-In package
-      // and get the credential from there.
       credential = await firebaseAuth.signInWithPopup(GoogleAuthProvider());
     } catch (e) {
-      // Handle error
-      print("Error during Google login: $e");
+      emit(UserError("Google login failed: $e"));
       return;
     }
 
@@ -103,37 +96,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       await firebaseAuth.signOut();
       emit(UserInitial());
     } catch (e) {
-      print("Error during logout: $e");
-      // Even if there's an error, we should still emit UserInitial
-      // as we want to force the user back to login screen
       emit(UserInitial());
     }
   }
-
-  // Future<void> _onUserLoginEvent(
-  //   UserLoginEvent event,
-  //   Emitter<UserState> emit,
-  // ) async {
-  //   late UserCredential credential;
-
-  //   try {
-  //     credential = await firebaseAuth.signInWithEmailAndPassword(
-  //       email: event.email,
-  //       password: event.password,
-  //     );
-  //   } catch (e) {
-  //     // Handle error
-  //     print("Error during login: $e");
-  //     return;
-  //   }
-
-  //   emit(
-  //     UserLoggedIn(
-  //       userId: credential.user!.uid,
-  //       email: credential.user!.email!,
-  //       displayName: credential.user!.displayName,
-  //       photoUrl: credential.user!.photoURL,
-  //     ),
-  //   );
-  // }
 }

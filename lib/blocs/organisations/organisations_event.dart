@@ -82,3 +82,11 @@ class RemoveMemberEvent extends OrganisationsEvent {
     required this.memberId,
   });
 }
+
+class JoinOrganisationEvent extends OrganisationsEvent {
+  final String organisationId;
+
+  JoinOrganisationEvent({
+    required this.organisationId,
+  });
+}

@@ -10,84 +10,140 @@ class JoinOrganisationDialog extends StatefulWidget {
 }
 
 class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
-  var sampleOrgTitles = [
-    "SST Inc",
-    "SST Hack Club",
-    "NUS High Rejects",
-    "sigma club",
-  ];
-  var sampleOrgDescriptions = [
-    "The ict talent development programme of the school of science and technology, singapore. lorem ipsum dolor sit amet",
-    "A rip off of sst inc, surely this is able to do better than it and lorem ipsum dolor sit amet, hirhg iurhfiuwrhf uiwhfouhw",
-    "Bums",
-    "we love not doing work 100",
-  ];
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      scrollable: true,
-      content: SizedBox(
-        width: MediaQuery.of(context).size.width / 2,
-        height: MediaQuery.of(context).size.height / 1.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      content: Container(
+        width: MediaQuery.of(context).size.width / 3,
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              "Join organisation",
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+            // Header with icon
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.group_add_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
-            SizedBox(height: 20),
-            Center(
-              child: TextField(
-                controller: widget.orgcodecontroller,
-                decoration: InputDecoration(
-                  hintText: "Enter join code",
-                  label: Text("Organisation code"),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+            SizedBox(height: 24),
+            
+            // Title
+            Text(
+              "Join Organisation",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            SizedBox(height: 8),
+            
+            // Subtitle
+            Text(
+              "Enter the organisation code to join",
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32),
+            
+            // Join code input
+            TextField(
+              controller: widget.orgcodecontroller,
+              decoration: InputDecoration(
+                hintText: "Enter join code",
+                label: Text("Organisation Code"),
+                prefixIcon: Icon(Icons.key_rounded),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
                   ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              ),
+              textCapitalization: TextCapitalization.characters,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+            SizedBox(height: 32),
+            
+            // Join button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                onPressed: () {
+                  if (widget.orgcodecontroller.text.isNotEmpty) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.login_rounded, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      "Join Organisation",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                      },
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            sampleOrgTitles[index],
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            sampleOrgDescriptions[index],
-                            style: TextStyle(fontSize: 14),
-                            maxLines: 1,
-                          ),
-                          SizedBox(height: 10),
-                        ],
-                      ),
-                      subtitle: Row(
-                        children: [
-                          Text("17 members"),
-                          VerticalDivider(),
-                          Text("4 projects"),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-                itemCount: sampleOrgDescriptions.length,
+            SizedBox(height: 16),
+            
+            // Cancel button
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],

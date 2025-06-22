@@ -1,14 +1,15 @@
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/views/Project/create_new_project.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/project_requests.dart';
+import 'package:accelerator_squared/views/Project/project_card.dart';
+import 'package:accelerator_squared/views/Project/project_details.dart';
 import 'package:accelerator_squared/views/organisations/org_members.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
-import 'package:accelerator_squared/views/Project/project_card.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_page.dart';
 import 'package:accelerator_squared/views/organisations/org_stats.dart';
-import 'package:accelerator_squared/models/projects.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/project_requests.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 
 class ProjectPage extends StatefulWidget {
   const ProjectPage({
@@ -43,7 +44,6 @@ class _ProjectPageState extends State<ProjectPage> {
     projects = List.from(widget.projects);
     projectRequests = List.from(widget.projectRequests);
     userRole = widget.userRole;
-    // Get user role from the organization data
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
   }
 
@@ -52,7 +52,6 @@ class _ProjectPageState extends State<ProjectPage> {
     return BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
         if (state is OrganisationsLoaded) {
-          // Find the updated organization and refresh the projects
           final updatedOrg = state.organisations
               .where((org) => org.id == widget.organisationId)
               .firstOrNull;
@@ -231,8 +230,18 @@ class _ProjectPageState extends State<ProjectPage> {
                                           crossAxisSpacing: 10,
                                           mainAxisSpacing: 10,
                                           children: projects.map((project) {
-                                            return ProjectCardNew(
+                                            return ProjectCard(
                                               project: project,
+                                              onTap: () {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (context) => ProjectDetails(
+                                                      projectName: project.name,
+                                                      projectDescription: project.description,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
                                             );
                                           }).toList(),
                                         ),

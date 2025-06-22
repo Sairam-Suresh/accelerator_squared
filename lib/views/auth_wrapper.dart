@@ -14,10 +14,8 @@ class AuthWrapper extends StatelessWidget {
     return BlocBuilder<UserBloc, UserState>(
       builder: (context, state) {
         if (state is UserLoading) {
-          // Show loading screen while checking authentication
           return LoadingScreen();
         } else if (state is UserInitial) {
-          // User is not logged in, show login page
           return ResponsiveBreakpoints.builder(
             breakpoints: [
               const Breakpoint(start: 0, end: 450, name: MOBILE),
@@ -28,7 +26,6 @@ class AuthWrapper extends StatelessWidget {
             child: LoginPage(),
           );
         } else if (state is UserLoggedIn || state is UserCreated) {
-          // User is logged in, show home page
           return ResponsiveBreakpoints.builder(
             breakpoints: [
               const Breakpoint(start: 0, end: 450, name: MOBILE),
@@ -39,7 +36,6 @@ class AuthWrapper extends StatelessWidget {
             child: HomePage(),
           );
         } else {
-          // Fallback to loading screen
           return LoadingScreen();
         }
       },

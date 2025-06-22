@@ -57,7 +57,6 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           'uid': memberData['uid'] ?? '',
         });
         
-        // Get current user's role
         if (memberData['uid'] == auth.currentUser?.uid || 
             memberData['email'] == auth.currentUser?.email) {
           currentUserRole = memberData['role'] ?? 'member';
@@ -72,14 +71,17 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       setState(() {
         isLoading = false;
       });
-      print('Error fetching members: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching members: $e')),
+        );
+      }
     }
   }
 
   Future<void> addMember() async {
     if (memberEmailController.text.isEmpty) return;
 
-    // Email validation
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(memberEmailController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +94,6 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
     }
 
     try {
-      // Add member to Firestore
       await firestore
           .collection('organisations')
           .doc(widget.organisationId)
@@ -107,9 +108,13 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       });
 
       memberEmailController.clear();
-      fetchMembers(); // Refresh the list
+      fetchMembers();
     } catch (e) {
-      print('Error adding member: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding member: $e')),
+        );
+      }
     }
   }
 
@@ -118,19 +123,15 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
     final bool isCurrentUser = member['uid'] == auth.currentUser?.uid || 
                                member['email'] == auth.currentUser?.email;
 
-    // Don't show menu for current user
     if (isCurrentUser) return;
 
-    // Determine available role options based on current user's role and target member's role
     List<String> availableRoles = [];
     
     if (currentUserRole == 'teacher') {
-      // Teachers can change any role
       if (memberRole != 'teacher') {
         availableRoles = ['teacher', 'student_teacher', 'member'];
       }
     } else if (currentUserRole == 'student_teacher') {
-      // Student teachers can only change members to student_teacher or student_teacher to member
       if (memberRole == 'member') {
         availableRoles = ['student_teacher'];
       } else if (memberRole == 'student_teacher') {
@@ -148,7 +149,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         )),
         if (_canRemoveMember(memberRole)) PopupMenuItem<String>(
           value: 'remove',
-          child: Text('Remove from organization', style: TextStyle(color: Colors.red)),
+          child: Text('Remove from organisation', style: TextStyle(color: Colors.red)),
         ),
       ],
     ).then((value) {
@@ -199,7 +200,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Remove Member'),
-        content: Text('Are you sure you want to remove ${member['email']} from the organization?'),
+        content: Text('Are you sure you want to remove ${member['email']} from the organisation?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -250,22 +251,25 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       return Center(child: CircularProgressIndicator());
     }
 
-    // Separate members by role
     List<Map<String, dynamic>> teachers = members.where((m) => m['role'] == 'teacher').toList();
     List<Map<String, dynamic>> studentTeachers = members.where((m) => m['role'] == 'student_teacher').toList();
     List<Map<String, dynamic>> regularMembers = members.where((m) => m['role'] == 'member').toList();
 
     return Padding(
-      padding: const EdgeInsets.all(15),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            widget.teacherView
-                ? Column(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.teacherView) ...[
+            Card(
+              elevation: 0,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width / 2.5,
+                    Expanded(
                       child: TextField(
                         controller: memberEmailController,
                         decoration: InputDecoration(
@@ -277,134 +281,140 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 10),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width / 2.5,
-                      child: ElevatedButton(
-                        onPressed: addMember,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(5, 15, 5, 15),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add),
-                              SizedBox(width: 10),
-                              Text(
-                                "Add member",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: addMember,
+                      icon: Icon(Icons.add),
+                      label: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                        child: Text("Add member", style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        elevation: 0,
                       ),
                     ),
                   ],
-                )
-                : SizedBox(),
-            SizedBox(height: 10),
-            
-            // Teachers section
-            if (teachers.isNotEmpty) ...[
-              Align(alignment: Alignment.centerLeft, child: Text("Teachers", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-              SizedBox(height: 5),
-              ListView.builder(
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      leading: _getRoleIcon(teachers[index]['role']),
-                      title: Text(
-                        teachers[index]['email'],
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text("Teacher"),
-                      trailing: isCurrentUser(teachers[index])
-                          ? Chip(
-                              label: Text("You", style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.green.shade100,
-                            )
-                          : (widget.teacherView ? IconButton(
-                              onPressed: () => _showRoleMenu(context, teachers[index]),
-                              icon: Icon(Icons.more_vert),
-                            ) : null),
-                    ),
-                  );
-                },
-                itemCount: teachers.length,
-                shrinkWrap: true,
+                ),
               ),
-              SizedBox(height: 20),
-            ],
-            
-            // Student Teachers section
-            if (studentTeachers.isNotEmpty) ...[
-              Align(alignment: Alignment.centerLeft, child: Text("Student Teachers", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-              SizedBox(height: 5),
-              ListView.builder(
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      leading: _getRoleIcon(studentTeachers[index]['role']),
-                      title: Text(
-                        studentTeachers[index]['email'],
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text("Student Teacher"),
-                      trailing: isCurrentUser(studentTeachers[index])
-                          ? Chip(
-                              label: Text("You", style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.green.shade100,
-                            )
-                          : (widget.teacherView ? IconButton(
-                              onPressed: () => _showRoleMenu(context, studentTeachers[index]),
-                              icon: Icon(Icons.more_vert),
-                            ) : null),
-                    ),
-                  );
-                },
-                itemCount: studentTeachers.length,
-                shrinkWrap: true,
-              ),
-              SizedBox(height: 20),
-            ],
-            
-            // Members section
-            Align(alignment: Alignment.centerLeft, child: Text("Members", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-            SizedBox(height: 5),
-            regularMembers.isEmpty 
-                ? Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text("No members found", style: TextStyle(fontStyle: FontStyle.italic)),
-                    ),
-                  )
-                : ListView.builder(
-                    itemBuilder: (context, index) {
-                      return Card(
-                        child: ListTile(
-                          leading: _getRoleIcon(regularMembers[index]['role']),
-                          title: Text(regularMembers[index]['email']),
-                          subtitle: Text("Member"),
-                          trailing: isCurrentUser(regularMembers[index])
-                              ? Chip(
-                                  label: Text("You", style: TextStyle(color: Colors.white)),
-                                  backgroundColor: Colors.green.shade100,
-                                )
-                              : (widget.teacherView ? IconButton(
-                                  onPressed: () => _showRoleMenu(context, regularMembers[index]),
-                                  icon: Icon(Icons.more_vert),
-                                ) : null),
-                        ),
-                      );
-                    },
-                    itemCount: regularMembers.length,
-                    shrinkWrap: true,
-                  ),
+            ),
+            const SizedBox(height: 24),
           ],
-        ),
+          _buildSectionHeader(context, "Teachers", teachers.length),
+          _buildMemberList(context, teachers, "Teacher"),
+          const SizedBox(height: 16),
+          Divider(),
+          _buildSectionHeader(context, "Student Teachers", studentTeachers.length),
+          _buildMemberList(context, studentTeachers, "Student Teacher"),
+          const SizedBox(height: 16),
+          Divider(),
+          _buildSectionHeader(context, "Members", regularMembers.length),
+          _buildMemberList(context, regularMembers, "Member"),
+        ],
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String label, int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(label, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 8),
+          Chip(
+            label: Text(count.toString()),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemberList(BuildContext context, List<Map<String, dynamic>> members, String roleLabel) {
+    if (members.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text("No $roleLabel${roleLabel.endsWith('s') ? '' : 's'} found", style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      );
+    }
+    return ListView.separated(
+      itemCount: members.length,
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      separatorBuilder: (context, index) => SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final member = members[index];
+        return Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                (member['email'] as String).isNotEmpty ? member['email'][0].toUpperCase() : '?',
+                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+              ),
+            ),
+            title: Text(
+              member['email'],
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildRoleChip(context, member['role']),
+                if (isCurrentUser(member)) ...[
+                  const SizedBox(width: 8),
+                  Chip(
+                    label: Text("You", style: TextStyle(color: Colors.white)),
+                    backgroundColor: Colors.green.shade400,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+                if (!isCurrentUser(member) && widget.teacherView) ...[
+                  IconButton(
+                    onPressed: () => _showRoleMenu(context, member),
+                    icon: Icon(Icons.more_vert),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRoleChip(BuildContext context, String role) {
+    Color bgColor;
+    Color textColor;
+    String label;
+    switch (role) {
+      case 'teacher':
+        bgColor = Colors.blue.shade100;
+        textColor = Colors.blue.shade800;
+        label = 'Teacher';
+        break;
+      case 'student_teacher':
+        bgColor = Colors.orange.shade100;
+        textColor = Colors.orange.shade800;
+        label = 'Student Teacher';
+        break;
+      default:
+        bgColor = Colors.grey.shade200;
+        textColor = Colors.grey.shade800;
+        label = 'Member';
+    }
+    return Chip(
+      label: Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
+      backgroundColor: bgColor,
+      visualDensity: VisualDensity.compact,
     );
   }
 }

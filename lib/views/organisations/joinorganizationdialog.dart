@@ -1,59 +1,148 @@
 import 'package:flutter/material.dart';
 
-class JoinOrganizationDialog extends StatefulWidget {
-  const JoinOrganizationDialog({super.key});
+class JoinOrganisationDialog extends StatefulWidget {
+  const JoinOrganisationDialog({super.key});
 
   @override
-  State<JoinOrganizationDialog> createState() => _JoinOrganizationDialogState();
+  State<JoinOrganisationDialog> createState() => _JoinOrganisationDialogState();
 }
 
-class _JoinOrganizationDialogState extends State<JoinOrganizationDialog> {
+class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
   TextEditingController orgcodecontroller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      scrollable: true,
-      content: SizedBox(
-        width: MediaQuery.of(context).size.width / 2,
-        height: MediaQuery.of(context).size.height / 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      content: Container(
+        width: MediaQuery.of(context).size.width / 3,
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Header with icon
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.group_add_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            SizedBox(height: 24),
+            
+            // Title
             Text(
-              "Join organisation",
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              "Join Organisation",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
-            Spacer(),
-            Center(
-              child: TextField(
-                controller: orgcodecontroller,
-                decoration: InputDecoration(
-                  hintText: "Enter join code",
-                  label: Text("Organisation code"),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+            SizedBox(height: 8),
+            
+            // Subtitle
+            Text(
+              "Enter the organisation code to join",
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32),
+            
+            // Join code input
+            TextField(
+              controller: orgcodecontroller,
+              decoration: InputDecoration(
+                hintText: "Enter join code",
+                label: Text("Organisation Code"),
+                prefixIcon: Icon(Icons.key_rounded),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
                   ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              ),
+              textCapitalization: TextCapitalization.characters,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+            SizedBox(height: 32),
+            
+            // Join button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                onPressed: () {
+                  if (orgcodecontroller.text.isNotEmpty) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.send_rounded, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      "Send Join Request",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            Spacer(),
-            ElevatedButton(
-              style: ButtonStyle(
-                shape: WidgetStateProperty.all(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-              ),
+            SizedBox(height: 16),
+            
+            // Cancel button
+            TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(5, 15, 5, 15),
-                child: Text(
-                  "Send join request",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),

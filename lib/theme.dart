@@ -103,3 +103,430 @@ const ColorScheme darkColorScheme = ColorScheme(
   inversePrimary: Color(0xFF3C4755),
   surfaceTint: Color(0xFF748BAC),
 );
+
+// Theme mode enum
+enum AppThemeMode {
+  system,
+  light,
+  dark,
+}
+
+// App theme data class
+class AppTheme {
+  static const String _fontFamily = 'IBMPlexSans';
+
+  // Light theme
+  static ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    fontFamily: _fontFamily,
+    colorScheme: lightColorScheme,
+    brightness: Brightness.light,
+    
+    // App bar theme
+    appBarTheme: AppBarTheme(
+      backgroundColor: lightColorScheme.surface,
+      foregroundColor: lightColorScheme.onSurface,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: lightColorScheme.onSurface,
+        fontFamily: _fontFamily,
+      ),
+      iconTheme: IconThemeData(
+        color: lightColorScheme.onSurfaceVariant,
+        size: 24,
+      ),
+    ),
+    
+    // Card theme
+    cardTheme: CardThemeData(
+      elevation: 2,
+      shadowColor: lightColorScheme.shadow.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      color: lightColorScheme.surface,
+      surfaceTintColor: lightColorScheme.surfaceTint,
+    ),
+    
+    // Elevated button theme
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        elevation: 2,
+        shadowColor: lightColorScheme.shadow.withValues(alpha: 0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        textStyle: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          fontFamily: _fontFamily,
+        ),
+      ),
+    ),
+    
+    // Text button theme
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        textStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          fontFamily: _fontFamily,
+        ),
+      ),
+    ),
+    
+    // Input decoration theme
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: lightColorScheme.surfaceContainerLow,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: lightColorScheme.outline),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: lightColorScheme.outline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: lightColorScheme.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: lightColorScheme.error),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(
+        color: lightColorScheme.onSurfaceVariant,
+        fontSize: 16,
+        fontFamily: _fontFamily,
+      ),
+      hintStyle: TextStyle(
+        color: lightColorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+        fontSize: 16,
+        fontFamily: _fontFamily,
+      ),
+    ),
+    
+    // Navigation rail theme
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: lightColorScheme.surface,
+      selectedIconTheme: IconThemeData(
+        color: lightColorScheme.primary,
+        size: 24,
+      ),
+      unselectedIconTheme: IconThemeData(
+        color: lightColorScheme.onSurfaceVariant,
+        size: 24,
+      ),
+      selectedLabelTextStyle: TextStyle(
+        color: lightColorScheme.primary,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+      ),
+      unselectedLabelTextStyle: TextStyle(
+        color: lightColorScheme.onSurfaceVariant,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        fontFamily: _fontFamily,
+      ),
+      indicatorColor: lightColorScheme.primaryContainer,
+    ),
+    
+    // Floating action button theme
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: lightColorScheme.primary,
+      foregroundColor: lightColorScheme.onPrimary,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    
+    // Dialog theme
+    dialogTheme: DialogThemeData(
+      backgroundColor: lightColorScheme.surface,
+      surfaceTintColor: lightColorScheme.surfaceTint,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      titleTextStyle: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: lightColorScheme.onSurface,
+        fontFamily: _fontFamily,
+      ),
+      contentTextStyle: TextStyle(
+        fontSize: 16,
+        color: lightColorScheme.onSurfaceVariant,
+        fontFamily: _fontFamily,
+      ),
+    ),
+    
+    // Bottom sheet theme
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: lightColorScheme.surface,
+      surfaceTintColor: lightColorScheme.surfaceTint,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+    ),
+    
+    // Tab bar theme
+    tabBarTheme: TabBarThemeData(
+      labelColor: lightColorScheme.primary,
+      unselectedLabelColor: lightColorScheme.onSurfaceVariant,
+      indicatorColor: lightColorScheme.primary,
+      labelStyle: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+      ),
+      unselectedLabelStyle: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        fontFamily: _fontFamily,
+      ),
+    ),
+    
+    // Divider theme
+    dividerTheme: DividerThemeData(
+      color: lightColorScheme.outlineVariant,
+      thickness: 1,
+      space: 1,
+    ),
+    
+    // Icon theme
+    iconTheme: IconThemeData(
+      color: lightColorScheme.onSurfaceVariant,
+      size: 24,
+    ),
+  );
+
+  // Dark theme
+  static ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
+    fontFamily: _fontFamily,
+    colorScheme: darkColorScheme,
+    brightness: Brightness.dark,
+    
+    // App bar theme
+    appBarTheme: AppBarTheme(
+      backgroundColor: darkColorScheme.surface,
+      foregroundColor: darkColorScheme.onSurface,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: darkColorScheme.onSurface,
+        fontFamily: _fontFamily,
+      ),
+      iconTheme: IconThemeData(
+        color: darkColorScheme.onSurfaceVariant,
+        size: 24,
+      ),
+    ),
+    
+    // Card theme
+    cardTheme: CardThemeData(
+      elevation: 2,
+      shadowColor: darkColorScheme.shadow.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      color: darkColorScheme.surfaceContainer,
+      surfaceTintColor: darkColorScheme.surfaceTint,
+    ),
+    
+    // Elevated button theme
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        elevation: 2,
+        shadowColor: darkColorScheme.shadow.withValues(alpha: 0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        textStyle: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          fontFamily: _fontFamily,
+        ),
+      ),
+    ),
+    
+    // Text button theme
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        textStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          fontFamily: _fontFamily,
+        ),
+      ),
+    ),
+    
+    // Input decoration theme
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: darkColorScheme.surfaceContainerLow,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: darkColorScheme.outline),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: darkColorScheme.outline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: darkColorScheme.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: darkColorScheme.error),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(
+        color: darkColorScheme.onSurfaceVariant,
+        fontSize: 16,
+        fontFamily: _fontFamily,
+      ),
+      hintStyle: TextStyle(
+        color: darkColorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+        fontSize: 16,
+        fontFamily: _fontFamily,
+      ),
+    ),
+    
+    // Navigation rail theme
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: darkColorScheme.surface,
+      selectedIconTheme: IconThemeData(
+        color: darkColorScheme.primary,
+        size: 24,
+      ),
+      unselectedIconTheme: IconThemeData(
+        color: darkColorScheme.onSurfaceVariant,
+        size: 24,
+      ),
+      selectedLabelTextStyle: TextStyle(
+        color: darkColorScheme.primary,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+      ),
+      unselectedLabelTextStyle: TextStyle(
+        color: darkColorScheme.onSurfaceVariant,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        fontFamily: _fontFamily,
+      ),
+      indicatorColor: darkColorScheme.primaryContainer,
+    ),
+    
+    // Floating action button theme
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: darkColorScheme.primary,
+      foregroundColor: darkColorScheme.onPrimary,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    
+    // Dialog theme
+    dialogTheme: DialogThemeData(
+      backgroundColor: darkColorScheme.surface,
+      surfaceTintColor: darkColorScheme.surfaceTint,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      titleTextStyle: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: darkColorScheme.onSurface,
+        fontFamily: _fontFamily,
+      ),
+      contentTextStyle: TextStyle(
+        fontSize: 16,
+        color: darkColorScheme.onSurfaceVariant,
+        fontFamily: _fontFamily,
+      ),
+    ),
+    
+    // Bottom sheet theme
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: darkColorScheme.surface,
+      surfaceTintColor: darkColorScheme.surfaceTint,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+    ),
+    
+    // Tab bar theme
+    tabBarTheme: TabBarThemeData(
+      labelColor: darkColorScheme.primary,
+      unselectedLabelColor: darkColorScheme.onSurfaceVariant,
+      indicatorColor: darkColorScheme.primary,
+      labelStyle: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+      ),
+      unselectedLabelStyle: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        fontFamily: _fontFamily,
+      ),
+    ),
+    
+    // Divider theme
+    dividerTheme: DividerThemeData(
+      color: darkColorScheme.outlineVariant,
+      thickness: 1,
+      space: 1,
+    ),
+    
+    // Icon theme
+    iconTheme: IconThemeData(
+      color: darkColorScheme.onSurfaceVariant,
+      size: 24,
+    ),
+  );
+}
+
+class ThemeProvider extends ChangeNotifier {
+  AppThemeMode _themeMode = AppThemeMode.system;
+  
+  AppThemeMode get themeMode => _themeMode;
+  
+  void setThemeMode(AppThemeMode mode) {
+    _themeMode = mode;
+    notifyListeners();
+  }
+  
+  bool get isDarkMode {
+    if (_themeMode == AppThemeMode.system) {
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+    }
+    return _themeMode == AppThemeMode.dark;
+  }
+
+  ThemeData get theme => isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme;
+  ColorScheme get colorScheme => isDarkMode ? darkColorScheme : lightColorScheme;
+}

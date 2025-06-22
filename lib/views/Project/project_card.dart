@@ -1,128 +1,117 @@
 import 'package:accelerator_squared/models/projects.dart';
-import 'package:accelerator_squared/views/Project/project_details.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class ProjectCard extends StatefulWidget {
+class ProjectCard extends StatelessWidget {
+  final Project project;
+  final VoidCallback? onTap;
+  
   const ProjectCard({
     super.key,
-    required this.sampleProjectDescriptions,
-    required this.sampleProjectList,
-    required this.index,
+    required this.project,
+    this.onTap,
   });
 
-  final List sampleProjectList;
-  final List sampleProjectDescriptions;
-  final int index;
-
-  @override
-  State<ProjectCard> createState() => _ProjectCardState();
-}
-
-class _ProjectCardState extends State<ProjectCard> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withAlpha(175),
-            blurRadius: 5,
-            spreadRadius: -4,
-          ),
-        ],
+    return Card(
+      elevation: 4.0,
+      shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Card(
-        elevation: 4,
-        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-        child: Padding(
-          padding: EdgeInsets.all(10),
-          child: ListTile(
-            onTap: () {
-              Navigator.of(context).push(
-                CupertinoPageRoute(
-                  builder: (context) {
-                    return ProjectDetails(
-                      projectName: widget.sampleProjectList[widget.index],
-                      projectDescription:
-                          widget.sampleProjectDescriptions[widget.index],
-                    );
-                  },
-                ),
-              );
-            },
-            title: Text(
-              widget.sampleProjectList[widget.index],
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              widget.sampleProjectDescriptions[widget.index],
-              maxLines: 5,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        splashColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+        highlightColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// New ProjectCard class that accepts Project objects directly
-class ProjectCardNew extends StatelessWidget {
-  final Project project;
-
-  const ProjectCardNew({super.key, required this.project});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withAlpha(175),
-            blurRadius: 5,
-            spreadRadius: -4,
-          ),
-        ],
-      ),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Card(
-          elevation: 4,
-          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-          child: InkWell(
-            splashFactory: InkSparkle.splashFactory,
-            borderRadius: BorderRadius.circular(16), // Same as Card
-            onTap: () {
-              Navigator.of(context).push(
-                CupertinoPageRoute(
-                  builder: (context) {
-                    return ProjectDetails(
-                      projectName: project.name,
-                      projectDescription: project.description,
-                    );
-                  },
-                ),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with icon and arrow
+              Row(
                 children: [
-                  Text(
-                    project.name,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.folder_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
                   ),
-                  Text(project.description, maxLines: 5),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      project.name,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ],
               ),
-            ),
+              SizedBox(height: 16),
+              
+              // Description
+              Text(
+                project.description.isNotEmpty 
+                  ? project.description 
+                  : "No description provided",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  height: 1.4,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Spacer(),
+              
+              // Footer with creation date
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Created: ${project.createdAt.toString().split(' ')[0]}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
+} 
