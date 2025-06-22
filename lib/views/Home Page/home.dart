@@ -2,6 +2,8 @@ import 'package:accelerator_squared/models/organisation.dart';
 import 'package:accelerator_squared/views/Home%20Page/invites.dart';
 import 'package:accelerator_squared/views/Home%20Page/settings.dart';
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/add_organisation_button.dart';
+import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/create_organisation_dialog.dart';
+import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/join_organisation_dialog.dart';
 import 'package:accelerator_squared/widgets/organisation_card.dart';
 import 'package:accelerator_squared/views/Project/project_page.dart';
 import 'package:flutter/material.dart';
@@ -205,12 +207,50 @@ class _HomePageState extends State<HomePage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("Create Organisation"),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return StatefulBuilder(
+                          builder: (context, StateSetter setState) {
+                            return CreateOrganisationDialog();
+                          },
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text("Create Organisation"),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+                SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        TextEditingController orgcodecontroller = TextEditingController();
+                        return JoinOrganisationDialog(
+                          orgcodecontroller: orgcodecontroller,
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.group_add),
+                  label: const Text("Join Organisation"),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -330,6 +370,7 @@ class _HomePageState extends State<HomePage> {
                         projects: organisations[index].projects,
                         projectRequests: organisations[index].projectRequests,
                         userRole: organisations[index].userRole,
+                        joinCode: organisations[index].joinCode,
                       ),
                     ),
                   );

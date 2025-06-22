@@ -28,6 +28,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
   List<Map<String, dynamic>> members = [];
   bool isLoading = true;
   String currentUserRole = 'member';
+  bool memberOperationInProgress = false;
 
   @override
   void initState() {
@@ -94,6 +95,10 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
     }
 
     try {
+      setState(() {
+        memberOperationInProgress = true;
+      });
+      
       await firestore
           .collection('organisations')
           .doc(widget.organisationId)
@@ -109,7 +114,14 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
 
       memberEmailController.clear();
       fetchMembers();
+      
+      setState(() {
+        memberOperationInProgress = false;
+      });
     } catch (e) {
+      setState(() {
+        memberOperationInProgress = false;
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error adding member: $e')),
@@ -128,14 +140,18 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
     List<String> availableRoles = [];
     
     if (currentUserRole == 'teacher') {
-      if (memberRole != 'teacher') {
-        availableRoles = ['teacher', 'student_teacher', 'member'];
+      if (memberRole == 'teacher') {
+        availableRoles = ['student_teacher', 'member'];
+      } else if (memberRole == 'student_teacher') {
+        availableRoles = ['teacher', 'member'];
+      } else if (memberRole == 'member') {
+        availableRoles = ['teacher', 'student_teacher'];
       }
     } else if (currentUserRole == 'student_teacher') {
-      if (memberRole == 'member') {
-        availableRoles = ['student_teacher'];
-      } else if (memberRole == 'student_teacher') {
+      if (memberRole == 'student_teacher') {
         availableRoles = ['member'];
+      } else if (memberRole == 'member') {
+        availableRoles = ['student_teacher'];
       }
     }
 
@@ -178,14 +194,20 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
 
   bool _canRemoveMember(String memberRole) {
     if (currentUserRole == 'teacher') {
-      return memberRole != 'teacher';
+      // Teachers can remove student teachers and members, but not other teachers
+      return memberRole == 'student_teacher' || memberRole == 'member';
     } else if (currentUserRole == 'student_teacher') {
+      // Student teachers can only remove members
       return memberRole == 'member';
     }
+    // Members cannot remove anyone
     return false;
   }
 
   void _changeMemberRole(String memberId, String newRole) {
+    setState(() {
+      memberOperationInProgress = true;
+    });
     context.read<OrganisationsBloc>().add(
       ChangeMemberRoleEvent(
         organisationId: widget.organisationId,
@@ -209,6 +231,9 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
+              setState(() {
+                memberOperationInProgress = true;
+              });
               context.read<OrganisationsBloc>().add(
                 RemoveMemberEvent(
                   organisationId: widget.organisationId,
@@ -232,21 +257,23 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
            member['email'] == auth.currentUser?.email;
   }
 
-  Icon _getRoleIcon(String role) {
-    switch (role) {
-      case 'teacher':
-        return Icon(Icons.school, color: Colors.blue);
-      case 'student_teacher':
-        return Icon(Icons.person, color: Colors.orange);
-      case 'member':
-        return Icon(Icons.person_outline, color: Colors.grey);
-      default:
-        return Icon(Icons.person_outline, color: Colors.grey);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    return BlocListener<OrganisationsBloc, OrganisationsState>(
+      listener: (context, state) {
+        // Only refresh when member operations complete
+        if (state is OrganisationsLoaded && memberOperationInProgress) {
+          setState(() {
+            memberOperationInProgress = false;
+          });
+          fetchMembers();
+        }
+      },
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     if (isLoading) {
       return Center(child: CircularProgressIndicator());
     }
@@ -355,7 +382,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               child: Text(
                 (member['email'] as String).isNotEmpty ? member['email'][0].toUpperCase() : '?',
                 style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
@@ -378,9 +405,50 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                   ),
                 ],
                 if (!isCurrentUser(member) && widget.teacherView) ...[
-                  IconButton(
-                    onPressed: () => _showRoleMenu(context, member),
+                  PopupMenuButton<String>(
                     icon: Icon(Icons.more_vert),
+                    onSelected: (value) {
+                      if (value == 'remove') {
+                        _showRemoveConfirmation(member);
+                      } else {
+                        _changeMemberRole(member['id'], value);
+                      }
+                    },
+                    itemBuilder: (context) {
+                      final String memberRole = member['role'] ?? 'member';
+                      List<String> availableRoles = [];
+                      
+                      if (currentUserRole == 'teacher') {
+                        // Teacher permissions
+                        if (memberRole == 'teacher') {
+                          availableRoles = ['student_teacher', 'member'];
+                        } else if (memberRole == 'student_teacher') {
+                          availableRoles = ['teacher', 'member'];
+                        } else if (memberRole == 'member') {
+                          availableRoles = ['teacher', 'student_teacher'];
+                        }
+                      } else if (currentUserRole == 'student_teacher') {
+                        // Student teacher permissions
+                        if (memberRole == 'student_teacher') {
+                          availableRoles = ['member'];
+                        } else if (memberRole == 'member') {
+                          availableRoles = ['student_teacher'];
+                        }
+                        // No options for teachers (teacher role)
+                      }
+                      // No options for members (member role)
+                      
+                      return [
+                        ...availableRoles.map((role) => PopupMenuItem<String>(
+                          value: role,
+                          child: Text('Change to ${_getRoleDisplayName(role)}'),
+                        )),
+                        if (_canRemoveMember(memberRole)) PopupMenuItem<String>(
+                          value: 'remove',
+                          child: Text('Remove from organisation', style: TextStyle(color: Colors.red)),
+                        ),
+                      ];
+                    },
                   ),
                 ],
               ],

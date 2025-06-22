@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
 
 class OrgStatistics extends StatefulWidget {
@@ -24,6 +26,18 @@ class _OrgStatisticsState extends State<OrgStatistics> {
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<OrganisationsBloc, OrganisationsState>(
+      listener: (context, state) {
+        if (state is OrganisationsLoaded) {
+          // Refresh data when organisation data is updated
+          // The parent widget will handle the refresh
+        }
+      },
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     // Calculate summary stats
     int totalProjects = widget.projects.length;
     int totalMilestones = sampleMilestonesDict.length;
@@ -78,7 +92,7 @@ class _OrgStatisticsState extends State<OrgStatistics> {
                               DataCell(Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                     child: Icon(Icons.folder, color: Theme.of(context).colorScheme.primary),
                                   ),
                                   const SizedBox(width: 12),
@@ -109,7 +123,7 @@ class _OrgStatisticsState extends State<OrgStatistics> {
                                     Text(percent, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                   ],
                                 ));
-                              }).toList(),
+                              }),
                             ],
                           );
                         }).toList(),
@@ -129,7 +143,7 @@ class _OrgStatisticsState extends State<OrgStatistics> {
     return Column(
       children: [
         CircleAvatar(
-          backgroundColor: (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.15),
+          backgroundColor: (color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.15),
           child: Icon(icon, color: color ?? Theme.of(context).colorScheme.primary),
         ),
         const SizedBox(height: 8),

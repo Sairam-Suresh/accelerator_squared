@@ -1,5 +1,7 @@
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_details.dart';
 
@@ -8,10 +10,12 @@ class TeacherProjectPage extends StatefulWidget {
     super.key,
     required this.orgName,
     required this.projects,
+    required this.organisationId,
   });
 
   final String orgName;
   final List<Project> projects;
+  final String organisationId;
 
   @override
   State<TeacherProjectPage> createState() => _TeacherProjectPageState();
@@ -20,6 +24,18 @@ class TeacherProjectPage extends StatefulWidget {
 class _TeacherProjectPageState extends State<TeacherProjectPage> {
   @override
   Widget build(BuildContext context) {
+    return BlocListener<OrganisationsBloc, OrganisationsState>(
+      listener: (context, state) {
+        if (state is OrganisationsLoaded) {
+          // Refresh data when organisation data is updated
+          // The parent widget will handle the refresh
+        }
+      },
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     if (widget.projects.isEmpty) {
       return Center(
         child: Column(
@@ -62,6 +78,8 @@ class _TeacherProjectPageState extends State<TeacherProjectPage> {
         children: widget.projects.map((project) {
           return ProjectCard(
             project: project,
+            organisationId: widget.organisationId,
+            isTeacher: true,
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(

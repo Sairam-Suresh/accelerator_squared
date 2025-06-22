@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -92,9 +93,13 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .collection('organisations')
             .doc(orgId);
 
+        // Generate a 6-character join code (uppercase letters and numbers)
+        String joinCode = _generateJoinCode();
+
         await orgRef.set({
           'name': event.name,
           'description': event.description,
+          'joinCode': joinCode,
         });
 
         await orgRef.collection('members').doc().set({
@@ -381,6 +386,425 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         emit(OrganisationsError(e.toString()));
       }
     });
+
+    on<RefreshJoinCodeEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Check if user is a teacher in the organisation
+        QuerySnapshot userSnapshot = await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        if (userSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("User not found in organisation"));
+          return;
+        }
+
+        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        String userRole = userData['role'] ?? 'member';
+
+        if (userRole != 'teacher') {
+          emit(OrganisationsError("Only teachers can refresh join codes"));
+          return;
+        }
+
+        // Generate new join code
+        String newJoinCode = _generateJoinCode();
+
+        // Update the organisation document
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .update({
+          'joinCode': newJoinCode,
+        });
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<JoinOrganisationByCodeEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        String userEmail = auth.currentUser?.email ?? '';
+        
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Find organisation by join code
+        QuerySnapshot orgSnapshot = await firestore
+            .collection('organisations')
+            .where('joinCode', isEqualTo: event.joinCode.toUpperCase())
+            .get();
+
+        if (orgSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("Invalid join code"));
+          return;
+        }
+
+        String orgId = orgSnapshot.docs.first.id;
+
+        // Check if user is already a member (try by uid first, then email)
+        QuerySnapshot memberSnapshot = await firestore
+            .collection('organisations')
+            .doc(orgId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        // If not found by uid, try by email
+        if (memberSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
+          memberSnapshot = await firestore
+              .collection('organisations')
+              .doc(orgId)
+              .collection('members')
+              .where('email', isEqualTo: userEmail)
+              .get();
+        }
+
+        if (memberSnapshot.docs.isNotEmpty) {
+          emit(OrganisationsError("You are already a member of this organisation"));
+          return;
+        }
+
+        // Add user to organisation
+        await firestore
+            .collection('organisations')
+            .doc(orgId)
+            .collection('members')
+            .doc()
+            .set({
+          'role': 'member',
+          'email': auth.currentUser?.email ?? '',
+          'uid': uid,
+          'status': 'active',
+          'addedAt': FieldValue.serverTimestamp(),
+          'addedBy': uid,
+        });
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<DeleteProjectEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Check if user is a teacher in the organisation
+        QuerySnapshot userSnapshot = await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        if (userSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("User not found in organisation"));
+          return;
+        }
+
+        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        String userRole = userData['role'] ?? 'member';
+
+        if (userRole != 'teacher') {
+          emit(OrganisationsError("Only teachers can delete projects"));
+          return;
+        }
+
+        // Delete the project and all its subcollections
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(event.projectId)
+            .delete();
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<DeleteOrganisationEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Check if user is a teacher in the organisation
+        QuerySnapshot userSnapshot = await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        if (userSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("User not found in organisation"));
+          return;
+        }
+
+        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        String userRole = userData['role'] ?? 'member';
+
+        if (userRole != 'teacher') {
+          emit(OrganisationsError("Only teachers can delete organisations"));
+          return;
+        }
+
+        // Delete all subcollections first
+        List<String> subcollections = ['members', 'projects', 'projectRequests'];
+        
+        for (String subcollection in subcollections) {
+          QuerySnapshot subcollectionSnapshot = await firestore
+              .collection('organisations')
+              .doc(event.organisationId)
+              .collection(subcollection)
+              .get();
+
+          // Delete all documents in the subcollection
+          for (QueryDocumentSnapshot doc in subcollectionSnapshot.docs) {
+            await doc.reference.delete();
+          }
+        }
+
+        // Delete the organisation document
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .delete();
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<ChangeMemberRoleEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Check if user has permission to change roles
+        QuerySnapshot userSnapshot = await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        if (userSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("User not found in organisation"));
+          return;
+        }
+
+        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        String userRole = userData['role'] ?? 'member';
+
+        if (userRole != 'teacher' && userRole != 'student_teacher') {
+          emit(OrganisationsError("Only teachers and student teachers can change member roles"));
+          return;
+        }
+
+        // Update the member's role
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .doc(event.memberId)
+            .update({
+          'role': event.newRole,
+        });
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<RemoveMemberEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Check if user has permission to remove members
+        QuerySnapshot userSnapshot = await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        if (userSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("User not found in organisation"));
+          return;
+        }
+
+        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        String userRole = userData['role'] ?? 'member';
+
+        if (userRole != 'teacher' && userRole != 'student_teacher') {
+          emit(OrganisationsError("Only teachers and student teachers can remove members"));
+          return;
+        }
+
+        // Remove the member
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .doc(event.memberId)
+            .delete();
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<LeaveOrganisationEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Get the current user's member document
+        QuerySnapshot userSnapshot = await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        if (userSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("User not found in organisation"));
+          return;
+        }
+
+        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        String userRole = userData['role'] ?? 'member';
+        String userMemberId = userSnapshot.docs.first.id;
+
+        // If user is a teacher, check if they are the last teacher
+        if (userRole == 'teacher') {
+          QuerySnapshot teachersSnapshot = await firestore
+              .collection('organisations')
+              .doc(event.organisationId)
+              .collection('members')
+              .where('role', isEqualTo: 'teacher')
+              .get();
+
+          if (teachersSnapshot.docs.length <= 1) {
+            emit(OrganisationsError("Cannot leave organisation. You are the last teacher. Please assign another teacher before leaving."));
+            return;
+          }
+        }
+
+        // Remove the user from the organisation
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .doc(userMemberId)
+            .delete();
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<UpdateOrganisationEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        String userEmail = auth.currentUser?.email ?? '';
+        
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+
+        // Check if user is a teacher or student teacher
+        QuerySnapshot userSnapshot = await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('members')
+            .where('uid', isEqualTo: uid)
+            .get();
+
+        // If not found by uid, try by email
+        if (userSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
+          userSnapshot = await firestore
+              .collection('organisations')
+              .doc(event.organisationId)
+              .collection('members')
+              .where('email', isEqualTo: userEmail)
+              .get();
+        }
+
+        if (userSnapshot.docs.isEmpty) {
+          emit(OrganisationsError("User not found in organisation"));
+          return;
+        }
+
+        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        String userRole = userData['role'] ?? 'member';
+
+        if (userRole != 'teacher' && userRole != 'student_teacher') {
+          emit(OrganisationsError("Only teachers and student teachers can update organisation information"));
+          return;
+        }
+
+        // Update the organisation document
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .update({
+              'name': event.name,
+              'description': event.description,
+            });
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
   }
 
   Future<void> _loadOrganisationDataById(
@@ -490,12 +914,19 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             projectRequests: projectRequests,
             memberCount: membersCountSnapshot.docs.length,
             userRole: userRole,
+            joinCode: data['joinCode'] ?? '',
           ),
         );
       }
     } catch (e) {
       // Silently handle individual organisation loading errors to prevent one bad org from breaking the entire list
     }
+  }
+
+  String _generateJoinCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return List.generate(6, (_) => chars[random.nextInt(chars.length)]).join();
   }
 }
 

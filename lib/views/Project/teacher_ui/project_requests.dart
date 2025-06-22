@@ -18,8 +18,45 @@ class ProjectRequests extends StatefulWidget {
 }
 
 class _RequestDialogState extends State<ProjectRequests> {
+  bool isApproving = false;
+  bool isRejecting = false;
+  String? currentRequestId;
+
   @override
   Widget build(BuildContext context) {
+    return BlocListener<OrganisationsBloc, OrganisationsState>(
+      listener: (context, state) {
+        if (state is OrganisationsLoaded) {
+          // Reset loading states when operation completes
+          if (isApproving || isRejecting) {
+            setState(() {
+              isApproving = false;
+              isRejecting = false;
+              currentRequestId = null;
+            });
+          }
+        } else if (state is OrganisationsError) {
+          // Reset loading states on error
+          if (isApproving || isRejecting) {
+            setState(() {
+              isApproving = false;
+              isRejecting = false;
+              currentRequestId = null;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     final pendingRequests = widget.projectRequests;
 
     if (pendingRequests.isEmpty) {
@@ -125,24 +162,42 @@ class _RequestDialogState extends State<ProjectRequests> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton(
-                              onPressed: () {
+                              onPressed: (isRejecting && currentRequestId == request.id) ? null : () {
                                 _showRejectDialog(context, request);
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.red,
                               ),
-                              child: Text('Reject'),
+                              child: (isRejecting && currentRequestId == request.id)
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                                    ),
+                                  )
+                                : Text('Reject'),
                             ),
                             SizedBox(width: 8),
                             ElevatedButton(
-                              onPressed: () {
+                              onPressed: (isApproving && currentRequestId == request.id) ? null : () {
                                 _approveRequest(request);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
                               ),
-                              child: Text('Approve'),
+                              child: (isApproving && currentRequestId == request.id)
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text('Approve'),
                             ),
                           ],
                         ),
@@ -165,6 +220,10 @@ class _RequestDialogState extends State<ProjectRequests> {
   }
 
   void _approveRequest(ProjectRequest request) {
+    setState(() {
+      isApproving = true;
+      currentRequestId = request.id;
+    });
     context.read<OrganisationsBloc>().add(
       ApproveProjectRequestEvent(
         organisationId: widget.organisationId,
@@ -181,11 +240,15 @@ class _RequestDialogState extends State<ProjectRequests> {
         content: Text('Are you sure you want to reject "${request.title}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: (isRejecting && currentRequestId == request.id) ? null : () => Navigator.of(context).pop(),
             child: Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: (isRejecting && currentRequestId == request.id) ? null : () {
+              setState(() {
+                isRejecting = true;
+                currentRequestId = request.id;
+              });
               Navigator.of(context).pop();
               context.read<OrganisationsBloc>().add(
                 RejectProjectRequestEvent(
@@ -198,7 +261,16 @@ class _RequestDialogState extends State<ProjectRequests> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: Text('Reject'),
+            child: (isRejecting && currentRequestId == request.id)
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text('Reject'),
           ),
         ],
       ),

@@ -90,3 +90,57 @@ class JoinOrganisationEvent extends OrganisationsEvent {
     required this.organisationId,
   });
 }
+
+class RefreshJoinCodeEvent extends OrganisationsEvent {
+  final String organisationId;
+
+  RefreshJoinCodeEvent({
+    required this.organisationId,
+  });
+}
+
+class JoinOrganisationByCodeEvent extends OrganisationsEvent {
+  final String joinCode;
+
+  JoinOrganisationByCodeEvent({
+    required this.joinCode,
+  });
+}
+
+class DeleteProjectEvent extends OrganisationsEvent {
+  final String organisationId;
+  final String projectId;
+
+  DeleteProjectEvent({
+    required this.organisationId,
+    required this.projectId,
+  });
+}
+
+class DeleteOrganisationEvent extends OrganisationsEvent {
+  final String organisationId;
+
+  DeleteOrganisationEvent({
+    required this.organisationId,
+  });
+}
+
+class LeaveOrganisationEvent extends OrganisationsEvent {
+  final String organisationId;
+
+  LeaveOrganisationEvent({
+    required this.organisationId,
+  });
+}
+
+class UpdateOrganisationEvent extends OrganisationsEvent {
+  final String organisationId;
+  final String name;
+  final String description;
+
+  UpdateOrganisationEvent({
+    required this.organisationId,
+    required this.name,
+    required this.description,
+  });
+}
