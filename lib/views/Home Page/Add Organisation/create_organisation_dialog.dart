@@ -405,7 +405,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                           ),
                           padding: EdgeInsets.symmetric(vertical: 16),
                         ),
-                        onPressed: () {
+                        onPressed: isCreating ? null : () {
                           setState(() {
                             isCreating = true;
                           });
@@ -417,20 +417,29 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                             ),
                           );
                         },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_business_rounded, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              "Create Organisation",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                        child: isCreating
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                               ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_business_rounded, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Create Organisation",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
                       ),
                     ),
                   ],

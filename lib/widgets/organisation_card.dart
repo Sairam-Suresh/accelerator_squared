@@ -19,11 +19,18 @@ class OrganisationCard extends StatefulWidget {
 }
 
 class _OrganisationCardState extends State<OrganisationCard> {
+  bool isLeaving = false;
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
         if (state is OrganisationsError) {
+          if (isLeaving) {
+            setState(() {
+              isLeaving = false;
+            });
+          }
           // Check if this is the "last teacher" error
           if (state.message.contains("last teacher")) {
             showDialog(
@@ -69,6 +76,11 @@ class _OrganisationCardState extends State<OrganisationCard> {
             );
           }
         } else if (state is OrganisationsLoaded) {
+          if (isLeaving) {
+            setState(() {
+              isLeaving = false;
+            });
+          }
           // Check if user is no longer in this organisation
           final updatedOrg = state.organisations
               .where((org) => org.id == widget.organisation.id)
@@ -335,7 +347,10 @@ class _OrganisationCardState extends State<OrganisationCard> {
             child: Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: isLeaving ? null : () {
+              setState(() {
+                isLeaving = true;
+              });
               Navigator.of(context).pop(); // Close confirmation dialog
               context.read<OrganisationsBloc>().add(
                 LeaveOrganisationEvent(
@@ -347,7 +362,16 @@ class _OrganisationCardState extends State<OrganisationCard> {
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
             ),
-            child: Text('Leave Organisation'),
+            child: isLeaving
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text('Leave Organisation'),
           ),
         ],
       ),

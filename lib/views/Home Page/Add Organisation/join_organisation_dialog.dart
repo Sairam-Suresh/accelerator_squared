@@ -12,6 +12,8 @@ class JoinOrganisationDialog extends StatefulWidget {
 }
 
 class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
+  bool isJoining = false;
+
   void _joinOrganisation() {
     if (widget.orgcodecontroller.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -22,6 +24,10 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
       );
       return;
     }
+
+    setState(() {
+      isJoining = true;
+    });
 
     context.read<OrganisationsBloc>().add(
       JoinOrganisationByCodeEvent(
@@ -34,7 +40,10 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
   Widget build(BuildContext context) {
     return BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
-        if (state is OrganisationsLoaded) {
+        if (state is OrganisationsLoaded && isJoining) {
+          setState(() {
+            isJoining = false;
+          });
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -42,7 +51,10 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
               backgroundColor: Colors.green,
             ),
           );
-        } else if (state is OrganisationsError) {
+        } else if (state is OrganisationsError && isJoining) {
+          setState(() {
+            isJoining = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -149,21 +161,30 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                     ),
                     elevation: 2,
                   ),
-                  onPressed: _joinOrganisation,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.login_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text(
-                        "Join Organisation",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                  onPressed: isJoining ? null : _joinOrganisation,
+                  child: isJoining
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                         ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.login_rounded, size: 20),
+                          SizedBox(width: 12),
+                          Text(
+                            "Join Organisation",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                 ),
               ),
               SizedBox(height: 16),

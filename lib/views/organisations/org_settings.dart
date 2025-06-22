@@ -24,17 +24,21 @@ class OrganisationSettingsDialog extends StatefulWidget {
 }
 
 class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog> {
-  late TextEditingController nameFieldController;
-  late TextEditingController descriptionFieldController;
-  late String currentJoinCode;
   bool editingName = false;
   bool editingDescription = false;
+  bool isSaving = false;
+  bool isRefreshingJoinCode = false;
+  bool isLeaving = false;
+  bool isDeleting = false;
+  TextEditingController nameFieldController = TextEditingController();
+  TextEditingController descriptionFieldController = TextEditingController();
+  String currentJoinCode = '';
 
   @override
   void initState() {
     super.initState();
-    nameFieldController = TextEditingController(text: widget.orgName);
-    descriptionFieldController = TextEditingController(text: widget.orgDescription);
+    nameFieldController.text = widget.orgName;
+    descriptionFieldController.text = widget.orgDescription;
     currentJoinCode = widget.joinCode;
   }
 
@@ -43,71 +47,87 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
     return BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
         if (state is OrganisationsLoaded) {
-          final updatedOrg = state.organisations
-              .where((org) => org.id == widget.organisationId)
-              .firstOrNull;
-          if (updatedOrg != null && mounted) {
+          if (isSaving) {
             setState(() {
-              currentJoinCode = updatedOrg.joinCode;
+              isSaving = false;
             });
-            // Check if this was an organisation update
-            if (updatedOrg.name != widget.orgName || updatedOrg.description != widget.orgDescription) {
-              // Organisation was updated successfully
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Organisation updated successfully'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
-          } else if (updatedOrg == null && mounted) {
-            // User is no longer in this organisation, navigate to home
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+            Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Left organisation successfully'),
+                content: Text('Organisation updated successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else if (isRefreshingJoinCode) {
+            setState(() {
+              isRefreshingJoinCode = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Join code refreshed!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else if (isLeaving) {
+            setState(() {
+              isLeaving = false;
+            });
+            Navigator.of(context).pop();
+            Navigator.of(context).pushReplacementNamed('/home');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Successfully left organisation'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else if (isDeleting) {
+            setState(() {
+              isDeleting = false;
+            });
+            Navigator.of(context).pop();
+            Navigator.of(context).pushReplacementNamed('/home');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Organisation deleted successfully'),
                 backgroundColor: Colors.green,
               ),
             );
           }
         } else if (state is OrganisationsError) {
-          // Check if this is the "last teacher" error
-          if (state.message.contains("last teacher")) {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Cannot Leave Organisation'),
-                  ],
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'You are the last teacher in this organisation.',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'To leave the organisation, you must first assign another member as a teacher.',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text('OK'),
-                  ),
-                ],
+          if (isSaving) {
+            setState(() {
+              isSaving = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
               ),
             );
-          } else {
-            // Show other errors as snackbar
+          } else if (isRefreshingJoinCode) {
+            setState(() {
+              isRefreshingJoinCode = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (isLeaving) {
+            setState(() {
+              isLeaving = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (isDeleting) {
+            setState(() {
+              isDeleting = false;
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -130,8 +150,10 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
             ),
             if (widget.isTeacher && (editingName || editingDescription))
               IconButton(
-                onPressed: () {
-                  // Save changes
+                onPressed: isSaving ? null : () {
+                  setState(() {
+                    isSaving = true;
+                  });
                   context.read<OrganisationsBloc>().add(
                     UpdateOrganisationEvent(
                       organisationId: widget.organisationId,
@@ -139,14 +161,17 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                       description: descriptionFieldController.text,
                     ),
                   );
-                  setState(() {
-                    editingName = false;
-                    editingDescription = false;
-                  });
-                  // Dismiss the dialog
-                  Navigator.of(context).pop();
                 },
-                icon: Icon(Icons.save, color: Theme.of(context).colorScheme.primary),
+                icon: isSaving
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                      ),
+                    )
+                  : Icon(Icons.save, color: Theme.of(context).colorScheme.primary),
                 tooltip: "Save changes",
               ),
           ],
@@ -323,20 +348,26 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                               ),
                               Spacer(),
                               IconButton(
-                                onPressed: () {
+                                onPressed: isRefreshingJoinCode ? null : () {
+                                  setState(() {
+                                    isRefreshingJoinCode = true;
+                                  });
                                   context.read<OrganisationsBloc>().add(
                                     RefreshJoinCodeEvent(
                                       organisationId: widget.organisationId,
                                     ),
                                   );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Join code refreshed!'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
                                 },
-                                icon: Icon(Icons.refresh, size: 20),
+                                icon: isRefreshingJoinCode
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                                      ),
+                                    )
+                                  : Icon(Icons.refresh, size: 20),
                                 tooltip: "Refresh join code",
                               ),
                             ],
@@ -441,7 +472,7 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () {
+                          onPressed: isLeaving ? null : () {
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
@@ -485,7 +516,10 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                                     child: Text('Cancel'),
                                   ),
                                   ElevatedButton(
-                                    onPressed: () {
+                                    onPressed: isLeaving ? null : () {
+                                      setState(() {
+                                        isLeaving = true;
+                                      });
                                       Navigator.of(context).pop(); // Close confirmation dialog
                                       Navigator.of(context).pop(); // Close settings dialog
                                       context.read<OrganisationsBloc>().add(
@@ -498,7 +532,16 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                                       backgroundColor: Colors.orange,
                                       foregroundColor: Colors.white,
                                     ),
-                                    child: Text('Leave Organisation'),
+                                    child: isLeaving
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : Text('Leave Organisation'),
                                   ),
                                 ],
                               ),
@@ -561,7 +604,7 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: () {
+                            onPressed: isDeleting ? null : () {
                               showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
@@ -606,7 +649,10 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                                       child: Text('Cancel'),
                                     ),
                                     ElevatedButton(
-                                      onPressed: () {
+                                      onPressed: isDeleting ? null : () {
+                                        setState(() {
+                                          isDeleting = true;
+                                        });
                                         Navigator.of(context).pop(); // Close confirmation dialog
                                         Navigator.of(context).pop(); // Close settings dialog
                                         context.read<OrganisationsBloc>().add(
@@ -614,18 +660,21 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
                                             organisationId: widget.organisationId,
                                           ),
                                         );
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Organisation deleted successfully'),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red,
                                         foregroundColor: Colors.white,
                                       ),
-                                      child: Text('Delete Organisation'),
+                                      child: isDeleting
+                                        ? SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            ),
+                                          )
+                                        : Text('Delete Organisation'),
                                     ),
                                   ],
                                 ),

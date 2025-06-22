@@ -29,6 +29,10 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
   bool isLoading = true;
   String currentUserRole = 'member';
   bool memberOperationInProgress = false;
+  bool isAddingMember = false;
+  bool isChangingRole = false;
+  bool isRemovingMember = false;
+  String? currentOperationId;
 
   @override
   void initState() {
@@ -97,6 +101,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
     try {
       setState(() {
         memberOperationInProgress = true;
+        isAddingMember = true;
       });
       
       await firestore
@@ -117,10 +122,12 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       
       setState(() {
         memberOperationInProgress = false;
+        isAddingMember = false;
       });
     } catch (e) {
       setState(() {
         memberOperationInProgress = false;
+        isAddingMember = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -207,6 +214,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
   void _changeMemberRole(String memberId, String newRole) {
     setState(() {
       memberOperationInProgress = true;
+      isChangingRole = true;
     });
     context.read<OrganisationsBloc>().add(
       ChangeMemberRoleEvent(
@@ -233,6 +241,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
               Navigator.of(context).pop();
               setState(() {
                 memberOperationInProgress = true;
+                isRemovingMember = true;
               });
               context.read<OrganisationsBloc>().add(
                 RemoveMemberEvent(
@@ -261,12 +270,35 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
   Widget build(BuildContext context) {
     return BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
-        // Only refresh when member operations complete
         if (state is OrganisationsLoaded && memberOperationInProgress) {
           setState(() {
             memberOperationInProgress = false;
+            isAddingMember = false;
+            isChangingRole = false;
+            isRemovingMember = false;
+            currentOperationId = null;
           });
           fetchMembers();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Operation completed successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (state is OrganisationsError && memberOperationInProgress) {
+          setState(() {
+            memberOperationInProgress = false;
+            isAddingMember = false;
+            isChangingRole = false;
+            isRemovingMember = false;
+            currentOperationId = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       },
       child: _buildContent(),
@@ -310,11 +342,22 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
-                      onPressed: addMember,
-                      icon: Icon(Icons.add),
+                      onPressed: isAddingMember ? null : addMember,
+                      icon: isAddingMember
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
+                            ),
+                          )
+                        : Icon(Icons.add),
                       label: Padding(
                         padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                        child: Text("Add member", style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: isAddingMember
+                          ? Text("Adding...", style: TextStyle(fontWeight: FontWeight.bold))
+                          : Text("Add member", style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
