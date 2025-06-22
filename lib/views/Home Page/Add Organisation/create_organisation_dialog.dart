@@ -31,7 +31,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Organisation created successfully'),
+              content: Text('Organisation "${orgNameController.text}" created successfully'),
               backgroundColor: Colors.green,
             ),
           );

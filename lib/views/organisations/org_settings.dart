@@ -54,7 +54,7 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
             Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Organisation updated successfully'),
+                content: Text('Organisation "${nameFieldController.text}" updated successfully'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -73,10 +73,10 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
               isLeaving = false;
             });
             Navigator.of(context).pop();
-            Navigator.of(context).pushReplacementNamed('/home');
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Successfully left organisation'),
+                content: Text('Successfully left organisation "${widget.orgName}"'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -85,10 +85,10 @@ class _OrganisationSettingsDialogState extends State<OrganisationSettingsDialog>
               isDeleting = false;
             });
             Navigator.of(context).pop();
-            Navigator.of(context).pushReplacementNamed('/home');
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Organisation deleted successfully'),
+                content: Text('Organisation "${widget.orgName}" deleted successfully'),
                 backgroundColor: Colors.green,
               ),
             );

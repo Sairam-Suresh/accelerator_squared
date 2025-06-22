@@ -21,6 +21,23 @@ class _RequestDialogState extends State<ProjectRequests> {
   bool isApproving = false;
   bool isRejecting = false;
   String? currentRequestId;
+  List<ProjectRequest> currentRequests = [];
+
+  @override
+  void initState() {
+    super.initState();
+    currentRequests = List.from(widget.projectRequests);
+  }
+
+  @override
+  void didUpdateWidget(ProjectRequests oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.projectRequests != widget.projectRequests) {
+      setState(() {
+        currentRequests = List.from(widget.projectRequests);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +74,7 @@ class _RequestDialogState extends State<ProjectRequests> {
   }
 
   Widget _buildContent() {
-    final pendingRequests = widget.projectRequests;
+    final pendingRequests = currentRequests;
 
     if (pendingRequests.isEmpty) {
       return Center(
@@ -155,6 +172,33 @@ class _RequestDialogState extends State<ProjectRequests> {
                           Text(
                             request.description,
                             style: TextStyle(fontSize: 14),
+                          ),
+                        ],
+                        if (request.memberEmails.isNotEmpty) ...[
+                          SizedBox(height: 12),
+                          Text(
+                            'Project Members:',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: request.memberEmails.map((email) {
+                              return Chip(
+                                label: Text(
+                                  email,
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                backgroundColor: Colors.blue.shade50,
+                                side: BorderSide(color: Colors.blue.shade200),
+                                visualDensity: VisualDensity.compact,
+                              );
+                            }).toList(),
                           ),
                         ],
                         SizedBox(height: 16),

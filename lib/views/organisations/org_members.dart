@@ -215,6 +215,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
     setState(() {
       memberOperationInProgress = true;
       isChangingRole = true;
+      currentOperationId = memberId;
     });
     context.read<OrganisationsBloc>().add(
       ChangeMemberRoleEvent(
@@ -242,6 +243,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
               setState(() {
                 memberOperationInProgress = true;
                 isRemovingMember = true;
+                currentOperationId = member['id'];
               });
               context.read<OrganisationsBloc>().add(
                 RemoveMemberEvent(
@@ -281,7 +283,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           fetchMembers();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Operation completed successfully'),
+              content: Text('Member operation completed successfully'),
               backgroundColor: Colors.green,
             ),
           );
@@ -447,9 +449,19 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                     visualDensity: VisualDensity.compact,
                   ),
                 ],
-                if (!isCurrentUser(member) && widget.teacherView) ...[
+                if (!isCurrentUser(member) && widget.teacherView && 
+                    !(currentUserRole == 'student_teacher' && member['role'] == 'teacher')) ...[
                   PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert),
+                    icon: (isChangingRole && currentOperationId == member['id'])
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                          ),
+                        )
+                      : Icon(Icons.more_vert),
                     onSelected: (value) {
                       if (value == 'remove') {
                         _showRemoveConfirmation(member);
@@ -484,11 +496,41 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                       return [
                         ...availableRoles.map((role) => PopupMenuItem<String>(
                           value: role,
-                          child: Text('Change to ${_getRoleDisplayName(role)}'),
+                          child: (isChangingRole && currentOperationId == member['id'])
+                            ? Row(
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Changing to ${_getRoleDisplayName(role)}...'),
+                                ],
+                              )
+                            : Text('Change to ${_getRoleDisplayName(role)}'),
                         )),
                         if (_canRemoveMember(memberRole)) PopupMenuItem<String>(
                           value: 'remove',
-                          child: Text('Remove from organisation', style: TextStyle(color: Colors.red)),
+                          child: (isRemovingMember && currentOperationId == member['id'])
+                            ? Row(
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Removing...', style: TextStyle(color: Colors.red)),
+                                ],
+                              )
+                            : Text('Remove from organisation', style: TextStyle(color: Colors.red)),
                         ),
                       ];
                     },

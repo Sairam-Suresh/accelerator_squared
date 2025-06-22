@@ -128,45 +128,93 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildOrganisationsContent() {
-    return BlocBuilder<OrganisationsBloc, OrganisationsState>(
-      builder: (context, state) {
-        if (state is OrganisationsLoading) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).colorScheme.primary,
+    return BlocListener<OrganisationsBloc, OrganisationsState>(
+      listener: (context, state) {
+        if (state is OrganisationsError) {
+          // Check if this is the "last teacher" error
+          if (state.message.contains("last teacher")) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Cannot Leave Organisation'),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'You are the last teacher in this organisation.',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ),
+                    SizedBox(height: 8),
+                    Text(
+                      'To leave the organisation, you must first assign another member as a teacher.',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Loading organisations...',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('OK'),
                   ),
-                ),
-              ],
-            ),
-          );
-        } else if (state is OrganisationsLoaded) {
-          organisations = state.organisations;
-          if (organisations.isEmpty) {
-            return _buildEmptyState();
+                ],
+              ),
+            );
+          } else {
+            // Show other errors as snackbar
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
-          return _buildOrganisationsGrid();
-        } else if (state is OrganisationsError) {
-          return _buildErrorState(state.message);
-        } else {
-          return _buildEmptyState();
         }
       },
+      child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
+        builder: (context, state) {
+          if (state is OrganisationsLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading organisations...',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else if (state is OrganisationsLoaded) {
+            organisations = state.organisations;
+            if (organisations.isEmpty) {
+              return _buildEmptyState();
+            }
+            return _buildOrganisationsGrid();
+          } else {
+            return _buildEmptyState();
+          }
+        },
+      ),
     );
   }
 
@@ -251,56 +299,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(60),
-              ),
-              child: Icon(
-                Icons.error_outline,
-                size: 60,
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Something went wrong',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text("Try Again"),
             ),
           ],
         ),

@@ -47,7 +47,7 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Successfully joined organisation!'),
+              content: Text('Successfully joined organisation with code "${widget.orgcodecontroller.text.trim().toUpperCase()}"'),
               backgroundColor: Colors.green,
             ),
           );

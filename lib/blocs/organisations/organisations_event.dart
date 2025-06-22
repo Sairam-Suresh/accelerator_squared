@@ -19,11 +19,13 @@ class CreateProjectEvent extends OrganisationsEvent {
   final String organisationId;
   final String title;
   final String description;
+  final List<String> memberEmails;
 
   CreateProjectEvent({
     required this.organisationId,
     required this.title,
     required this.description,
+    required this.memberEmails,
   });
 }
 

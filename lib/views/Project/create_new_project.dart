@@ -211,7 +211,267 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                       ),
                     ),
                     
-                    if (!widget.isTeacher) ...[
+                    if (widget.isTeacher) ...[
+                      SizedBox(height: 24),
+                      
+                      // Member management section
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.people_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Add Team Members",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      
+                      // Info card
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                "You must add at least 1 non-teacher member to the project. Teachers cannot be added to projects.",
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      
+                      // Add member input row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: emailAddingController,
+                              decoration: InputDecoration(
+                                hintText: "Enter member's email",
+                                label: Text("Member Email"),
+                                prefixIcon: Icon(Icons.email_rounded),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.outline,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            ),
+                            onPressed: () {
+                              if (emailAddingController.text.isNotEmpty) {
+                                // Check if the email belongs to a teacher
+                                if (isTeacher(emailAddingController.text)) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline_rounded,
+                                              color: Colors.red,
+                                              size: 24,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("Cannot Add Teacher"),
+                                          ],
+                                        ),
+                                        content: Text(
+                                          "Teachers cannot be added to projects. Please add student teachers or members only.",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text("OK"),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  return;
+                                }
+
+                                setState(() {
+                                  memberEmailsList.add(emailAddingController.text);
+                                  emailAddingController.clear();
+                                });
+                              } else {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline_rounded,
+                                            color: Colors.red,
+                                            size: 24,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text("Invalid Email"),
+                                        ],
+                                      ),
+                                      content: Text(
+                                        "Email field cannot be empty when adding a new member.",
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text("OK"),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              }
+                            },
+                            icon: Icon(Icons.add_rounded, size: 20),
+                            label: Text("Add"),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      
+                      // Members list
+                      Container(
+                        constraints: BoxConstraints(
+                          maxHeight: MediaQuery.of(context).size.height / 4,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: memberEmailsList.isNotEmpty
+                            ? ListView.builder(
+                                padding: EdgeInsets.all(8),
+                                shrinkWrap: true,
+                                itemBuilder: (context, index) {
+                                  return Card(
+                                    margin: EdgeInsets.symmetric(vertical: 4),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                        child: Icon(
+                                          Icons.person_rounded,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        memberEmailsList[index],
+                                        style: TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                      subtitle: Text(
+                                        isTeacher(memberEmailsList[index]) ? "Teacher (cannot be added)" : "Member",
+                                        style: TextStyle(
+                                          color: isTeacher(memberEmailsList[index]) ? Colors.red : Colors.grey,
+                                        ),
+                                      ),
+                                      trailing: IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            memberEmailsList.removeAt(index);
+                                          });
+                                        },
+                                        icon: Icon(Icons.remove_circle_outline_rounded, color: Colors.red),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                itemCount: memberEmailsList.length,
+                              )
+                            : Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.people_outline_rounded,
+                                        size: 48,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        "No members added yet",
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ] else ...[
                       SizedBox(height: 24),
                       
                       // Member management section
@@ -557,6 +817,20 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                             onPressed: isCreating ? null : () {
                               // create project or submit request
                               if (projectNameController.text.isNotEmpty) {
+                                // For teachers, validate that at least 1 non-teacher member is added
+                                if (widget.isTeacher) {
+                                  bool hasNonTeacherMember = memberEmailsList.any((email) => !isTeacher(email));
+                                  if (!hasNonTeacherMember) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('You must add at least 1 non-teacher member to the project'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                }
+                                
                                 setState(() {
                                   isCreating = true;
                                 });
@@ -566,6 +840,7 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                       organisationId: widget.organisationId,
                                       title: projectNameController.text,
                                       description: descriptionController.text,
+                                      memberEmails: List<String>.from(memberEmailsList),
                                     ),
                                   );
                                 } else {
