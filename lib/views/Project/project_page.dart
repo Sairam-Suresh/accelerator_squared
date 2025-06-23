@@ -187,10 +187,26 @@ class _ProjectPageState extends State<ProjectPage>
             ],
           ),
           actions: [
-            IconButton(
-              onPressed: _refreshData,
-              icon: Icon(Icons.refresh),
-              tooltip: 'Refresh data',
+            BlocBuilder<OrganisationsBloc, OrganisationsState>(
+              builder: (context, state) {
+                final isLoading = state is OrganisationsLoading;
+                return IconButton(
+                  onPressed: isLoading ? null : _refreshData,
+                  icon: isLoading
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        )
+                      : Icon(Icons.refresh),
+                  tooltip: 'Refresh data',
+                );
+              },
             ),
           ],
         ),
