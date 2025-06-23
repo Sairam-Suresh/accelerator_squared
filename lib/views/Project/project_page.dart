@@ -99,7 +99,8 @@ class _ProjectPageState extends State<ProjectPage>
               builder: (context) {
                 return NewProjectDialog(
                   organisationId: widget.organisationId,
-                  isTeacher: userRole == 'teacher' || userRole == 'student_teacher',
+                  isTeacher:
+                      userRole == 'teacher' || userRole == 'student_teacher',
                 );
               },
             );
@@ -192,22 +193,24 @@ class _ProjectPageState extends State<ProjectPage>
                 final isLoading = state is OrganisationsLoading;
                 return IconButton(
                   onPressed: isLoading ? null : _refreshData,
-                  icon: isLoading
-                      ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
+                  icon:
+                      isLoading
+                          ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.primary,
+                              ),
                             ),
-                          ),
-                        )
-                      : Icon(Icons.refresh),
+                          )
+                          : Icon(Icons.refresh),
                   tooltip: 'Refresh data',
                 );
               },
             ),
+            SizedBox(width: 10),
           ],
         ),
         body:
