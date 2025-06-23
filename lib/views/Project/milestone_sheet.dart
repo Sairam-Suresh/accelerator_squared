@@ -1,7 +1,6 @@
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:side_sheet_material3/side_sheet_material3.dart';
 
 class MilestoneSheet extends StatefulWidget {
   const MilestoneSheet({
