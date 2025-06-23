@@ -4,6 +4,8 @@ import 'package:accelerator_squared/views/Project/project_files.dart';
 import 'package:accelerator_squared/views/Project/project_settings.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/create_milestone_dialog.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_members.dart';
+import 'package:awesome_side_sheet/Enums/sheet_position.dart';
+import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:side_sheet_material3/side_sheet_material3.dart';
 
@@ -79,7 +81,10 @@ class _TeacherProjectDetailsState extends State<TeacherProjectDetails> {
                 builder: (context) {
                   return StatefulBuilder(
                     builder: (context, setState) {
-                      return ProjectSettings();
+                      return ProjectSettings(
+                        projectName: widget.projectName,
+                        projectDetails: widget.projectDescription,
+                      );
                     },
                   );
                 },
@@ -224,9 +229,20 @@ class _TeacherProjectDetailsState extends State<TeacherProjectDetails> {
                                 child: Padding(
                                   padding: EdgeInsets.all(10),
                                   child: ListTile(
-                                    onTap: () async {
-                                      await showModalSideSheet(
-                                        context,
+                                    onTap: () {
+                                      aweSideSheet(
+                                        context: context,
+                                        sheetPosition: SheetPosition.right,
+                                        sheetWidth:
+                                            MediaQuery.of(context).size.width /
+                                            3,
+
+                                        header: SizedBox(height: 20),
+                                        showHeaderDivider: false,
+                                        cancelButtonTextColor: Colors.red,
+                                        cancelButtonBgColor: Colors.redAccent,
+                                        onCancel:
+                                            () => Navigator.of(context).pop(),
                                         body: Padding(
                                           padding: EdgeInsets.fromLTRB(
                                             20,
@@ -243,7 +259,6 @@ class _TeacherProjectDetailsState extends State<TeacherProjectDetails> {
                                             index: index,
                                           ),
                                         ),
-                                        header: "Milestone",
                                       );
                                     },
                                     title: Text(

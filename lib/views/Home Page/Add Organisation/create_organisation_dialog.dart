@@ -31,7 +31,9 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Organisation "${orgNameController.text}" created successfully'),
+              content: Text(
+                'Organisation "${orgNameController.text}" created successfully',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -40,17 +42,12 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
             isCreating = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         }
       },
       child: AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Container(
           width: MediaQuery.of(context).size.width / 2.5,
           height: MediaQuery.of(context).size.height / 1.3,
@@ -62,7 +59,9 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
@@ -72,7 +71,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                   ),
                 ),
                 SizedBox(height: 24),
-                
+
                 // Title
                 Text(
                   "Create New Organisation",
@@ -83,7 +82,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                   ),
                 ),
                 SizedBox(height: 32),
-                
+
                 // Organisation name input
                 TextField(
                   controller: orgNameController,
@@ -108,11 +107,14 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                       ),
                     ),
                     filled: true,
-                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withValues(alpha: 0.3),
                   ),
                 ),
                 SizedBox(height: 16),
-                
+
                 // Organisation description input
                 TextField(
                   controller: orgDescController,
@@ -139,59 +141,16 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                       ),
                     ),
                     filled: true,
-                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withValues(alpha: 0.3),
                   ),
                 ),
-                SizedBox(height: 16),
-                
+
                 // Google Drive integration
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  ),
-                  child: Row(
-                    children: [
-                      Image.asset("assets/drive.png", height: 32),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Connected Account",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            Text(
-                              userState.email,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 24,
-                      ),
-                    ],
-                  ),
-                ),
                 SizedBox(height: 24),
-                
+
                 // Member management section
                 Row(
                   children: [
@@ -212,7 +171,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                   ],
                 ),
                 SizedBox(height: 16),
-                
+
                 // Add member input row
                 Row(
                   children: [
@@ -240,7 +199,10 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                             ),
                           ),
                           filled: true,
-                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.3),
                         ),
                       ),
                     ),
@@ -248,11 +210,15 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
                       ),
                       onPressed: () {
                         if (emailAddingController.text.isNotEmpty) {
@@ -300,7 +266,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                   ],
                 ),
                 SizedBox(height: 16),
-                
+
                 // Members list
                 Container(
                   constraints: BoxConstraints(
@@ -313,67 +279,83 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: orgMemberList.isNotEmpty
-                      ? ListView.builder(
-                          padding: EdgeInsets.all(8),
-                          shrinkWrap: true,
-                          itemBuilder: (context, index) {
-                            return Card(
-                              margin: EdgeInsets.symmetric(vertical: 4),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                  child: Icon(
-                                    Icons.person_rounded,
-                                    color: Theme.of(context).colorScheme.primary,
+                  child:
+                      orgMemberList.isNotEmpty
+                          ? ListView.builder(
+                            padding: EdgeInsets.all(8),
+                            shrinkWrap: true,
+                            itemBuilder: (context, index) {
+                              return Card(
+                                margin: EdgeInsets.symmetric(vertical: 4),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.primaryContainer,
+                                    child: Icon(
+                                      Icons.person_rounded,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    orgMemberList[index],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  trailing: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        orgMemberList.removeAt(index);
+                                      });
+                                    },
+                                    icon: Icon(
+                                      Icons.remove_circle_outline_rounded,
+                                      color: Colors.red,
+                                    ),
                                   ),
                                 ),
-                                title: Text(
-                                  orgMemberList[index],
-                                  style: TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                trailing: IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      orgMemberList.removeAt(index);
-                                    });
-                                  },
-                                  icon: Icon(Icons.remove_circle_outline_rounded, color: Colors.red),
-                                ),
-                              ),
-                            );
-                          },
-                          itemCount: orgMemberList.length,
-                        )
-                      : Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.people_outline_rounded,
-                                  size: 48,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  "No members added yet",
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    fontSize: 16,
+                              );
+                            },
+                            itemCount: orgMemberList.length,
+                          )
+                          : Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.people_outline_rounded,
+                                    size: 48,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(height: 8),
+                                  Text(
+                                    "No members added yet",
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                 ),
                 SizedBox(height: 24),
-                
+
                 // Action buttons
                 Row(
                   children: [
@@ -388,7 +370,10 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                             "Cancel",
                             style: TextStyle(
                               fontSize: 16,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -398,48 +383,58 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           padding: EdgeInsets.symmetric(vertical: 16),
                         ),
-                        onPressed: isCreating ? null : () {
-                          setState(() {
-                            isCreating = true;
-                          });
-                          context.read<OrganisationsBloc>().add(
-                            CreateOrganisationEvent(
-                              name: orgNameController.text,
-                              description: orgDescController.text,
-                              memberEmails: List<String>.from(orgMemberList),
-                            ),
-                          );
-                        },
-                        child: isCreating
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_business_rounded, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Create Organisation",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                        onPressed:
+                            isCreating
+                                ? null
+                                : () {
+                                  setState(() {
+                                    isCreating = true;
+                                  });
+                                  context.read<OrganisationsBloc>().add(
+                                    CreateOrganisationEvent(
+                                      name: orgNameController.text,
+                                      description: orgDescController.text,
+                                      memberEmails: List<String>.from(
+                                        orgMemberList,
+                                      ),
+                                    ),
+                                  );
+                                },
+                        child:
+                            isCreating
+                                ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Theme.of(context).colorScheme.onPrimary,
+                                    ),
                                   ),
+                                )
+                                : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add_business_rounded, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Create Organisation",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
                       ),
                     ),
                   ],
