@@ -40,93 +40,174 @@ class _SettingsPageState extends State<SettingsPage> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(60),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline,
-                          width: 3,
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.account_circle_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 24,
                         ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(57),
-                        child: userState.photoUrl == null
-                            ? Container(
-                                color: Theme.of(context).colorScheme.primaryContainer,
-                                child: Icon(
-                                  Icons.person,
-                                  size: 60,
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
-                              )
-                            : Image.network(
-                                userState.photoUrl!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Theme.of(context).colorScheme.primaryContainer,
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
+                        const SizedBox(width: 12),
+                        Text(
+                          "Account",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 24),
-                    
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userState.displayName ?? "User",
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(60),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline,
+                              width: 3,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            userState.email,
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(57),
+                            child:
+                                userState.photoUrl == null
+                                    ? Container(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.primaryContainer,
+                                      child: Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimaryContainer,
+                                      ),
+                                    )
+                                    : Image.network(
+                                      userState.photoUrl!,
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (
+                                        context,
+                                        error,
+                                        stackTrace,
+                                      ) {
+                                        return Container(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.primaryContainer,
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color:
+                                                Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimaryContainer,
+                                          ),
+                                        );
+                                      },
+                                    ),
                           ),
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              "Active User",
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                userState.displayName ?? "User",
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              Text(
+                                userState.email,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyLarge?.copyWith(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "Active User",
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width / 4,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          context.read<UserBloc>().add(UserLogoutEvent());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.errorContainer,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onErrorContainer,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        icon: const Icon(Icons.logout, size: 20),
+                        label: const Text(
+                          "Sign Out",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            
             const SizedBox(height: 32),
-            
+
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -143,7 +224,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         const SizedBox(width: 12),
                         Text(
                           "Appearance",
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(
+                            context,
+                          ).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
@@ -160,58 +243,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     const SizedBox(height: 12),
                     _buildThemeModeSelector(themeProvider),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.account_circle_outlined,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          "Account",
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          context.read<UserBloc>().add(UserLogoutEvent());
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                          foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        icon: const Icon(Icons.logout, size: 20),
-                        label: const Text(
-                          "Sign Out",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -260,7 +291,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required IconData icon,
   }) {
     final isSelected = themeProvider.themeMode == mode;
-    
+
     return InkWell(
       onTap: () {
         themeProvider.setThemeMode(mode);
@@ -269,14 +300,16 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? Theme.of(context).colorScheme.primaryContainer
-              : Theme.of(context).colorScheme.surfaceContainer,
+          color:
+              isSelected
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected 
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline,
+            color:
+                isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -284,9 +317,10 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Icon(
               icon,
-              color: isSelected 
-                  ? Theme.of(context).colorScheme.onPrimaryContainer
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              color:
+                  isSelected
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -298,18 +332,21 @@ class _SettingsPageState extends State<SettingsPage> {
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSurface,
+                      color:
+                          isSelected
+                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                              : Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      color:
+                          isSelected
+                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                                  .withValues(alpha: 0.7)
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 14,
                     ),
                   ),
