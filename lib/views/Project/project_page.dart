@@ -123,7 +123,7 @@ class _ProjectPageState extends State<ProjectPage> with TickerProviderStateMixin
                         return OrganisationSettingsDialog(
                           orgDescription: currentOrgDescription,
                           orgName: currentOrgName,
-                          isTeacher: userRole == 'teacher' || userRole == 'student_teacher',
+                          isTeacher: userRole == 'teacher',
                           organisationId: widget.organisationId,
                           joinCode: currentJoinCode,
                         );

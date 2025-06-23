@@ -295,7 +295,7 @@ class _OrganisationCardState extends State<OrganisationCard> {
         return OrganisationSettingsDialog(
           orgDescription: widget.organisation.description,
           orgName: widget.organisation.name,
-          isTeacher: widget.organisation.userRole == 'teacher' || widget.organisation.userRole == 'student_teacher',
+          isTeacher: widget.organisation.userRole == 'teacher',
           organisationId: widget.organisation.id,
           joinCode: widget.organisation.joinCode,
         );

@@ -607,7 +607,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher') {
-          emit(OrganisationsError("Only teachers can delete organisations"));
+          emit(OrganisationsError("Only full teachers can delete organisations"));
           return;
         }
 
