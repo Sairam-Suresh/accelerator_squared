@@ -337,17 +337,16 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                               ),
                             ),
                             onPressed: () {
-                              if (emailAddingController.text.isNotEmpty) {
+                              final email = emailAddingController.text.trim();
+                              if (email.isNotEmpty) {
                                 // Check if the email belongs to a teacher
-                                if (isTeacher(emailAddingController.text)) {
+                                if (isTeacher(email)) {
                                   showDialog(
                                     context: context,
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          borderRadius: BorderRadius.circular(16),
                                         ),
                                         title: Row(
                                           children: [
@@ -376,11 +375,45 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                   );
                                   return;
                                 }
-
-                                setState(() {
-                                  memberEmailsList.add(
-                                    emailAddingController.text,
+                                // Check if the email exists in the organisation
+                                final found = organisationMembers.any((m) => m['email'] == email);
+                                if (!found) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline_rounded,
+                                              color: Colors.red,
+                                              size: 24,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("User Not Found"),
+                                          ],
+                                        ),
+                                        content: Text(
+                                          "This email is not a member of the organisation.",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text("OK"),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   );
+                                  return;
+                                }
+                                setState(() {
+                                  memberEmailsList.add(email);
                                   emailAddingController.clear();
                                 });
                               } else {
@@ -642,17 +675,16 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                               ),
                             ),
                             onPressed: () {
-                              if (emailAddingController.text.isNotEmpty) {
+                              final email = emailAddingController.text.trim();
+                              if (email.isNotEmpty) {
                                 // Check if the email belongs to a teacher
-                                if (isTeacher(emailAddingController.text)) {
+                                if (isTeacher(email)) {
                                   showDialog(
                                     context: context,
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          borderRadius: BorderRadius.circular(16),
                                         ),
                                         title: Row(
                                           children: [
@@ -681,11 +713,45 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                   );
                                   return;
                                 }
-
-                                setState(() {
-                                  memberEmailsList.add(
-                                    emailAddingController.text,
+                                // Check if the email exists in the organisation
+                                final found = organisationMembers.any((m) => m['email'] == email);
+                                if (!found) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline_rounded,
+                                              color: Colors.red,
+                                              size: 24,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("User Not Found"),
+                                          ],
+                                        ),
+                                        content: Text(
+                                          "This email is not a member of the organisation.",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text("OK"),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   );
+                                  return;
+                                }
+                                setState(() {
+                                  memberEmailsList.add(email);
                                   emailAddingController.clear();
                                 });
                               } else {

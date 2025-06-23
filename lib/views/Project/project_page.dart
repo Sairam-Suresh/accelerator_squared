@@ -99,7 +99,7 @@ class _ProjectPageState extends State<ProjectPage>
               builder: (context) {
                 return NewProjectDialog(
                   organisationId: widget.organisationId,
-                  isTeacher: userRole == 'teacher',
+                  isTeacher: userRole == 'teacher' || userRole == 'student_teacher',
                 );
               },
             );

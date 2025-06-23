@@ -145,6 +145,16 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .where('uid', isEqualTo: uid)
             .get();
 
+        // If not found by uid, try by email
+        if (userSnapshot.docs.isEmpty && auth.currentUser?.email != null && auth.currentUser!.email!.isNotEmpty) {
+          userSnapshot = await firestore
+              .collection('organisations')
+              .doc(event.organisationId)
+              .collection('members')
+              .where('email', isEqualTo: auth.currentUser!.email)
+              .get();
+        }
+
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
           return;
@@ -153,8 +163,8 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
-        if (userRole != 'teacher') {
-          emit(OrganisationsError("Only teachers can create projects directly. Please submit a project request instead."));
+        if (userRole != 'teacher' && userRole != 'student_teacher') {
+          emit(OrganisationsError("Only teachers and student teachers can create projects directly. Please submit a project request instead."));
           return;
         }
 
