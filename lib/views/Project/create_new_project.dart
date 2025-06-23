@@ -108,7 +108,7 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            content: Container(
+            content: SizedBox(
               width: MediaQuery.of(context).size.width / 2,
               height: MediaQuery.of(context).size.height / 1.3,
               child: SingleChildScrollView(
@@ -346,7 +346,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         title: Row(
                                           children: [
@@ -356,7 +358,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                               size: 24,
                                             ),
                                             SizedBox(width: 8),
-                                            Text("You will automatically be added as the creator. Please do not add your own email."),
+                                            Text(
+                                              "You will automatically be added as the creator. Please do not add your own email.",
+                                            ),
                                           ],
                                         ),
                                         content: Text(
@@ -382,7 +386,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         title: Row(
                                           children: [
@@ -412,14 +418,18 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                   return;
                                 }
                                 // Check if the email exists in the organisation
-                                final found = organisationMembers.any((m) => m['email'] == email);
+                                final found = organisationMembers.any(
+                                  (m) => m['email'] == email,
+                                );
                                 if (!found) {
                                   showDialog(
                                     context: context,
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         title: Row(
                                           children: [
@@ -720,7 +730,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         title: Row(
                                           children: [
@@ -730,7 +742,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                               size: 24,
                                             ),
                                             SizedBox(width: 8),
-                                            Text("You will automatically be added as the creator. Please do not add your own email."),
+                                            Text(
+                                              "You will automatically be added as the creator. Please do not add your own email.",
+                                            ),
                                           ],
                                         ),
                                         content: Text(
@@ -756,7 +770,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         title: Row(
                                           children: [
@@ -786,14 +802,18 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                   return;
                                 }
                                 // Check if the email exists in the organisation
-                                final found = organisationMembers.any((m) => m['email'] == email);
+                                final found = organisationMembers.any(
+                                  (m) => m['email'] == email,
+                                );
                                 if (!found) {
                                   showDialog(
                                     context: context,
                                     builder: (context) {
                                       return AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         title: Row(
                                           children: [
