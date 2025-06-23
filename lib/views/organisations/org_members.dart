@@ -105,17 +105,36 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         isAddingMember = true;
       });
 
+      // Try to find the user's UID by email
+      String email = memberEmailController.text.trim();
+      String? uid;
+      try {
+        final methods = await auth.fetchSignInMethodsForEmail(email);
+        if (methods.isNotEmpty) {
+          // User exists, try to get UID from Firestore users collection if you have one
+          // (Assume users are stored in a 'users' collection with UID as doc ID and email field)
+          final userQuery = await firestore.collection('users').where('email', isEqualTo: email).limit(1).get();
+          if (userQuery.docs.isNotEmpty) {
+            uid = userQuery.docs.first.id;
+          }
+        }
+      } catch (e) {
+        // Ignore errors, fallback to email as ID
+      }
+      // Use UID if found, otherwise fallback to email
+      String docId = uid ?? email;
       await firestore
           .collection('organisations')
           .doc(widget.organisationId)
           .collection('members')
-          .doc()
+          .doc(docId)
           .set({
-            'email': memberEmailController.text,
+            'email': email,
             'role': 'member',
             'status': 'active',
             'addedAt': FieldValue.serverTimestamp(),
             'addedBy': auth.currentUser?.uid,
+            if (uid != null) 'uid': uid,
           });
 
       memberEmailController.clear();

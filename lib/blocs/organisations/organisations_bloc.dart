@@ -102,7 +102,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           'joinCode': joinCode,
         });
 
-        await orgRef.collection('members').doc().set({
+        await orgRef.collection('members').doc(uid).set({
           'role': 'teacher',
           'email': auth.currentUser?.email ?? '',
           'uid': uid,
@@ -113,8 +113,8 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
 
         for (String email in event.memberEmails) {
           if (email == auth.currentUser?.email) continue;
-
-          await orgRef.collection('members').doc().set({
+          // TODO: Lookup UID by email if possible. For now, use email as fallback for doc ID.
+          await orgRef.collection('members').doc(email).set({
             'role': 'member',
             'email': email,
             'status': 'active',
@@ -198,7 +198,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           'createdBy': uid,
         });
 
-        await projectRef.collection('members').doc().set({
+        await projectRef.collection('members').doc(uid).set({
           'role': 'teacher',
           'email': auth.currentUser?.email ?? '',
           'uid': uid,
@@ -208,11 +208,26 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
 
         // Add the verified member emails to the project
         for (String email in verifiedMemberEmails) {
-          await projectRef.collection('members').doc().set({
+          // Try to find the user's UID by email
+          String? memberUid;
+          try {
+            final methods = await auth.fetchSignInMethodsForEmail(email);
+            if (methods.isNotEmpty) {
+              final userQuery = await firestore.collection('users').where('email', isEqualTo: email).limit(1).get();
+              if (userQuery.docs.isNotEmpty) {
+                memberUid = userQuery.docs.first.id;
+              }
+            }
+          } catch (e) {
+            // Ignore errors, fallback to email as ID
+          }
+          String docId = memberUid ?? email;
+          await projectRef.collection('members').doc(docId).set({
             'role': 'member',
             'email': email,
             'status': 'active',
             'addedAt': FieldValue.serverTimestamp(),
+            if (memberUid != null) 'uid': memberUid,
           });
         }
 
@@ -407,7 +422,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .collection('organisations')
             .doc(event.organisationId);
 
-        await orgRef.collection('members').doc().set({
+        await orgRef.collection('members').doc(uid).set({
           'role': 'member',
           'email': auth.currentUser?.email ?? '',
           'uid': uid,
@@ -521,7 +536,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .collection('organisations')
             .doc(orgId)
             .collection('members')
-            .doc()
+            .doc(uid)
             .set({
           'role': 'member',
           'email': auth.currentUser?.email ?? '',
