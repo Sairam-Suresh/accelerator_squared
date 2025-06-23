@@ -339,6 +339,42 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                             onPressed: () {
                               final email = emailAddingController.text.trim();
                               if (email.isNotEmpty) {
+                                // Prevent adding self
+                                if (email == userState.email) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline_rounded,
+                                              color: Colors.red,
+                                              size: 24,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("You will automatically be added as the creator. Please do not add your own email."),
+                                          ],
+                                        ),
+                                        content: Text(
+                                          "You cannot add yourself as a project member.",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text("OK"),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  return;
+                                }
                                 // Check if the email belongs to a teacher
                                 if (isTeacher(email)) {
                                   showDialog(
@@ -677,6 +713,42 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                             onPressed: () {
                               final email = emailAddingController.text.trim();
                               if (email.isNotEmpty) {
+                                // Prevent adding self
+                                if (email == userState.email) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline_rounded,
+                                              color: Colors.red,
+                                              size: 24,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("You will automatically be added as the creator. Please do not add your own email."),
+                                          ],
+                                        ),
+                                        content: Text(
+                                          "You cannot add yourself as a project member.",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text("OK"),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  return;
+                                }
                                 // Check if the email belongs to a teacher
                                 if (isTeacher(email)) {
                                   showDialog(
