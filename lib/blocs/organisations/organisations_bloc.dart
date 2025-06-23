@@ -643,6 +643,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
       emit(OrganisationsLoading());
       try {
         String uid = auth.currentUser?.uid ?? '';
+        String userEmail = auth.currentUser?.email ?? '';
         if (uid.isEmpty) {
           emit(OrganisationsError("User not authenticated"));
           return;
@@ -655,6 +656,16 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .collection('members')
             .where('uid', isEqualTo: uid)
             .get();
+
+        // If not found by uid, try by email
+        if (userSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
+          userSnapshot = await firestore
+              .collection('organisations')
+              .doc(event.organisationId)
+              .collection('members')
+              .where('email', isEqualTo: userEmail)
+              .get();
+        }
 
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
