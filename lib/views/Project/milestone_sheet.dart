@@ -1,3 +1,5 @@
+import 'package:awesome_side_sheet/Enums/sheet_position.dart';
+import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:side_sheet_material3/side_sheet_material3.dart';
 
@@ -216,16 +218,17 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     size: 16,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-
-                    await showModalSideSheet(
-                      context,
+                  onTap: () {
+                    aweSideSheet(
+                      sheetPosition: SheetPosition.right,
+                      sheetWidth: MediaQuery.of(context).size.width / 3,
+                      context: context,
                       body: Padding(
                         padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
                         child: _buildTaskDetailSheet(index),
                       ),
-                      header: "Task Details",
+                      header: SizedBox(height: 20),
+                      onCancel: () => Navigator.of(context).pop(),
                     );
                   },
                 ),

@@ -52,3 +52,6 @@ macos/Runner.xcodeproj/project.pbxproj
 
 # FVM Version Cache
 .fvm/
+
+#Firebase
+.firebase/
