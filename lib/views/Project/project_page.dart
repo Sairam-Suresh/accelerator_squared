@@ -35,7 +35,8 @@ class ProjectPage extends StatefulWidget {
   State<ProjectPage> createState() => _ProjectPageState();
 }
 
-class _ProjectPageState extends State<ProjectPage> with TickerProviderStateMixin {
+class _ProjectPageState extends State<ProjectPage>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   List<Project> projects = [];
   List<ProjectRequest> projectRequests = [];
@@ -43,6 +44,8 @@ class _ProjectPageState extends State<ProjectPage> with TickerProviderStateMixin
   String currentOrgName = '';
   String currentOrgDescription = '';
   String currentJoinCode = '';
+
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -53,12 +56,8 @@ class _ProjectPageState extends State<ProjectPage> with TickerProviderStateMixin
     currentOrgName = widget.orgName;
     currentOrgDescription = widget.orgDescription;
     currentJoinCode = widget.joinCode;
-    
+
     // Initialize TabController with correct length based on user role
-    _tabController = TabController(
-      length: (userRole == 'teacher' || userRole == 'student_teacher') ? 4 : 2,
-      vsync: this,
-    );
   }
 
   @override
@@ -76,9 +75,10 @@ class _ProjectPageState extends State<ProjectPage> with TickerProviderStateMixin
     return BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
         if (state is OrganisationsLoaded) {
-          final updatedOrg = state.organisations
-              .where((org) => org.id == widget.organisationId)
-              .firstOrNull;
+          final updatedOrg =
+              state.organisations
+                  .where((org) => org.id == widget.organisationId)
+                  .firstOrNull;
           if (updatedOrg != null && mounted) {
             setState(() {
               projects = List.from(updatedOrg.projects);
@@ -193,119 +193,198 @@ class _ProjectPageState extends State<ProjectPage> with TickerProviderStateMixin
               tooltip: 'Refresh data',
             ),
           ],
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: (userRole == 'teacher' || userRole == 'student_teacher')
-                ? [
-                    Tab(icon: Icon(Icons.list), text: "Projects"),
-                    Tab(
-                      icon: Icon(Icons.auto_graph_rounded),
-                      text: "Statistics",
-                    ),
-                    Tab(
-                      icon: Icon(Icons.check_box_outlined),
-                      text: "Project Requests",
-                    ),
-                    Tab(icon: Icon(Icons.groups), text: "Members"),
-                  ]
-                : [
-                    Tab(icon: Icon(Icons.list), text: "Projects"),
-                    Tab(icon: Icon(Icons.groups), text: "Members"),
-                  ],
-          ),
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: userRole == 'member'
-              ? [
-                  SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.all(10),
-                      child: projects.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.folder_off,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'No projects found',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'There are no projects in this organisation yet.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Column(
-                              children: [
-                                Expanded(
-                                  child: GridView.count(
-                                    childAspectRatio: 1.5,
-                                    crossAxisCount: 3,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 10,
-                                    children: projects.map((project) {
-                                      return ProjectCard(
-                                        project: project,
-                                        organisationId: widget.organisationId,
-                                        isTeacher: userRole == 'teacher',
-                                        onTap: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) => ProjectDetails(
-                                                projectName: project.name,
-                                                projectDescription: project.description,
-                                              ),
+        body:
+            userRole == 'member'
+                ? Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border(
+                          right: BorderSide(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: NavigationRail(
+                        backgroundColor: Colors.transparent,
+                        onDestinationSelected: (value) {
+                          setState(() {
+                            _selectedIndex = value;
+                          });
+                        },
+                        labelType: NavigationRailLabelType.all,
+                        destinations: [
+                          NavigationRailDestination(
+                            icon: Icon(Icons.list),
+                            label: Text("Projects"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.groups),
+                            label: Text("Members"),
+                          ),
+                        ],
+
+                        selectedIndex: _selectedIndex,
+                      ),
+                    ),
+                    Expanded(
+                      child:
+                          _selectedIndex == 0
+                              ? SafeArea(
+                                child: Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child:
+                                      projects.isEmpty
+                                          ? Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.folder_off,
+                                                  size: 64,
+                                                  color: Colors.grey,
+                                                ),
+                                                SizedBox(height: 16),
+                                                Text(
+                                                  'No projects found',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.grey,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'There are no projects in this organisation yet.',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          );
-                                        },
-                                      );
-                                    }).toList(),
-                                  ),
+                                          )
+                                          : Column(
+                                            children: [
+                                              Expanded(
+                                                child: GridView.count(
+                                                  childAspectRatio: 1.5,
+                                                  crossAxisCount: 3,
+                                                  crossAxisSpacing: 10,
+                                                  mainAxisSpacing: 10,
+                                                  children:
+                                                      projects.map((project) {
+                                                        return ProjectCard(
+                                                          project: project,
+                                                          organisationId:
+                                                              widget
+                                                                  .organisationId,
+                                                          isTeacher:
+                                                              userRole ==
+                                                              'teacher',
+                                                          onTap: () {
+                                                            Navigator.of(
+                                                              context,
+                                                            ).push(
+                                                              MaterialPageRoute(
+                                                                builder:
+                                                                    (
+                                                                      context,
+                                                                    ) => ProjectDetails(
+                                                                      projectName:
+                                                                          project
+                                                                              .name,
+                                                                      projectDescription:
+                                                                          project
+                                                                              .description,
+                                                                    ),
+                                                              ),
+                                                            );
+                                                          },
+                                                        );
+                                                      }).toList(),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                 ),
-                              ],
-                            ),
+                              )
+                              : OrgMembers(
+                                teacherView: false,
+                                organisationId: widget.organisationId,
+                                organisationName: widget.orgName,
+                              ),
                     ),
-                  ),
-                  OrgMembers(
-                    teacherView: false,
-                    organisationId: widget.organisationId,
-                    organisationName: widget.orgName,
-                  ),
-                ]
-              : [
-                  TeacherProjectPage(
-                    orgName: widget.orgName,
-                    projects: projects,
-                    organisationId: widget.organisationId,
-                  ),
-                  OrgStatistics(projects: projects),
-                  ProjectRequests(
-                    organisationId: widget.organisationId,
-                    projectRequests: projectRequests,
-                  ),
-                  OrgMembers(
-                    teacherView: true,
-                    organisationId: widget.organisationId,
-                    organisationName: widget.orgName,
-                  ),
-                ],
-        ),
+                  ],
+                )
+                : Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border(
+                          right: BorderSide(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: NavigationRail(
+                        backgroundColor: Colors.transparent,
+                        onDestinationSelected: (value) {
+                          setState(() {
+                            _selectedIndex = value;
+                          });
+                        },
+                        labelType: NavigationRailLabelType.all,
+                        destinations: [
+                          NavigationRailDestination(
+                            icon: Icon(Icons.list),
+                            label: Text("Projects"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.auto_graph_rounded),
+                            label: Text("Statistics"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.check_box_outlined),
+                            label: Text("Project Requests"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.groups),
+                            label: Text("Members"),
+                          ),
+                        ],
+                        selectedIndex: _selectedIndex,
+                      ),
+                    ),
+                    Expanded(
+                      child:
+                          _selectedIndex == 0
+                              ? TeacherProjectPage(
+                                orgName: widget.orgName,
+                                projects: projects,
+                                organisationId: widget.organisationId,
+                              )
+                              : _selectedIndex == 1
+                              ? OrgStatistics(projects: projects)
+                              : _selectedIndex == 2
+                              ? ProjectRequests(
+                                organisationId: widget.organisationId,
+                                projectRequests: projectRequests,
+                              )
+                              : OrgMembers(
+                                teacherView: true,
+                                organisationId: widget.organisationId,
+                                organisationName: widget.orgName,
+                              ),
+                    ),
+                  ],
+                ),
       ),
     );
   }

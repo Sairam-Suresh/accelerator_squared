@@ -1,6 +1,7 @@
 import 'package:accelerator_squared/views/Project/comments/comments_sheet.dart';
+import 'package:awesome_side_sheet/Enums/sheet_position.dart';
+import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:side_sheet_material3/side_sheet_material3.dart';
 
 class CommentsDialog extends StatefulWidget {
   const CommentsDialog({
@@ -36,9 +37,13 @@ class _CommentsDialogState extends State<CommentsDialog> {
                     child: Padding(
                       padding: EdgeInsets.all(10),
                       child: ListTile(
-                        onTap: () async {
-                          showModalSideSheet(
-                            context,
+                        onTap: () {
+                          aweSideSheet(
+                            onCancel: () => Navigator.of(context).pop(),
+                            header: SizedBox(height: 20),
+                            sheetPosition: SheetPosition.right,
+                            sheetWidth: MediaQuery.of(context).size.width / 3,
+                            context: context,
                             body: Padding(
                               padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
                               child: CommentsSheet(
@@ -48,7 +53,6 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                 index: index,
                               ),
                             ),
-                            header: "Comment",
                           );
                         },
                         title: Text(

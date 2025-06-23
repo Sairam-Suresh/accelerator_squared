@@ -1,5 +1,6 @@
+import 'package:awesome_side_sheet/Enums/sheet_position.dart';
+import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:side_sheet_material3/side_sheet_material3.dart';
 
 class MilestoneSheet extends StatefulWidget {
   const MilestoneSheet({
@@ -22,34 +23,34 @@ class MilestoneSheet extends StatefulWidget {
 class _MilestoneSheetState extends State<MilestoneSheet> {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header section
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header section
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.flag_rounded,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 24,
+                  ),
                 ),
-                child: Icon(
-                  Icons.flag_rounded,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  size: 24,
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
+                SizedBox(width: 16),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -71,109 +72,112 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 24),
-        
-        // Details section
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              width: 1,
+              ],
             ),
-            borderRadius: BorderRadius.circular(16),
-            color: Theme.of(context).colorScheme.surface,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          SizedBox(height: 24),
+
+          // Details section
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline,
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Info rows
+                _buildInfoRow(
+                  Icons.person_rounded,
+                  "Assigned by",
+                  "placeholder",
+                ),
+                SizedBox(height: 12),
+                _buildInfoRow(
+                  Icons.calendar_today_rounded,
+                  "Due on",
+                  "placeholder",
+                ),
+                SizedBox(height: 12),
+                _buildInfoRow(Icons.folder_rounded, "Project", "Project 1"),
+                SizedBox(height: 20),
+
+                // Description
+                Text(
+                  "Description",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  widget.sampleMilestoneDescriptions[widget.index],
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 20),
+
+          // Action button
+          SizedBox(
+            height: 56,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              icon: Icon(Icons.send_rounded, size: 20),
+              label: Text(
+                "Send for Review",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          SizedBox(height: 24),
+
+          // Tasks section
+          Row(
             children: [
-              // Info rows
-              _buildInfoRow(Icons.person_rounded, "Assigned by", "placeholder"),
-              SizedBox(height: 12),
-              _buildInfoRow(Icons.calendar_today_rounded, "Due on", "placeholder"),
-              SizedBox(height: 12),
-              _buildInfoRow(Icons.folder_rounded, "Project", "Project 1"),
-              SizedBox(height: 20),
-              
-              // Description
+              Icon(
+                Icons.checklist_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              SizedBox(width: 8),
               Text(
-                "Description",
+                "Tasks",
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                widget.sampleMilestoneDescriptions[widget.index],
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
-              ),
             ],
           ),
-        ),
-        SizedBox(height: 20),
-        
-        // Action button
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-            ),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            icon: Icon(Icons.send_rounded, size: 20),
-            label: Text(
-              "Send for Review",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 24),
-        
-        // Tasks section
-        Row(
-          children: [
-            Icon(
-              Icons.checklist_rounded,
-              color: Theme.of(context).colorScheme.primary,
-              size: 20,
-            ),
-            SizedBox(width: 8),
-            Text(
-              "Tasks",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16),
-        
-        // Tasks list
-        Expanded(
-          child: ListView.separated(
+
+          SizedBox(height: 16),
+
+          // Tasks list
+          ListView.separated(
             itemBuilder: (context, index) {
               return Card(
                 elevation: 2,
@@ -196,10 +200,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   ),
                   title: Text(
                     widget.sampleTasksList[index],
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   subtitle: Padding(
                     padding: EdgeInsets.only(top: 8),
@@ -216,16 +217,17 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     size: 16,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-
-                    await showModalSideSheet(
-                      context,
+                  onTap: () {
+                    aweSideSheet(
+                      sheetPosition: SheetPosition.right,
+                      sheetWidth: MediaQuery.of(context).size.width / 3,
+                      context: context,
                       body: Padding(
                         padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
                         child: _buildTaskDetailSheet(index),
                       ),
-                      header: "Task Details",
+                      header: SizedBox(height: 20),
+                      onCancel: () => Navigator.of(context).pop(),
                     );
                   },
                 ),
@@ -235,9 +237,10 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
               return SizedBox(height: 8);
             },
             itemCount: widget.sampleTasksList.length,
+            shrinkWrap: true,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -325,7 +328,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
           ),
         ),
         SizedBox(height: 24),
-        
+
         // Task details
         Container(
           padding: EdgeInsets.all(20),
@@ -340,9 +343,13 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildInfoRow(Icons.calendar_today_rounded, "Due on", "X April 2025"),
+              _buildInfoRow(
+                Icons.calendar_today_rounded,
+                "Due on",
+                "X April 2025",
+              ),
               SizedBox(height: 20),
-              
+
               Text(
                 "Description",
                 style: TextStyle(
@@ -364,7 +371,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
           ),
         ),
         SizedBox(height: 24),
-        
+
         // Complete button
         SizedBox(
           width: double.infinity,
@@ -385,10 +392,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
             icon: Icon(Icons.check_rounded, size: 20),
             label: Text(
               "Mark as Completed",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ),

@@ -5,9 +5,10 @@ import 'package:accelerator_squared/views/Project/project_settings.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_members.dart'
     show ProjectMembersDialog;
 import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_details.dart';
+import 'package:awesome_side_sheet/Enums/sheet_position.dart';
+import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:side_sheet_material3/side_sheet_material3.dart';
 
 class ProjectDetails extends StatefulWidget {
   const ProjectDetails({
@@ -93,7 +94,10 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                 builder: (context) {
                   return StatefulBuilder(
                     builder: (context, setState) {
-                      return ProjectSettings();
+                      return ProjectSettings(
+                        projectName: widget.projectName,
+                        projectDetails: widget.projectDescription,
+                      );
                     },
                   );
                 },
@@ -222,9 +226,10 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                 child: Padding(
                                   padding: EdgeInsets.all(10),
                                   child: ListTile(
-                                    onTap: () async {
-                                      await showModalSideSheet(
-                                        context,
+                                    onTap: () {
+                                      aweSideSheet(
+                                        context: context,
+                                        sheetPosition: SheetPosition.right,
                                         body: Padding(
                                           padding: EdgeInsets.fromLTRB(
                                             20,
@@ -241,7 +246,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                             index: index,
                                           ),
                                         ),
-                                        header: "Milestone",
+                                        header: Text("Milestone"),
                                       );
                                     },
                                     title: Text(
