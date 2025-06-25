@@ -205,9 +205,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
               SizedBox(height: 16),
 
               // Due date input
-              TextField(
-                controller: dateFieldController,
-                readOnly: true,
+              GestureDetector(
                 onTap: () async {
                   final DateTime? pickedDate = await showDatePicker(
                     context: context,
@@ -224,30 +222,33 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                     });
                   }
                 },
-                decoration: InputDecoration(
-                  hintText: "dd/mm/yyyy",
-                  label: Text("Due Date"),
-                  prefixIcon: Icon(Icons.calendar_today_rounded),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.outline,
+                child: TextField(
+                  controller: dateFieldController,
+                  decoration: InputDecoration(
+                    hintText: "dd/mm/yyyy",
+                    label: Text("Due Date"),
+                    prefixIcon: Icon(Icons.calendar_today_rounded),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest.withAlpha(77),
                   ),
-                  filled: true,
-                  fillColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest.withAlpha(77),
                 ),
               ),
               SizedBox(height: 24),

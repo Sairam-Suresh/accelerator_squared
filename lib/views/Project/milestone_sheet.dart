@@ -1,20 +1,18 @@
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MilestoneSheet extends StatefulWidget {
   const MilestoneSheet({
     super.key,
-    required this.sampleMilestoneList,
-    required this.sampleMilestoneDescriptions,
-    required this.sampleTasksList,
-    required this.index,
+    required this.milestone,
+    required this.projectTitle,
   });
 
-  final List sampleMilestoneList;
-  final List sampleMilestoneDescriptions;
-  final List sampleTasksList;
-  final int index;
+  final Map<String, dynamic> milestone;
+  final String projectTitle;
 
   @override
   State<MilestoneSheet> createState() => _MilestoneSheetState();
@@ -23,6 +21,27 @@ class MilestoneSheet extends StatefulWidget {
 class _MilestoneSheetState extends State<MilestoneSheet> {
   @override
   Widget build(BuildContext context) {
+    final milestone = widget.milestone;
+    final projectTitle = widget.projectTitle;
+    final tasks = (milestone['tasks'] as List?) ?? [];
+    // Format due date
+    String formattedDueDate = 'Unknown';
+    final dueDateRaw = milestone['dueDate'];
+    if (dueDateRaw != null) {
+      DateTime? dueDate;
+      if (dueDateRaw is DateTime) {
+        dueDate = dueDateRaw;
+      } else if (dueDateRaw is String) {
+        try {
+          dueDate = DateTime.parse(dueDateRaw);
+        } catch (_) {}
+      } else if (dueDateRaw is Timestamp) {
+        dueDate = dueDateRaw.toDate();
+      }
+      if (dueDate != null) {
+        formattedDueDate = DateFormat('dd/MM/yy').format(dueDate);
+      }
+    }
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -54,7 +73,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.sampleMilestoneList[widget.index],
+                      milestone['name'] ?? '',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -95,16 +114,16 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 _buildInfoRow(
                   Icons.person_rounded,
                   "Assigned by",
-                  "placeholder",
+                  milestone['createdByEmail'] ?? 'Unknown',
                 ),
                 SizedBox(height: 12),
                 _buildInfoRow(
                   Icons.calendar_today_rounded,
                   "Due on",
-                  "placeholder",
+                  formattedDueDate,
                 ),
                 SizedBox(height: 12),
-                _buildInfoRow(Icons.folder_rounded, "Project", "Project 1"),
+                _buildInfoRow(Icons.folder_rounded, "Project", projectTitle),
                 SizedBox(height: 20),
 
                 // Description
@@ -118,7 +137,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  widget.sampleMilestoneDescriptions[widget.index],
+                  milestone['description'] ?? '',
                   style: TextStyle(
                     fontSize: 16,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -199,13 +218,13 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                   ),
                   title: Text(
-                    widget.sampleTasksList[index],
+                    tasks[index]['name'] ?? '',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   subtitle: Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
-                      widget.sampleMilestoneDescriptions[index],
+                      tasks[index]['description'] ?? '',
                       maxLines: 2,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -224,7 +243,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                       context: context,
                       body: Padding(
                         padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
-                        child: _buildTaskDetailSheet(index),
+                        child: _buildTaskDetailSheet(index, tasks),
                       ),
                       header: SizedBox(height: 20),
                       onCancel: () => Navigator.of(context).pop(),
@@ -233,10 +252,8 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 ),
               );
             },
-            separatorBuilder: (context, index) {
-              return SizedBox(height: 8);
-            },
-            itemCount: widget.sampleTasksList.length,
+            separatorBuilder: (context, index) => SizedBox(height: 8),
+            itemCount: tasks.length,
             shrinkWrap: true,
           ),
         ],
@@ -273,7 +290,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
     );
   }
 
-  Widget _buildTaskDetailSheet(int index) {
+  Widget _buildTaskDetailSheet(int index, [List? tasksOverride]) {
+    final milestone = widget.milestone;
+    final tasks = tasksOverride ?? (milestone['tasks'] as List?) ?? [];
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +324,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.sampleTasksList[index],
+                      tasks[index]['name'] ?? '',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -346,7 +365,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
               _buildInfoRow(
                 Icons.calendar_today_rounded,
                 "Due on",
-                "X April 2025",
+                tasks[index]['dueDate'] != null
+                    ? tasks[index]['dueDate'].toString()
+                    : 'Unknown',
               ),
               SizedBox(height: 20),
 
@@ -360,7 +381,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
               ),
               SizedBox(height: 8),
               Text(
-                widget.sampleMilestoneDescriptions[index],
+                tasks[index]['description'] ?? '',
                 style: TextStyle(
                   fontSize: 16,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -99,7 +99,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        heroTag: "milestone_fab",
         onPressed: () {
           showDialog(
             context: context,
@@ -144,9 +143,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                           ),
                           SizedBox(height: 10),
                           Container(
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width / 1.5,
-                            ),
                             child: Text(
                               widget.project.description,
                               style: TextStyle(fontSize: 17.5),
@@ -281,6 +277,25 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       child: Padding(
                                         padding: EdgeInsets.all(10),
                                         child: ListTile(
+                                          leading: Container(
+                                            padding: EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .primaryContainer,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(
+                                              Icons.folder_rounded,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                              size: 24,
+                                            ),
+                                          ),
                                           onTap: () {
                                             aweSideSheet(
                                               context: context,
@@ -294,15 +309,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                   10,
                                                 ),
                                                 child: MilestoneSheet(
-                                                  sampleMilestoneDescriptions: [
-                                                    milestone['description'] ??
-                                                        '',
-                                                  ],
-                                                  sampleMilestoneList: [
-                                                    milestone['name'] ?? '',
-                                                  ],
-                                                  sampleTasksList: const [],
-                                                  index: 0,
+                                                  milestone: milestone,
+                                                  projectTitle:
+                                                      widget.project.name,
                                                 ),
                                               ),
                                               header: SizedBox(height: 20),

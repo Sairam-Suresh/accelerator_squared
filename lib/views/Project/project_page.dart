@@ -92,7 +92,6 @@ class _ProjectPageState extends State<ProjectPage>
       },
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
-          heroTag: "project_fab",
           onPressed: () {
             showDialog(
               context: context,

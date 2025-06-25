@@ -266,6 +266,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             'dueDate': event.dueDate,
             'createdAt': FieldValue.serverTimestamp(),
             'createdBy': uid,
+            'createdByEmail': auth.currentUser?.email ?? '',
           });
       emit(ProjectActionSuccess('Milestone added successfully'));
       add(FetchProjectsEvent(orgId));
