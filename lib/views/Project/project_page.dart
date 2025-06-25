@@ -71,25 +71,39 @@ class _ProjectPageState extends State<ProjectPage>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<OrganisationsBloc, OrganisationsState>(
-      listener: (context, state) {
-        if (state is OrganisationsLoaded) {
-          final updatedOrg =
-              state.organisations
-                  .where((org) => org.id == widget.organisationId)
-                  .firstOrNull;
-          if (updatedOrg != null && mounted) {
-            setState(() {
-              projects = List.from(updatedOrg.projects);
-              projectRequests = List.from(updatedOrg.projectRequests);
-              userRole = updatedOrg.userRole;
-              currentOrgName = updatedOrg.name;
-              currentOrgDescription = updatedOrg.description;
-              currentJoinCode = updatedOrg.joinCode;
-            });
-          }
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<OrganisationsBloc, OrganisationsState>(
+          listener: (context, state) {
+            if (state is OrganisationsLoaded) {
+              final updatedOrg =
+                  state.organisations
+                      .where((org) => org.id == widget.organisationId)
+                      .firstOrNull;
+              if (updatedOrg != null && mounted) {
+                setState(() {
+                  projects = List.from(updatedOrg.projects);
+                  projectRequests = List.from(updatedOrg.projectRequests);
+                  userRole = updatedOrg.userRole;
+                  currentOrgName = updatedOrg.name;
+                  currentOrgDescription = updatedOrg.description;
+                  currentJoinCode = updatedOrg.joinCode;
+                });
+              }
+            }
+          },
+        ),
+        BlocListener<ProjectsBloc, ProjectsState>(
+          listener: (context, state) {
+            if (state is ProjectActionSuccess) {
+              // Refresh the project list after a project is updated
+              context.read<ProjectsBloc>().add(
+                FetchProjectsEvent(widget.organisationId),
+              );
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {
@@ -306,28 +320,51 @@ class _ProjectPageState extends State<ProjectPage>
                                                               'teacher',
                                                           onTap: () {
                                                             Navigator.of(
-                                                              context,
-                                                            ).push(
-                                                              MaterialPageRoute(
-                                                                builder:
-                                                                    (
-                                                                      context,
-                                                                    ) => BlocProvider(
-                                                                      create:
-                                                                          (_) =>
-                                                                              ProjectsBloc(),
-                                                                      child: ProjectDetails(
-                                                                        organisationId:
-                                                                            widget.organisationId,
-                                                                        project:
-                                                                            project,
-                                                                        isTeacher:
-                                                                            widget.userRole !=
-                                                                            "member",
-                                                                      ),
-                                                                    ),
-                                                              ),
-                                                            );
+                                                                  context,
+                                                                )
+                                                                .push(
+                                                                  MaterialPageRoute(
+                                                                    builder:
+                                                                        (
+                                                                          context,
+                                                                        ) => BlocProvider(
+                                                                          create:
+                                                                              (_) =>
+                                                                                  ProjectsBloc(),
+                                                                          child: ProjectDetails(
+                                                                            organisationId:
+                                                                                widget.organisationId,
+                                                                            project:
+                                                                                project,
+                                                                            isTeacher:
+                                                                                widget.userRole !=
+                                                                                "member",
+                                                                            key: ValueKey(
+                                                                              project.id,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                  ),
+                                                                )
+                                                                .then((_) {
+                                                                  context
+                                                                      .read<
+                                                                        ProjectsBloc
+                                                                      >()
+                                                                      .add(
+                                                                        FetchProjectsEvent(
+                                                                          widget
+                                                                              .organisationId,
+                                                                        ),
+                                                                      );
+                                                                  context
+                                                                      .read<
+                                                                        OrganisationsBloc
+                                                                      >()
+                                                                      .add(
+                                                                        FetchOrganisationsEvent(),
+                                                                      );
+                                                                });
                                                           },
                                                         );
                                                       }).toList(),
@@ -437,29 +474,53 @@ class _ProjectPageState extends State<ProjectPage>
                                                   isTeacher:
                                                       userRole == 'teacher',
                                                   onTap: () {
-                                                    Navigator.of(context).push(
-                                                      MaterialPageRoute(
-                                                        builder:
-                                                            (
-                                                              context,
-                                                            ) => BlocProvider(
-                                                              create:
-                                                                  (_) =>
-                                                                      ProjectsBloc(),
-                                                              child: ProjectDetails(
-                                                                organisationId:
-                                                                    widget
-                                                                        .organisationId,
-                                                                project:
-                                                                    project,
-                                                                isTeacher:
-                                                                    widget
-                                                                        .userRole !=
-                                                                    "member",
-                                                              ),
-                                                            ),
-                                                      ),
-                                                    );
+                                                    Navigator.of(context)
+                                                        .push(
+                                                          MaterialPageRoute(
+                                                            builder:
+                                                                (
+                                                                  context,
+                                                                ) => BlocProvider(
+                                                                  create:
+                                                                      (_) =>
+                                                                          ProjectsBloc(),
+                                                                  child: ProjectDetails(
+                                                                    organisationId:
+                                                                        widget
+                                                                            .organisationId,
+                                                                    project:
+                                                                        project,
+                                                                    isTeacher:
+                                                                        widget
+                                                                            .userRole !=
+                                                                        "member",
+                                                                    key: ValueKey(
+                                                                      project
+                                                                          .id,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                          ),
+                                                        )
+                                                        .then((_) {
+                                                          context
+                                                              .read<
+                                                                ProjectsBloc
+                                                              >()
+                                                              .add(
+                                                                FetchProjectsEvent(
+                                                                  widget
+                                                                      .organisationId,
+                                                                ),
+                                                              );
+                                                          context
+                                                              .read<
+                                                                OrganisationsBloc
+                                                              >()
+                                                              .add(
+                                                                FetchOrganisationsEvent(),
+                                                              );
+                                                        });
                                                   },
                                                 );
                                               }).toList(),

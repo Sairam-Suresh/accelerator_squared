@@ -186,6 +186,19 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             'description': event.description,
             'updatedAt': FieldValue.serverTimestamp(),
           });
+      // Emit optimistic state with updated project info
+      final optimisticProject = ProjectWithDetails(
+        id: projectId,
+        data: {
+          'id': projectId,
+          'title': event.title,
+          'description': event.description,
+          // Optionally add more fields if needed
+        },
+        milestones: [],
+        comments: [],
+      );
+      emit(ProjectsLoaded([optimisticProject]));
       emit(ProjectActionSuccess('Project updated successfully'));
       add(FetchProjectsEvent(orgId));
     } catch (e) {
