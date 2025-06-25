@@ -1,5 +1,6 @@
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
+import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/firebase_options.dart';
 import 'package:accelerator_squared/theme.dart';
 import 'package:accelerator_squared/views/auth_wrapper.dart';
@@ -32,7 +33,9 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initializeFirebase() async {
     try {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       if (mounted) {
         setState(() {
           _firebaseInitialized = true;
@@ -71,6 +74,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<OrganisationsBloc>(
           create: (context) => OrganisationsBloc(),
         ),
+        BlocProvider<ProjectsBloc>(create: (context) => ProjectsBloc()),
       ],
       child: ChangeNotifierProvider(
         create: (_) => ThemeProvider(),

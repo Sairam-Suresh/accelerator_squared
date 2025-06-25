@@ -2,23 +2,25 @@ import 'package:equatable/equatable.dart';
 
 class Project extends Equatable {
   final String id;
-  final String name;
+  final String title;
   final String description;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   const Project({
     required this.id,
-    required this.name,
+    required this.title,
     required this.description,
     required this.createdAt,
     required this.updatedAt,
   });
 
+  String get name => title;
+
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
       id: json['id'] as String,
-      name: json['name'] as String,
+      title: json['title'] as String? ?? json['name'] as String? ?? '',
       description: json['description'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
@@ -28,7 +30,7 @@ class Project extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'title': title,
       'description': description,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -36,7 +38,7 @@ class Project extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, description, createdAt, updatedAt];
+  List<Object?> get props => [id, title, description, createdAt, updatedAt];
 }
 
 class ProjectRequest extends Equatable {
@@ -66,7 +68,11 @@ class ProjectRequest extends Equatable {
       requestedBy: json['requestedBy'] as String,
       requesterEmail: json['requesterEmail'] as String,
       requestedAt: DateTime.parse(json['requestedAt'] as String),
-      memberEmails: (json['memberEmails'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      memberEmails:
+          (json['memberEmails'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
     );
   }
 
@@ -83,5 +89,13 @@ class ProjectRequest extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, title, description, requestedBy, requesterEmail, requestedAt, memberEmails];
+  List<Object?> get props => [
+    id,
+    title,
+    description,
+    requestedBy,
+    requesterEmail,
+    requestedAt,
+    memberEmails,
+  ];
 }

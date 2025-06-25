@@ -1,7 +1,13 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 class ProjectFilesDialog extends StatefulWidget {
-  const ProjectFilesDialog({super.key});
+  const ProjectFilesDialog({super.key, required this.isTeacher});
+
+  final bool isTeacher;
 
   @override
   State<ProjectFilesDialog> createState() => _ProjectFilesDialogState();
@@ -13,9 +19,7 @@ class _ProjectFilesDialogState extends State<ProjectFilesDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       content: Container(
         width: MediaQuery.of(context).size.width / 2,
         height: MediaQuery.of(context).size.height / 1.3,
@@ -36,7 +40,7 @@ class _ProjectFilesDialogState extends State<ProjectFilesDialog> {
               ),
             ),
             SizedBox(height: 24),
-            
+
             // Title
             Text(
               "Project Files",
@@ -47,178 +51,220 @@ class _ProjectFilesDialogState extends State<ProjectFilesDialog> {
               ),
             ),
             SizedBox(height: 32),
-            
-            // Project Brief section
-            Row(
-              children: [
-                Icon(
-                  Icons.description_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  "Project Brief",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(16),
-                leading: Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.description_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                title: Text(
-                  "Project Brief",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Text(
-                  "2MB",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                trailing: IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.edit_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 24),
-            
-            // Files section
-            Row(
-              children: [
-                Icon(
-                  Icons.insert_drive_file_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  "Files",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            
-            // Files list
+
             Expanded(
-              child: filenameList.isNotEmpty
-                  ? ListView.builder(
-                      itemBuilder: (context, index) {
-                        return Card(
-                          elevation: 2,
-                          margin: EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Project Brief section
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.description_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Project Brief",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.all(16),
-                            leading: Container(
-                              padding: EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                _getFileIcon(filenameList[index]),
-                                color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                size: 24,
-                              ),
-                            ),
-                            title: Text(
-                              filenameList[index],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            subtitle: Text(
-                              "12KB",
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            trailing: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  filenameList.remove(filenameList[index]);
-                                });
-                              },
-                              icon: Icon(
-                                Icons.delete_rounded,
-                                color: Colors.red,
-                              ),
-                            ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.all(16),
+                        leading: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        );
-                      },
-                      itemCount: filenameList.length,
-                    )
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.folder_open_rounded,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          child: Icon(
+                            Icons.description_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 24,
                           ),
-                          SizedBox(height: 16),
-                          Text(
-                            "No files uploaded yet",
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        ),
+                        title: Text(
+                          "Project Brief",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            "Upload files to get started",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                        ),
+                        subtitle: Text(
+                          "2MB",
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                        ],
+                        ),
+                        trailing:
+                            widget.isTeacher
+                                ? IconButton(
+                                  onPressed: () async {
+                                    FilePickerResult? result =
+                                        await FilePicker.platform.pickFiles();
+
+                                    if (result != null) {
+                                      Uint8List? fileBytes =
+                                          result.files.first.bytes;
+                                      String filename = result.files.first.name;
+
+                                      // upload the file to firebase storage
+                                    }
+                                  },
+                                  icon: Icon(
+                                    Icons.edit_rounded,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                )
+                                : SizedBox(),
                       ),
                     ),
+                    SizedBox(height: 24),
+
+                    // Files section
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.insert_drive_file_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Files",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+
+                    // Files list
+                    filenameList.isNotEmpty
+                        ? ListView.builder(
+                          itemBuilder: (context, index) {
+                            return Card(
+                              elevation: 2,
+                              margin: EdgeInsets.only(bottom: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListTile(
+                                contentPadding: EdgeInsets.all(16),
+                                leading: Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    _getFileIcon(filenameList[index]),
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSecondaryContainer,
+                                    size: 24,
+                                  ),
+                                ),
+                                title: Text(
+                                  filenameList[index],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  "12KB",
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                trailing: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      filenameList.remove(filenameList[index]);
+                                    });
+                                  },
+                                  icon: Icon(
+                                    Icons.delete_rounded,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          itemCount: filenameList.length,
+                          shrinkWrap: true,
+                        )
+                        : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.folder_open_rounded,
+                                size: 64,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                "No files uploaded yet",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                "Upload files to get started",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                  ],
+                ),
+              ),
             ),
+
             SizedBox(height: 24),
-            
+
             // Action buttons
             Row(
               children: [
@@ -226,14 +272,30 @@ class _ProjectFilesDialogState extends State<ProjectFilesDialog> {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.secondary,
-                      foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onSecondary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       padding: EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       // Add file upload functionality
+
+                      FilePickerResult? result = await FilePicker.platform
+                          .pickFiles(allowMultiple: true);
+
+                      if (result != null) {
+                        List<String?> fileBytes =
+                            result.files
+                                .map((file) => file.bytes.toString())
+                                .toList();
+
+                        List<String?> filenames =
+                            result.files.map((file) => file.name).toList();
+
+                        print(filenames);
+                      }
                     },
                     icon: Icon(Icons.upload_rounded, size: 20),
                     label: Text(

@@ -20,7 +20,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
       try {
         String uid = auth.currentUser?.uid ?? '';
         String userEmail = auth.currentUser?.email ?? '';
-        
+
         if (uid.isEmpty) {
           emit(OrganisationsError("User not authenticated"));
           return;
@@ -35,7 +35,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .timeout(const Duration(seconds: 10));
 
         QuerySnapshot emailMemberships;
-        
+
         if (uidMemberships.docs.isEmpty && userEmail.isNotEmpty) {
           emailMemberships = await firestore
               .collectionGroup('members')
@@ -56,24 +56,33 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        Set<String> orgIds = allMemberships
-            .map((doc) => doc.reference.parent.parent?.id)
-            .where((id) => id != null)
-            .cast<String>()
-            .toSet();
+        Set<String> orgIds =
+            allMemberships
+                .map((doc) => doc.reference.parent.parent?.id)
+                .where((id) => id != null)
+                .cast<String>()
+                .toSet();
 
         List<Future<void>> organisationFutures = [];
-        
+
         for (String orgId in orgIds) {
-          organisationFutures.add(_loadOrganisationDataById(orgId, uid, userEmail, organisations));
+          organisationFutures.add(
+            _loadOrganisationDataById(orgId, uid, userEmail, organisations),
+          );
         }
 
-        await Future.wait(organisationFutures).timeout(const Duration(seconds: 15));
+        await Future.wait(
+          organisationFutures,
+        ).timeout(const Duration(seconds: 15));
 
         emit(OrganisationsLoaded(organisations));
       } catch (e) {
         if (e.toString().contains('timeout')) {
-          emit(OrganisationsError("Request timed out. Please check your connection and try again."));
+          emit(
+            OrganisationsError(
+              "Request timed out. Please check your connection and try again.",
+            ),
+          );
         } else {
           emit(OrganisationsError(e.toString()));
         }
@@ -138,21 +147,25 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         // If not found by uid, try by email
-        if (userSnapshot.docs.isEmpty && auth.currentUser?.email != null && auth.currentUser!.email!.isNotEmpty) {
-          userSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection('members')
-              .where('email', isEqualTo: auth.currentUser!.email)
-              .get();
+        if (userSnapshot.docs.isEmpty &&
+            auth.currentUser?.email != null &&
+            auth.currentUser!.email!.isNotEmpty) {
+          userSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection('members')
+                  .where('email', isEqualTo: auth.currentUser!.email)
+                  .get();
         }
 
         if (userSnapshot.docs.isEmpty) {
@@ -160,28 +173,35 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher' && userRole != 'student_teacher') {
-          emit(OrganisationsError("Only teachers and student teachers can create projects directly. Please submit a project request instead."));
+          emit(
+            OrganisationsError(
+              "Only teachers and student teachers can create projects directly. Please submit a project request instead.",
+            ),
+          );
           return;
         }
 
         // Verify that all member emails exist in the organisation
         List<String> verifiedMemberEmails = [];
         for (String email in event.memberEmails) {
-          QuerySnapshot memberSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection('members')
-              .where('email', isEqualTo: email)
-              .get();
+          QuerySnapshot memberSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection('members')
+                  .where('email', isEqualTo: email)
+                  .get();
 
           if (memberSnapshot.docs.isNotEmpty) {
-            Map<String, dynamic> memberData = memberSnapshot.docs.first.data() as Map<String, dynamic>;
+            Map<String, dynamic> memberData =
+                memberSnapshot.docs.first.data() as Map<String, dynamic>;
             String memberRole = memberData['role'] ?? 'member';
-            
+
             if (memberRole != 'teacher') {
               verifiedMemberEmails.add(email);
             }
@@ -189,7 +209,11 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         if (verifiedMemberEmails.isEmpty) {
-          emit(OrganisationsError("You must add at least 1 non-teacher member to the project"));
+          emit(
+            OrganisationsError(
+              "You must add at least 1 non-teacher member to the project",
+            ),
+          );
           return;
         }
 
@@ -223,7 +247,12 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           try {
             final methods = await auth.fetchSignInMethodsForEmail(email);
             if (methods.isNotEmpty) {
-              final userQuery = await firestore.collection('users').where('email', isEqualTo: email).limit(1).get();
+              final userQuery =
+                  await firestore
+                      .collection('users')
+                      .where('email', isEqualTo: email)
+                      .limit(1)
+                      .get();
               if (userQuery.docs.isNotEmpty) {
                 memberUid = userQuery.docs.first.id;
               }
@@ -258,17 +287,19 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
 
         List<String> filteredMemberEmails = [];
         for (String email in event.memberEmails) {
-          QuerySnapshot memberSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection('members')
-              .where('email', isEqualTo: email)
-              .get();
+          QuerySnapshot memberSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection('members')
+                  .where('email', isEqualTo: email)
+                  .get();
 
           if (memberSnapshot.docs.isNotEmpty) {
-            Map<String, dynamic> memberData = memberSnapshot.docs.first.data() as Map<String, dynamic>;
+            Map<String, dynamic> memberData =
+                memberSnapshot.docs.first.data() as Map<String, dynamic>;
             String memberRole = memberData['role'] ?? 'member';
-            
+
             if (memberRole != 'teacher') {
               filteredMemberEmails.add(email);
             }
@@ -308,39 +339,45 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher') {
-          emit(OrganisationsError("Only teachers can approve project requests"));
+          emit(
+            OrganisationsError("Only teachers can approve project requests"),
+          );
           return;
         }
 
-        DocumentSnapshot requestDoc = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('projectRequests')
-            .doc(event.requestId)
-            .get();
+        DocumentSnapshot requestDoc =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('projectRequests')
+                .doc(event.requestId)
+                .get();
 
         if (!requestDoc.exists) {
           emit(OrganisationsError("Project request not found"));
           return;
         }
 
-        Map<String, dynamic> requestData = requestDoc.data() as Map<String, dynamic>;
+        Map<String, dynamic> requestData =
+            requestDoc.data() as Map<String, dynamic>;
         String projectId = const Uuid().v4();
         DocumentReference projectRef = firestore
             .collection('organisations')
@@ -386,19 +423,21 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher') {
@@ -457,19 +496,21 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         // Check if user is a teacher in the organisation
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher') {
@@ -484,9 +525,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         await firestore
             .collection('organisations')
             .doc(event.organisationId)
-            .update({
-          'joinCode': newJoinCode,
-        });
+            .update({'joinCode': newJoinCode});
 
         add(FetchOrganisationsEvent());
       } catch (e) {
@@ -499,17 +538,18 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
       try {
         String uid = auth.currentUser?.uid ?? '';
         String userEmail = auth.currentUser?.email ?? '';
-        
+
         if (uid.isEmpty) {
           emit(OrganisationsError("User not authenticated"));
           return;
         }
 
         // Find organisation by join code
-        QuerySnapshot orgSnapshot = await firestore
-            .collection('organisations')
-            .where('joinCode', isEqualTo: event.joinCode.toUpperCase())
-            .get();
+        QuerySnapshot orgSnapshot =
+            await firestore
+                .collection('organisations')
+                .where('joinCode', isEqualTo: event.joinCode.toUpperCase())
+                .get();
 
         if (orgSnapshot.docs.isEmpty) {
           emit(OrganisationsError("Invalid join code"));
@@ -519,25 +559,29 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         String orgId = orgSnapshot.docs.first.id;
 
         // Check if user is already a member (try by uid first, then email)
-        QuerySnapshot memberSnapshot = await firestore
-            .collection('organisations')
-            .doc(orgId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot memberSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(orgId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         // If not found by uid, try by email
         if (memberSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
-          memberSnapshot = await firestore
-              .collection('organisations')
-              .doc(orgId)
-              .collection('members')
-              .where('email', isEqualTo: userEmail)
-              .get();
+          memberSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(orgId)
+                  .collection('members')
+                  .where('email', isEqualTo: userEmail)
+                  .get();
         }
 
         if (memberSnapshot.docs.isNotEmpty) {
-          emit(OrganisationsError("You are already a member of this organisation"));
+          emit(
+            OrganisationsError("You are already a member of this organisation"),
+          );
           return;
         }
 
@@ -548,13 +592,13 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .collection('members')
             .doc(uid)
             .set({
-          'role': 'member',
-          'email': auth.currentUser?.email ?? '',
-          'uid': uid,
-          'status': 'active',
-          'addedAt': FieldValue.serverTimestamp(),
-          'addedBy': uid,
-        });
+              'role': 'member',
+              'email': auth.currentUser?.email ?? '',
+              'uid': uid,
+              'status': 'active',
+              'addedAt': FieldValue.serverTimestamp(),
+              'addedBy': uid,
+            });
 
         add(FetchOrganisationsEvent());
       } catch (e) {
@@ -572,19 +616,21 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         // Check if user is a teacher in the organisation
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher') {
@@ -616,35 +662,44 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         // Check if user is a teacher in the organisation
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher') {
-          emit(OrganisationsError("Only full teachers can delete organisations"));
+          emit(
+            OrganisationsError("Only full teachers can delete organisations"),
+          );
           return;
         }
 
         // Delete all subcollections first
-        List<String> subcollections = ['members', 'projects', 'projectRequests'];
-        
+        List<String> subcollections = [
+          'members',
+          'projects',
+          'projectRequests',
+        ];
+
         for (String subcollection in subcollections) {
-          QuerySnapshot subcollectionSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection(subcollection)
-              .get();
+          QuerySnapshot subcollectionSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection(subcollection)
+                  .get();
 
           // Delete all documents in the subcollection
           for (QueryDocumentSnapshot doc in subcollectionSnapshot.docs) {
@@ -675,21 +730,23 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         // Check if user has permission to change roles
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         // If not found by uid, try by email
         if (userSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
-          userSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection('members')
-              .where('email', isEqualTo: userEmail)
-              .get();
+          userSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection('members')
+                  .where('email', isEqualTo: userEmail)
+                  .get();
         }
 
         if (userSnapshot.docs.isEmpty) {
@@ -697,11 +754,16 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher' && userRole != 'student_teacher') {
-          emit(OrganisationsError("Only teachers and student teachers can change member roles"));
+          emit(
+            OrganisationsError(
+              "Only teachers and student teachers can change member roles",
+            ),
+          );
           return;
         }
 
@@ -711,9 +773,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .doc(event.organisationId)
             .collection('members')
             .doc(event.memberId)
-            .update({
-          'role': event.newRole,
-        });
+            .update({'role': event.newRole});
 
         add(FetchOrganisationsEvent());
       } catch (e) {
@@ -731,23 +791,29 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         // Check if user has permission to remove members
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         if (userSnapshot.docs.isEmpty) {
           emit(OrganisationsError("User not found in organisation"));
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher' && userRole != 'student_teacher') {
-          emit(OrganisationsError("Only teachers and student teachers can remove members"));
+          emit(
+            OrganisationsError(
+              "Only teachers and student teachers can remove members",
+            ),
+          );
           return;
         }
 
@@ -770,28 +836,30 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
       try {
         String uid = auth.currentUser?.uid ?? '';
         String userEmail = auth.currentUser?.email ?? '';
-        
+
         if (uid.isEmpty) {
           emit(OrganisationsError("User not authenticated"));
           return;
         }
 
         // Get the current user's member document
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         // If not found by uid, try by email
         if (userSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
-          userSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection('members')
-              .where('email', isEqualTo: userEmail)
-              .get();
+          userSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection('members')
+                  .where('email', isEqualTo: userEmail)
+                  .get();
         }
 
         if (userSnapshot.docs.isEmpty) {
@@ -799,21 +867,27 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
         String userMemberId = userSnapshot.docs.first.id;
 
         // If user is a teacher, check if they are the last teacher
         if (userRole == 'teacher') {
-          QuerySnapshot teachersSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection('members')
-              .where('role', isEqualTo: 'teacher')
-              .get();
+          QuerySnapshot teachersSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection('members')
+                  .where('role', isEqualTo: 'teacher')
+                  .get();
 
           if (teachersSnapshot.docs.length <= 1) {
-            emit(OrganisationsError("Cannot leave organisation. You are the last teacher. Please assign another teacher before leaving."));
+            emit(
+              OrganisationsError(
+                "Cannot leave organisation. You are the last teacher. Please assign another teacher before leaving.",
+              ),
+            );
             return;
           }
         }
@@ -837,28 +911,30 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
       try {
         String uid = auth.currentUser?.uid ?? '';
         String userEmail = auth.currentUser?.email ?? '';
-        
+
         if (uid.isEmpty) {
           emit(OrganisationsError("User not authenticated"));
           return;
         }
 
         // Check if user is a teacher or student teacher
-        QuerySnapshot userSnapshot = await firestore
-            .collection('organisations')
-            .doc(event.organisationId)
-            .collection('members')
-            .where('uid', isEqualTo: uid)
-            .get();
+        QuerySnapshot userSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('members')
+                .where('uid', isEqualTo: uid)
+                .get();
 
         // If not found by uid, try by email
         if (userSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
-          userSnapshot = await firestore
-              .collection('organisations')
-              .doc(event.organisationId)
-              .collection('members')
-              .where('email', isEqualTo: userEmail)
-              .get();
+          userSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(event.organisationId)
+                  .collection('members')
+                  .where('email', isEqualTo: userEmail)
+                  .get();
         }
 
         if (userSnapshot.docs.isEmpty) {
@@ -866,11 +942,16 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        Map<String, dynamic> userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData =
+            userSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = userData['role'] ?? 'member';
 
         if (userRole != 'teacher' && userRole != 'student_teacher') {
-          emit(OrganisationsError("Only teachers and student teachers can update organisation information"));
+          emit(
+            OrganisationsError(
+              "Only teachers and student teachers can update organisation information",
+            ),
+          );
           return;
         }
 
@@ -878,10 +959,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         await firestore
             .collection('organisations')
             .doc(event.organisationId)
-            .update({
-              'name': event.name,
-              'description': event.description,
-            });
+            .update({'name': event.name, 'description': event.description});
 
         add(FetchOrganisationsEvent());
       } catch (e) {
@@ -925,7 +1003,8 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
 
       if (membersSnapshot.docs.isNotEmpty) {
         Map<String, dynamic> data = orgDoc.data() as Map<String, dynamic>;
-        Map<String, dynamic> memberData = membersSnapshot.docs.first.data() as Map<String, dynamic>;
+        Map<String, dynamic> memberData =
+            membersSnapshot.docs.first.data() as Map<String, dynamic>;
         String userRole = memberData['role'] ?? 'member';
 
         List<Future<QuerySnapshot>> subcollectionQueries = [
@@ -946,46 +1025,61 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
               .get(),
         ];
 
-        List<QuerySnapshot> results = await Future.wait(subcollectionQueries).timeout(const Duration(seconds: 10));
+        List<QuerySnapshot> results = await Future.wait(
+          subcollectionQueries,
+        ).timeout(const Duration(seconds: 10));
         QuerySnapshot projectsSnapshot = results[0];
         QuerySnapshot projectRequestsSnapshot = results[1];
         QuerySnapshot membersCountSnapshot = results[2];
 
-        List<Project> projects = projectsSnapshot.docs.map((projectDoc) {
-          final projectData = projectDoc.data() as Map<String, dynamic>;
-          return Project(
-            id: projectDoc.id,
-            name: projectData['title'] ?? projectData['Name'] ?? '',
-            description: projectData['description'] ?? projectData['Description'] ?? '',
-            createdAt: projectData['createdAt'] != null
-                ? (projectData['createdAt'] is String
-                    ? DateTime.parse(projectData['createdAt'])
-                    : (projectData['createdAt'] as Timestamp).toDate())
-                : DateTime.now(),
-            updatedAt: projectData['updatedAt'] != null
-                ? (projectData['updatedAt'] is String
-                    ? DateTime.parse(projectData['updatedAt'])
-                    : (projectData['updatedAt'] as Timestamp).toDate())
-                : DateTime.now(),
-          );
-        }).toList();
+        List<Project> projects =
+            projectsSnapshot.docs.map((projectDoc) {
+              final projectData = projectDoc.data() as Map<String, dynamic>;
+              return Project(
+                id: projectDoc.id,
+                title: projectData['title'] ?? projectData['Name'] ?? '',
+                description:
+                    projectData['description'] ??
+                    projectData['Description'] ??
+                    '',
+                createdAt:
+                    projectData['createdAt'] != null
+                        ? (projectData['createdAt'] is String
+                            ? DateTime.parse(projectData['createdAt'])
+                            : (projectData['createdAt'] as Timestamp).toDate())
+                        : DateTime.now(),
+                updatedAt:
+                    projectData['updatedAt'] != null
+                        ? (projectData['updatedAt'] is String
+                            ? DateTime.parse(projectData['updatedAt'])
+                            : (projectData['updatedAt'] as Timestamp).toDate())
+                        : DateTime.now(),
+              );
+            }).toList();
 
-        List<ProjectRequest> projectRequests = projectRequestsSnapshot.docs.map((requestDoc) {
-          final requestData = requestDoc.data() as Map<String, dynamic>;
-          return ProjectRequest(
-            id: requestDoc.id,
-            title: requestData['title'] ?? '',
-            description: requestData['description'] ?? '',
-            requestedBy: requestData['requestedBy'] ?? '',
-            requesterEmail: requestData['requesterEmail'] ?? '',
-            requestedAt: requestData['requestedAt'] != null
-                ? (requestData['requestedAt'] is String
-                    ? DateTime.parse(requestData['requestedAt'])
-                    : (requestData['requestedAt'] as Timestamp).toDate())
-                : DateTime.now(),
-            memberEmails: (requestData['memberEmails'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
-          );
-        }).toList();
+        List<ProjectRequest> projectRequests =
+            projectRequestsSnapshot.docs.map((requestDoc) {
+              final requestData = requestDoc.data() as Map<String, dynamic>;
+              return ProjectRequest(
+                id: requestDoc.id,
+                title: requestData['title'] ?? '',
+                description: requestData['description'] ?? '',
+                requestedBy: requestData['requestedBy'] ?? '',
+                requesterEmail: requestData['requesterEmail'] ?? '',
+                requestedAt:
+                    requestData['requestedAt'] != null
+                        ? (requestData['requestedAt'] is String
+                            ? DateTime.parse(requestData['requestedAt'])
+                            : (requestData['requestedAt'] as Timestamp)
+                                .toDate())
+                        : DateTime.now(),
+                memberEmails:
+                    (requestData['memberEmails'] as List<dynamic>?)
+                        ?.map((e) => e as String)
+                        .toList() ??
+                    [],
+              );
+            }).toList();
 
         organisations.add(
           Organisation(

@@ -1,25 +1,105 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
+import 'package:accelerator_squared/models/projects.dart';
 
 class CreateMilestoneDialog extends StatefulWidget {
-  const CreateMilestoneDialog({super.key});
+  final String organisationId;
+  final List<Project> projects;
+  const CreateMilestoneDialog({
+    super.key,
+    required this.organisationId,
+    required this.projects,
+  });
 
   @override
   State<CreateMilestoneDialog> createState() => _CreateMilestoneDialogState();
 }
 
 class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
-  var projectsList = ["Project 1", "Project 2"];
-  var projectStates = {};
-  var allSelected = false;
+  late Map<String, String> projectIdToName;
+  late Map<String, bool> projectStates;
+  bool allSelected = false;
 
   DateTime? selectedDate = DateTime.now();
   TextEditingController dateFieldController = TextEditingController();
+  TextEditingController titleController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
+
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    for (var x in projectsList) {
-      projectStates[x] = false;
+    projectIdToName = {for (var p in widget.projects) p.id: p.name};
+    projectStates = {for (var p in widget.projects) p.id: false};
+  }
+
+  void _createMilestone(BuildContext context) async {
+    final selectedProjects =
+        projectStates.entries.where((e) => e.value).map((e) => e.key).toList();
+    final title = titleController.text.trim();
+    final description = descriptionController.text.trim();
+    final dueDate = selectedDate;
+
+    if (title.isEmpty ||
+        description.isEmpty ||
+        dueDate == null ||
+        selectedProjects.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please fill all fields and select at least one project.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+    final bloc = BlocProvider.of<ProjectsBloc>(context);
+    int completed = 0;
+    int total = selectedProjects.length;
+    bool errorOccurred = false;
+
+    void onDone() {
+      completed++;
+      if (completed == total) {
+        setState(() {
+          isLoading = false;
+        });
+        if (!errorOccurred) Navigator.of(context).pop();
+      }
+    }
+
+    for (final projectId in selectedProjects) {
+      bloc.add(
+        AddMilestoneEvent(
+          organisationId: widget.organisationId,
+          projectId: projectId,
+          name: title,
+          description: description,
+          dueDate: dueDate,
+        ),
+      );
+      bloc.stream
+          .firstWhere(
+            (state) => state is ProjectActionSuccess || state is ProjectsError,
+          )
+          .then((state) {
+            if (state is ProjectsError) {
+              errorOccurred = true;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            onDone();
+          });
     }
   }
 
@@ -62,6 +142,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
 
               // Milestone title input
               TextField(
+                controller: titleController,
                 decoration: InputDecoration(
                   hintText: "Enter milestone title",
                   label: Text("Milestone Title"),
@@ -85,13 +166,14 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                   filled: true,
                   fillColor: Theme.of(
                     context,
-                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  ).colorScheme.surfaceContainerHighest.withAlpha(77),
                 ),
               ),
               SizedBox(height: 16),
 
               // Milestone description input
               TextField(
+                controller: descriptionController,
                 minLines: 3,
                 maxLines: 4,
                 decoration: InputDecoration(
@@ -117,7 +199,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                   filled: true,
                   fillColor: Theme.of(
                     context,
-                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  ).colorScheme.surfaceContainerHighest.withAlpha(77),
                 ),
               ),
               SizedBox(height: 16),
@@ -125,19 +207,22 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
               // Due date input
               TextField(
                 controller: dateFieldController,
+                readOnly: true,
                 onTap: () async {
                   final DateTime? pickedDate = await showDatePicker(
                     context: context,
-                    initialDate: DateTime.now(),
+                    initialDate: selectedDate ?? DateTime.now(),
                     firstDate: DateTime.now().subtract(Duration(days: 30)),
-                    lastDate: DateTime.now().add(Duration(days: 30)),
+                    lastDate: DateTime.now().add(Duration(days: 365)),
                   );
 
-                  setState(() {
-                    selectedDate = pickedDate;
-                    dateFieldController.text =
-                        "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}";
-                  });
+                  if (pickedDate != null) {
+                    setState(() {
+                      selectedDate = pickedDate;
+                      dateFieldController.text =
+                          "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}";
+                    });
+                  }
                 },
                 decoration: InputDecoration(
                   hintText: "dd/mm/yyyy",
@@ -162,7 +247,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                   filled: true,
                   fillColor: Theme.of(
                     context,
-                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  ).colorScheme.surfaceContainerHighest.withAlpha(77),
                 ),
               ),
               SizedBox(height: 24),
@@ -211,6 +296,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
               // Projects list
               ListView.builder(
                 itemBuilder: (context, index) {
+                  final projectId = projectIdToName.keys.elementAt(index);
                   return Card(
                     elevation: 1,
                     margin: EdgeInsets.only(bottom: 8),
@@ -219,26 +305,18 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                     ),
                     child: CheckboxListTile(
                       title: Text(
-                        projectsList[index],
+                        projectIdToName[projectId] ?? projectId,
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 16,
                         ),
                       ),
-                      value: projectStates[projectsList[index]],
+                      value: projectStates[projectId],
                       onChanged: (value) {
                         setState(() {
-                          projectStates[projectsList[index]] = value;
-
+                          projectStates[projectId] = value!;
                           // Update select all state
-                          bool allChecked = true;
-                          for (var state in projectStates.values) {
-                            if (!state) {
-                              allChecked = false;
-                              break;
-                            }
-                          }
-                          allSelected = allChecked;
+                          allSelected = projectStates.values.every((v) => v);
                         });
                       },
                       controlAffinity: ListTileControlAffinity.leading,
@@ -249,7 +327,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                     ),
                   );
                 },
-                itemCount: projectsList.length,
+                itemCount: projectIdToName.length,
                 shrinkWrap: true,
               ),
               SizedBox(height: 24),
@@ -287,23 +365,34 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                         ),
                         padding: EdgeInsets.symmetric(vertical: 16),
                       ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_rounded, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            "Create Milestone",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                      onPressed:
+                          isLoading ? null : () => _createMilestone(context),
+                      child:
+                          isLoading
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.onPrimary,
+                                  ),
+                                ),
+                              )
+                              : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_rounded, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Create Milestone",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                     ),
                   ),
                 ],

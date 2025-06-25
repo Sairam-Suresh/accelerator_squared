@@ -170,7 +170,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                             textAlign: TextAlign.center,
                           ),
 
-                          const SizedBox(height: 48),
+                          const SizedBox(height: 32),
 
                           // Login buttons
                           ConstrainedBox(

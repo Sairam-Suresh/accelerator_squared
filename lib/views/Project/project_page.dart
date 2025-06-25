@@ -1,4 +1,5 @@
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/views/Project/create_new_project.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
@@ -7,7 +8,7 @@ import 'package:accelerator_squared/views/organisations/org_members.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/organisations/org_stats.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_requests.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_page.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/create_milestone_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -37,7 +38,6 @@ class ProjectPage extends StatefulWidget {
 
 class _ProjectPageState extends State<ProjectPage>
     with TickerProviderStateMixin {
-  late TabController _tabController;
   List<Project> projects = [];
   List<ProjectRequest> projectRequests = [];
   String userRole = 'member';
@@ -62,7 +62,6 @@ class _ProjectPageState extends State<ProjectPage>
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -93,6 +92,7 @@ class _ProjectPageState extends State<ProjectPage>
       },
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
+          heroTag: "project_fab",
           onPressed: () {
             showDialog(
               context: context,
@@ -140,12 +140,12 @@ class _ProjectPageState extends State<ProjectPage>
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'Teacher',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue.shade800,
                     ),
@@ -157,12 +157,12 @@ class _ProjectPageState extends State<ProjectPage>
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'Student Teacher',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.orange.shade800,
                     ),
@@ -174,12 +174,12 @@ class _ProjectPageState extends State<ProjectPage>
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'Member',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey.shade700,
                     ),
@@ -313,13 +313,19 @@ class _ProjectPageState extends State<ProjectPage>
                                                                 builder:
                                                                     (
                                                                       context,
-                                                                    ) => ProjectDetails(
-                                                                      projectName:
-                                                                          project
-                                                                              .name,
-                                                                      projectDescription:
-                                                                          project
-                                                                              .description,
+                                                                    ) => BlocProvider(
+                                                                      create:
+                                                                          (_) =>
+                                                                              ProjectsBloc(),
+                                                                      child: ProjectDetails(
+                                                                        organisationId:
+                                                                            widget.organisationId,
+                                                                        project:
+                                                                            project,
+                                                                        isTeacher:
+                                                                            widget.userRole !=
+                                                                            "member",
+                                                                      ),
                                                                     ),
                                                               ),
                                                             );
@@ -384,11 +390,84 @@ class _ProjectPageState extends State<ProjectPage>
                     Expanded(
                       child:
                           _selectedIndex == 0
-                              ? TeacherProjectPage(
-                                orgName: widget.orgName,
-                                projects: projects,
-                                organisationId: widget.organisationId,
-                              )
+                              ? projects.isEmpty
+                                  ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.folder_off,
+                                          size: 64,
+                                          color: Colors.grey,
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'No projects found',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'There are no projects in this organisation yet.',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  : Column(
+                                    children: [
+                                      Expanded(
+                                        child: GridView.count(
+                                          childAspectRatio: 1.5,
+                                          crossAxisCount: 3,
+                                          crossAxisSpacing: 10,
+                                          mainAxisSpacing: 10,
+                                          children:
+                                              projects.map((project) {
+                                                return ProjectCard(
+                                                  project: project,
+                                                  organisationId:
+                                                      widget.organisationId,
+                                                  isTeacher:
+                                                      userRole == 'teacher',
+                                                  onTap: () {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder:
+                                                            (
+                                                              context,
+                                                            ) => BlocProvider(
+                                                              create:
+                                                                  (_) =>
+                                                                      ProjectsBloc(),
+                                                              child: ProjectDetails(
+                                                                organisationId:
+                                                                    widget
+                                                                        .organisationId,
+                                                                project:
+                                                                    project,
+                                                                isTeacher:
+                                                                    widget
+                                                                        .userRole !=
+                                                                    "member",
+                                                              ),
+                                                            ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                              }).toList(),
+                                        ),
+                                      ),
+                                    ],
+                                  )
                               : _selectedIndex == 1
                               ? OrgStatistics(projects: projects)
                               : _selectedIndex == 2

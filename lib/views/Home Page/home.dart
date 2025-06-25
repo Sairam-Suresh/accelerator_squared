@@ -88,7 +88,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: Container(
                 color: Theme.of(context).colorScheme.surfaceDim,
@@ -135,36 +135,37 @@ class _HomePageState extends State<HomePage> {
           if (state.message.contains("last teacher")) {
             showDialog(
               context: context,
-              builder: (context) => AlertDialog(
-                title: Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Cannot Leave Organisation'),
-                  ],
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'You are the last teacher in this organisation.',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+              builder:
+                  (context) => AlertDialog(
+                    title: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                        SizedBox(width: 8),
+                        Text('Cannot Leave Organisation'),
+                      ],
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'To leave the organisation, you must first assign another member as a teacher.',
-                      style: TextStyle(fontSize: 14),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'You are the last teacher in this organisation.',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'To leave the organisation, you must first assign another member as a teacher.',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text('OK'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text('OK'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
             );
           } else {
             // Show other errors as snackbar
@@ -283,7 +284,8 @@ class _HomePageState extends State<HomePage> {
                     showDialog(
                       context: context,
                       builder: (context) {
-                        TextEditingController orgcodecontroller = TextEditingController();
+                        TextEditingController orgcodecontroller =
+                            TextEditingController();
                         return JoinOrganisationDialog(
                           orgcodecontroller: orgcodecontroller,
                         );
@@ -329,7 +331,10 @@ class _HomePageState extends State<HomePage> {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
@@ -346,7 +351,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           Expanded(
             child: GridView.builder(
               itemCount: organisations.length,
@@ -356,24 +361,28 @@ class _HomePageState extends State<HomePage> {
                 crossAxisSpacing: 24,
                 mainAxisSpacing: 24,
               ),
-              itemBuilder: (context, index) => OrganisationCard(
-                organisation: organisations[index],
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ProjectPage(
-                        organisationId: organisations[index].id,
-                        orgName: organisations[index].name,
-                        orgDescription: organisations[index].description,
-                        projects: organisations[index].projects,
-                        projectRequests: organisations[index].projectRequests,
-                        userRole: organisations[index].userRole,
-                        joinCode: organisations[index].joinCode,
-                      ),
-                    ),
-                  );
-                },
-              ),
+              itemBuilder:
+                  (context, index) => OrganisationCard(
+                    organisation: organisations[index],
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ProjectPage(
+                                organisationId: organisations[index].id,
+                                orgName: organisations[index].name,
+                                orgDescription:
+                                    organisations[index].description,
+                                projects: organisations[index].projects,
+                                projectRequests:
+                                    organisations[index].projectRequests,
+                                userRole: organisations[index].userRole,
+                                joinCode: organisations[index].joinCode,
+                              ),
+                        ),
+                      );
+                    },
+                  ),
             ),
           ),
         ],

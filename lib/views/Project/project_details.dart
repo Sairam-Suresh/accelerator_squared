@@ -1,38 +1,44 @@
+import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/views/Project/comments/comments_dialog.dart';
 import 'package:accelerator_squared/views/Project/milestone_sheet.dart';
 import 'package:accelerator_squared/views/Project/project_files.dart';
 import 'package:accelerator_squared/views/Project/project_settings.dart';
+import 'package:accelerator_squared/views/Project/teacher_ui/create_milestone_dialog.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_members.dart'
     show ProjectMembersDialog;
-import 'package:accelerator_squared/views/Project/teacher_ui/teacher_project_details.dart';
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 
 class ProjectDetails extends StatefulWidget {
+  final String organisationId;
+  final Project project;
+  final bool isTeacher;
   const ProjectDetails({
     super.key,
-    required this.projectName,
-    required this.projectDescription,
+    required this.organisationId,
+    required this.project,
+    required this.isTeacher,
   });
-
-  final String projectName;
-  final String projectDescription;
 
   @override
   State<ProjectDetails> createState() => _ProjectDetailsState();
 }
 
 class _ProjectDetailsState extends State<ProjectDetails> {
-  var sampleMilestoneList = ['Milestone 1', 'Milestone 2'];
-  var sampleMilestoneDescriptions = [
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat',
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat',
-  ];
-
-  var sampleTasksList = ["Task 1", "Task 2"];
-  var sampleCommentsList = ["Comment 1", "Comment 2", "Comment 3"];
+  @override
+  void initState() {
+    super.initState();
+    // Debug print to verify event call
+    print(
+      'Dispatching FetchProjectsEvent with orgId: \\${widget.organisationId}, projectId: \\${widget.project.id}',
+    );
+    context.read<ProjectsBloc>().add(
+      FetchProjectsEvent(widget.organisationId, projectId: widget.project.id),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,28 +48,12 @@ class _ProjectDetailsState extends State<ProjectDetails> {
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.of(context).push(
-                CupertinoPageRoute(
-                  builder: (context) {
-                    return TeacherProjectDetails(
-                      projectName: widget.projectName,
-                      projectDescription: widget.projectDescription,
-                    );
-                  },
-                ),
-              );
-            },
-            icon: Icon(Icons.school),
-          ),
-          SizedBox(width: 10),
-          IconButton(
-            onPressed: () {
               showDialog(
                 context: context,
                 builder: (context) {
                   return CommentsDialog(
-                    commentsContents: sampleMilestoneDescriptions,
-                    commentsList: sampleCommentsList,
+                    commentsContents: const [],
+                    commentsList: const [],
                   );
                 },
               );
@@ -95,8 +85,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                   return StatefulBuilder(
                     builder: (context, setState) {
                       return ProjectSettings(
-                        projectName: widget.projectName,
-                        projectDetails: widget.projectDescription,
+                        projectName: widget.project.name,
+                        projectDetails: widget.project.description,
                       );
                     },
                   );
@@ -107,6 +97,29 @@ class _ProjectDetailsState extends State<ProjectDetails> {
           ),
           SizedBox(width: 20),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: "milestone_fab",
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) {
+              return BlocProvider.value(
+                value: context.read<ProjectsBloc>(),
+                child: StatefulBuilder(
+                  builder: (context, StateSetter setState) {
+                    return CreateMilestoneDialog(
+                      organisationId: widget.organisationId,
+                      projects: [widget.project],
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
+        label: Text("Create milestone"),
+        icon: Icon(Icons.add),
       ),
       body: SafeArea(
         child: Padding(
@@ -123,7 +136,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.projectName,
+                            widget.project.name,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 60,
@@ -135,7 +148,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                               maxWidth: MediaQuery.of(context).size.width / 1.5,
                             ),
                             child: Text(
-                              widget.projectDescription,
+                              widget.project.description,
                               style: TextStyle(fontSize: 17.5),
                             ),
                           ),
@@ -194,7 +207,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                           context,
                                           StateSetter setState,
                                         ) {
-                                          return ProjectFilesDialog();
+                                          return ProjectFilesDialog(
+                                            isTeacher: widget.isTeacher,
+                                          );
                                         },
                                       );
                                     },
@@ -220,49 +235,102 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                             ),
                           ),
                           SizedBox(height: 10),
-                          ListView.builder(
-                            itemBuilder: (context, index) {
-                              return Card(
-                                child: Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: ListTile(
-                                    onTap: () {
-                                      aweSideSheet(
-                                        context: context,
-                                        sheetPosition: SheetPosition.right,
-                                        body: Padding(
-                                          padding: EdgeInsets.fromLTRB(
-                                            20,
-                                            10,
-                                            20,
-                                            10,
+                          BlocBuilder<ProjectsBloc, ProjectsState>(
+                            key: ValueKey(widget.project.id),
+                            builder: (context, state) {
+                              if (state is ProjectsLoading) {
+                                return Container(
+                                  height:
+                                      MediaQuery.of(context).size.height - 200,
+                                  alignment: Alignment.center,
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              } else if (state is ProjectsLoaded) {
+                                // Debug print to verify state
+                                print(
+                                  'ProjectsLoaded: projectId=\\${widget.project.id}, milestones=\\${state.projects.firstWhere((p) => p.id == widget.project.id, orElse: () => ProjectWithDetails(id: widget.project.id, data: {}, milestones: [], comments: [])).milestones.length}',
+                                );
+                                final project = state.projects.firstWhere(
+                                  (p) => p.id == widget.project.id,
+                                  orElse:
+                                      () => ProjectWithDetails(
+                                        id: widget.project.id,
+                                        data: {},
+                                        milestones: [],
+                                        comments: [],
+                                      ),
+                                );
+                                final milestones = project.milestones;
+                                if (milestones.isEmpty) {
+                                  return Container(
+                                    height:
+                                        MediaQuery.of(context).size.height -
+                                        200,
+                                    alignment: Alignment.center,
+                                    child: Center(
+                                      child: Text('No milestones found.'),
+                                    ),
+                                  );
+                                }
+                                return ListView.builder(
+                                  itemBuilder: (context, index) {
+                                    final milestone = milestones[index];
+                                    return Card(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(10),
+                                        child: ListTile(
+                                          onTap: () {
+                                            aweSideSheet(
+                                              context: context,
+                                              sheetPosition:
+                                                  SheetPosition.right,
+                                              body: Padding(
+                                                padding: EdgeInsets.fromLTRB(
+                                                  20,
+                                                  10,
+                                                  20,
+                                                  10,
+                                                ),
+                                                child: MilestoneSheet(
+                                                  sampleMilestoneDescriptions: [
+                                                    milestone['description'] ??
+                                                        '',
+                                                  ],
+                                                  sampleMilestoneList: [
+                                                    milestone['name'] ?? '',
+                                                  ],
+                                                  sampleTasksList: const [],
+                                                  index: 0,
+                                                ),
+                                              ),
+                                              header: SizedBox(height: 20),
+                                              showHeaderDivider: false,
+                                            );
+                                          },
+                                          title: Text(
+                                            milestone['name'] ?? '',
+                                            style: TextStyle(fontSize: 20),
                                           ),
-                                          child: MilestoneSheet(
-                                            sampleMilestoneDescriptions:
-                                                sampleMilestoneDescriptions,
-                                            sampleMilestoneList:
-                                                sampleMilestoneList,
-                                            sampleTasksList: sampleTasksList,
-                                            index: index,
+                                          subtitle: Text(
+                                            milestone['description'] ?? '',
+                                            maxLines: 3,
                                           ),
                                         ),
-                                        header: Text("Milestone"),
-                                      );
-                                    },
-                                    title: Text(
-                                      sampleMilestoneList[index],
-                                      style: TextStyle(fontSize: 20),
-                                    ),
-                                    subtitle: Text(
-                                      sampleMilestoneDescriptions[index],
-                                      maxLines: 3,
-                                    ),
-                                  ),
-                                ),
-                              );
+                                      ),
+                                    );
+                                  },
+                                  itemCount: milestones.length,
+                                  shrinkWrap: true,
+                                );
+                              } else if (state is ProjectsError) {
+                                print('ProjectsError: \\${state.message}');
+                                return Text('Error: \\${state.message}');
+                              } else {
+                                return SizedBox.shrink();
+                              }
                             },
-                            itemCount: sampleMilestoneList.length,
-                            shrinkWrap: true,
                           ),
                         ],
                       ),
