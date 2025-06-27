@@ -70,6 +70,14 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
         setState(() {
           isLoading = false;
         });
+        // Always refresh milestones after adding
+        final bloc = BlocProvider.of<ProjectsBloc>(context);
+        bloc.add(
+          FetchProjectsEvent(
+            widget.organisationId,
+            projectId: widget.projects.first.id,
+          ),
+        );
         if (!errorOccurred) Navigator.of(context).pop();
       }
     }
@@ -210,7 +218,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                   final DateTime? pickedDate = await showDatePicker(
                     context: context,
                     initialDate: selectedDate ?? DateTime.now(),
-                    firstDate: DateTime.now().subtract(Duration(days: 30)),
+                    firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(Duration(days: 365)),
                   );
 

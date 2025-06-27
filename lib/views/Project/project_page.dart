@@ -8,7 +8,6 @@ import 'package:accelerator_squared/views/organisations/org_members.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/organisations/org_stats.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_requests.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/create_milestone_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -267,7 +266,7 @@ class _ProjectPageState extends State<ProjectPage>
                           _selectedIndex == 0
                               ? SafeArea(
                                 child: Padding(
-                                  padding: EdgeInsets.all(10),
+                                  padding: EdgeInsets.symmetric(horizontal: 10),
                                   child:
                                       projects.isEmpty
                                           ? Center(
@@ -426,108 +425,113 @@ class _ProjectPageState extends State<ProjectPage>
                     Expanded(
                       child:
                           _selectedIndex == 0
-                              ? projects.isEmpty
-                                  ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.folder_off,
-                                          size: 64,
-                                          color: Colors.grey,
-                                        ),
-                                        SizedBox(height: 16),
-                                        Text(
-                                          'No projects found',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            color: Colors.grey,
-                                            fontWeight: FontWeight.w500,
+                              ? Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child:
+                                    projects.isEmpty
+                                        ? Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.folder_off,
+                                                size: 64,
+                                                color: Colors.grey,
+                                              ),
+                                              SizedBox(height: 16),
+                                              Text(
+                                                'No projects found',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'There are no projects in this organisation yet.',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          'There are no projects in this organisation yet.',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  : Column(
-                                    children: [
-                                      Expanded(
-                                        child: GridView.count(
-                                          childAspectRatio: 1.5,
-                                          crossAxisCount: 3,
-                                          crossAxisSpacing: 10,
-                                          mainAxisSpacing: 10,
-                                          children:
-                                              projects.map((project) {
-                                                return ProjectCard(
-                                                  project: project,
-                                                  organisationId:
-                                                      widget.organisationId,
-                                                  isTeacher:
-                                                      userRole == 'teacher',
-                                                  onTap: () {
-                                                    Navigator.of(context)
-                                                        .push(
-                                                          MaterialPageRoute(
-                                                            builder:
-                                                                (
-                                                                  context,
-                                                                ) => BlocProvider(
-                                                                  create:
-                                                                      (_) =>
-                                                                          ProjectsBloc(),
-                                                                  child: ProjectDetails(
-                                                                    organisationId:
+                                        )
+                                        : Column(
+                                          children: [
+                                            Expanded(
+                                              child: GridView.count(
+                                                childAspectRatio: 1.5,
+                                                crossAxisCount: 3,
+                                                crossAxisSpacing: 10,
+                                                mainAxisSpacing: 10,
+                                                children:
+                                                    projects.map((project) {
+                                                      return ProjectCard(
+                                                        project: project,
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                        isTeacher:
+                                                            userRole ==
+                                                            'teacher',
+                                                        onTap: () {
+                                                          Navigator.of(context)
+                                                              .push(
+                                                                MaterialPageRoute(
+                                                                  builder:
+                                                                      (
+                                                                        context,
+                                                                      ) => BlocProvider(
+                                                                        create:
+                                                                            (
+                                                                              _,
+                                                                            ) =>
+                                                                                ProjectsBloc(),
+                                                                        child: ProjectDetails(
+                                                                          organisationId:
+                                                                              widget.organisationId,
+                                                                          project:
+                                                                              project,
+                                                                          isTeacher:
+                                                                              widget.userRole !=
+                                                                              "member",
+                                                                          key: ValueKey(
+                                                                            project.id,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                ),
+                                                              )
+                                                              .then((_) {
+                                                                context
+                                                                    .read<
+                                                                      ProjectsBloc
+                                                                    >()
+                                                                    .add(
+                                                                      FetchProjectsEvent(
                                                                         widget
                                                                             .organisationId,
-                                                                    project:
-                                                                        project,
-                                                                    isTeacher:
-                                                                        widget
-                                                                            .userRole !=
-                                                                        "member",
-                                                                    key: ValueKey(
-                                                                      project
-                                                                          .id,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                          ),
-                                                        )
-                                                        .then((_) {
-                                                          context
-                                                              .read<
-                                                                ProjectsBloc
-                                                              >()
-                                                              .add(
-                                                                FetchProjectsEvent(
-                                                                  widget
-                                                                      .organisationId,
-                                                                ),
-                                                              );
-                                                          context
-                                                              .read<
-                                                                OrganisationsBloc
-                                                              >()
-                                                              .add(
-                                                                FetchOrganisationsEvent(),
-                                                              );
-                                                        });
-                                                  },
-                                                );
-                                              }).toList(),
+                                                                      ),
+                                                                    );
+                                                                context
+                                                                    .read<
+                                                                      OrganisationsBloc
+                                                                    >()
+                                                                    .add(
+                                                                      FetchOrganisationsEvent(),
+                                                                    );
+                                                              });
+                                                        },
+                                                      );
+                                                    }).toList(),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  )
+                              )
                               : _selectedIndex == 1
                               ? OrgStatistics(projects: projects)
                               : _selectedIndex == 2

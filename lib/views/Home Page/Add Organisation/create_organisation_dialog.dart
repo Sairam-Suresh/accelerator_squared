@@ -48,7 +48,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
       },
       child: AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Container(
+        content: SizedBox(
           width: MediaQuery.of(context).size.width / 2.5,
           height: MediaQuery.of(context).size.height / 1.3,
           child: SingleChildScrollView(

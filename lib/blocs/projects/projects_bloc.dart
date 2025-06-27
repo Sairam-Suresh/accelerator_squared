@@ -72,7 +72,9 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
               }
               final milestones =
                   milestonesSnapshot.docs.isNotEmpty
-                      ? milestonesSnapshot.docs.map((m) => m.data()).toList()
+                      ? milestonesSnapshot.docs
+                          .map((m) => {...m.data(), 'id': m.id})
+                          .toList()
                       : <Map<String, dynamic>>[];
               print('[ProjectsBloc] Milestones fetched: $milestones');
               final project = ProjectWithDetails(
@@ -123,7 +125,10 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             ProjectWithDetails(
               id: projectId,
               data: doc.data(),
-              milestones: milestonesSnapshot.docs.map((m) => m.data()).toList(),
+              milestones:
+                  milestonesSnapshot.docs
+                      .map((m) => {...m.data(), 'id': m.id})
+                      .toList(),
               comments: commentsSnapshot.docs.map((c) => c.data()).toList(),
             ),
           );
