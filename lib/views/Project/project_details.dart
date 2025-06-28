@@ -154,28 +154,31 @@ class _ProjectDetailsState extends State<ProjectDetails> {
             SizedBox(width: 20),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return BlocProvider.value(
-                  value: context.read<ProjectsBloc>(),
-                  child: StatefulBuilder(
-                    builder: (context, StateSetter setState) {
-                      return CreateMilestoneDialog(
-                        organisationId: widget.organisationId,
-                        projects: [widget.project],
-                      );
-                    },
-                  ),
-                );
-              },
-            );
-          },
-          label: Text("Create milestone"),
-          icon: Icon(Icons.add),
-        ),
+        floatingActionButton:
+            widget.isTeacher
+                ? FloatingActionButton.extended(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return BlocProvider.value(
+                          value: context.read<ProjectsBloc>(),
+                          child: StatefulBuilder(
+                            builder: (context, StateSetter setState) {
+                              return CreateMilestoneDialog(
+                                organisationId: widget.organisationId,
+                                projects: [widget.project],
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  label: Text("Create milestone"),
+                  icon: Icon(Icons.add),
+                )
+                : null,
         body: SafeArea(
           child: Padding(
             padding: EdgeInsets.fromLTRB(30, 10, 30, 10),
@@ -202,6 +205,11 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                       project.data['description'] ?? projectDescription;
                   milestones = project.milestones;
                 }
+
+                // Safety check to ensure milestones is not null
+                if (milestones == null) {
+                  milestones = [];
+                }
                 return Column(
                   children: [
                     Row(
@@ -216,20 +224,36 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                 key: ValueKey('header_${widget.project.id}'),
                                 builder: (context, state) {
                                   String projectName = widget.project.name;
+
                                   if (state is ProjectsLoaded) {
-                                    final project = state.projects.firstWhere(
-                                      (p) => p.id == widget.project.id,
-                                      orElse:
-                                          () => ProjectWithDetails(
-                                            id: widget.project.id,
-                                            data: {},
-                                            milestones: [],
-                                            comments: [],
-                                          ),
+                                    // Try to find updated project data
+                                    ProjectWithDetails? project;
+                                    try {
+                                      project = state.projects.firstWhere(
+                                        (p) => p.id == widget.project.id,
+                                      );
+                                    } catch (e) {
+                                      project = null;
+                                    }
+
+                                    if (project != null) {
+                                      // Get the updated project name from the bloc data
+                                      final updatedName = project.data['title'];
+                                      if (updatedName != null &&
+                                          updatedName.isNotEmpty) {
+                                        projectName = updatedName;
+                                      }
+                                    }
+                                  } else if (state is ProjectActionSuccess) {
+                                    // When a project action succeeds, trigger a refresh to get the latest data
+                                    context.read<ProjectsBloc>().add(
+                                      FetchProjectsEvent(
+                                        widget.organisationId,
+                                        projectId: widget.project.id,
+                                      ),
                                     );
-                                    projectName =
-                                        project.data['title'] ?? projectName;
                                   }
+
                                   return Text(
                                     projectName,
                                     style: TextStyle(
@@ -240,11 +264,51 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                 },
                               ),
                               SizedBox(height: 10),
-                              Container(
-                                child: Text(
-                                  projectDescription,
-                                  style: TextStyle(fontSize: 17.5),
+                              BlocBuilder<ProjectsBloc, ProjectsState>(
+                                key: ValueKey(
+                                  'description_${widget.project.id}',
                                 ),
+                                builder: (context, state) {
+                                  String projectDescription =
+                                      widget.project.description;
+
+                                  if (state is ProjectsLoaded) {
+                                    // Try to find updated project data
+                                    ProjectWithDetails? project;
+                                    try {
+                                      project = state.projects.firstWhere(
+                                        (p) => p.id == widget.project.id,
+                                      );
+                                    } catch (e) {
+                                      project = null;
+                                    }
+
+                                    if (project != null) {
+                                      // Get the updated project description from the bloc data
+                                      final updatedDescription =
+                                          project.data['description'];
+                                      if (updatedDescription != null &&
+                                          updatedDescription.isNotEmpty) {
+                                        projectDescription = updatedDescription;
+                                      }
+                                    }
+                                  } else if (state is ProjectActionSuccess) {
+                                    // When a project action succeeds, trigger a refresh to get the latest data
+                                    context.read<ProjectsBloc>().add(
+                                      FetchProjectsEvent(
+                                        widget.organisationId,
+                                        projectId: widget.project.id,
+                                      ),
+                                    );
+                                  }
+
+                                  return Container(
+                                    child: Text(
+                                      projectDescription,
+                                      style: TextStyle(fontSize: 17.5),
+                                    ),
+                                  );
+                                },
                               ),
                               SizedBox(height: 15),
                               Text(
@@ -357,12 +421,29 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                     return SizedBox(height: 10);
                                   },
                                   itemBuilder: (context, index) {
+                                    // Safety check to prevent index out of bounds
+                                    if (index >= milestones.length) {
+                                      return SizedBox.shrink();
+                                    }
+
                                     final milestone = milestones[index];
+
+                                    // Safety check for milestone data
+                                    if (milestone == null ||
+                                        milestone['id'] == null) {
+                                      return SizedBox.shrink();
+                                    }
+
                                     return Card(
                                       child: InkWell(
                                         borderRadius: BorderRadius.circular(20),
                                         onTap: () {
                                           aweSideSheet(
+                                            sheetWidth:
+                                                MediaQuery.of(
+                                                  context,
+                                                ).size.width /
+                                                3,
                                             context: context,
                                             sheetPosition: SheetPosition.right,
                                             body: Padding(

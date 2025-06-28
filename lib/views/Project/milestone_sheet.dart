@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'dart:async';
 
 class MilestoneSheet extends StatefulWidget {
@@ -27,11 +28,31 @@ class MilestoneSheet extends StatefulWidget {
 
 class _MilestoneSheetState extends State<MilestoneSheet> {
   bool _isDeleting = false;
+  bool _isEditing = false;
+  bool _isSaving = false;
+  bool _isUpdatingDate = false;
+
+  TextEditingController nameController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
+  TextEditingController dueDateController = TextEditingController();
+
   StreamSubscription? _deleteSubscription;
+  StreamSubscription? _saveSubscription;
+  StreamSubscription? _dateUpdateSubscription;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    nameController.text = widget.milestone['name'] ?? '';
+    descriptionController.text = widget.milestone['description'] ?? '';
+  }
 
   @override
   void dispose() {
     _deleteSubscription?.cancel();
+    _saveSubscription?.cancel();
+    _dateUpdateSubscription?.cancel();
     super.dispose();
   }
 
@@ -88,14 +109,79 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      milestone['name'] ?? '',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
+                    _isEditing
+                        ? SizedBox(
+                          width: MediaQuery.of(context).size.width / 5,
+                          child: TextField(
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            controller: nameController,
+                            decoration: InputDecoration(
+                              hintText: "Enter milestone name",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                          ),
+                        )
+                        : BlocBuilder<ProjectsBloc, ProjectsState>(
+                          builder: (context, state) {
+                            // Get the current milestone data from the bloc if available
+                            String displayName =
+                                nameController.text.isNotEmpty
+                                    ? nameController.text
+                                    : (milestone['name'] ?? '');
+
+                            if (state is ProjectsLoaded) {
+                              // Try to find updated milestone data
+                              ProjectWithDetails? project;
+                              try {
+                                project = state.projects.firstWhere(
+                                  (p) => p.id == widget.projectId,
+                                );
+                              } catch (e) {
+                                project = null;
+                              }
+
+                              if (project != null) {
+                                Map<String, dynamic>? updatedMilestone;
+                                try {
+                                  updatedMilestone = project.milestones
+                                      .firstWhere(
+                                        (m) => m['id'] == milestone['id'],
+                                      );
+                                } catch (e) {
+                                  updatedMilestone = null;
+                                }
+
+                                if (updatedMilestone != null) {
+                                  displayName =
+                                      updatedMilestone['name'] ?? displayName;
+                                  // Update the controller if the data changed
+                                  if (nameController.text != displayName) {
+                                    nameController.text = displayName;
+                                  }
+                                }
+                              }
+                            }
+
+                            return Text(
+                              displayName,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            );
+                          },
+                        ),
                     SizedBox(height: 4),
                     Text(
                       "Milestone",
@@ -107,9 +193,132 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                   ],
                 ),
+                Spacer(),
+                !_isEditing
+                    ? IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _isEditing = true;
+                        });
+                      },
+                      icon: Icon(Icons.edit, size: 20),
+                      tooltip: "Edit milestone",
+                    )
+                    : IconButton(
+                      onPressed:
+                          _isSaving
+                              ? null
+                              : () async {
+                                final name = nameController.text.trim();
+                                final description =
+                                    descriptionController.text.trim();
+
+                                if (name.isEmpty || description.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Name and description cannot be empty',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() {
+                                  _isSaving = true;
+                                });
+
+                                final bloc = context.read<ProjectsBloc>();
+                                _saveSubscription = bloc.stream.listen((state) {
+                                  if (state is ProjectActionSuccess) {
+                                    _saveSubscription?.cancel();
+                                    if (mounted) {
+                                      setState(() {
+                                        _isEditing = false;
+                                        _isSaving = false;
+                                      });
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Milestone updated successfully',
+                                          ),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  } else if (state is ProjectsError) {
+                                    _saveSubscription?.cancel();
+                                    if (mounted) {
+                                      setState(() {
+                                        _isSaving = false;
+                                      });
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(state.message),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                });
+
+                                try {
+                                  if (mounted) {
+                                    bloc.add(
+                                      UpdateMilestoneEvent(
+                                        organisationId: widget.organisationId,
+                                        projectId: widget.projectId,
+                                        milestoneId: milestone['id'],
+                                        name: name,
+                                        description: description,
+                                        dueDate:
+                                            milestone['dueDate'] is DateTime
+                                                ? milestone['dueDate']
+                                                : (milestone['dueDate']
+                                                        is Timestamp
+                                                    ? milestone['dueDate']
+                                                        .toDate()
+                                                    : DateTime.now()),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  _saveSubscription?.cancel();
+                                  if (mounted) {
+                                    setState(() {
+                                      _isSaving = false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                      icon:
+                          _isSaving
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              )
+                              : Icon(Icons.save),
+                    ),
               ],
             ),
           ),
+
           SizedBox(height: 24),
 
           // Details section
@@ -133,37 +342,503 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   milestone['createdByEmail'] ?? 'Unknown',
                 ),
                 SizedBox(height: 12),
-                _buildInfoRow(
-                  Icons.calendar_today_rounded,
-                  "Due on",
-                  formattedDueDate,
-                ),
-                SizedBox(height: 12),
-                _buildInfoRow(Icons.folder_rounded, "Project", projectTitle),
-                SizedBox(height: 20),
-
-                // Description
                 Text(
-                  "Description",
+                  "Due on",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                SizedBox(height: 8),
+                SizedBox(height: 5),
+                _isEditing
+                    ? ElevatedButton.icon(
+                      icon:
+                          _isUpdatingDate
+                              ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              )
+                              : Icon(Icons.calendar_month_outlined),
+                      onPressed:
+                          _isUpdatingDate
+                              ? null
+                              : () async {
+                                // Get current due date as initial date
+                                DateTime initialDate = DateTime.now();
+                                final dueDateRaw = milestone['dueDate'];
+                                if (dueDateRaw != null) {
+                                  if (dueDateRaw is DateTime) {
+                                    initialDate = dueDateRaw;
+                                  } else if (dueDateRaw is Timestamp) {
+                                    initialDate = dueDateRaw.toDate();
+                                  }
+                                }
+
+                                final DateTime? pickedDate =
+                                    await showDatePicker(
+                                      context: context,
+                                      initialDate: initialDate,
+                                      firstDate: DateTime.now(),
+                                      lastDate: DateTime.now().add(
+                                        Duration(days: 365),
+                                      ),
+                                    );
+
+                                if (pickedDate != null) {
+                                  setState(() {
+                                    _isUpdatingDate = true;
+                                  });
+
+                                  final bloc = context.read<ProjectsBloc>();
+                                  _dateUpdateSubscription = bloc.stream.listen((
+                                    state,
+                                  ) {
+                                    if (state is ProjectActionSuccess) {
+                                      // Don't stop loading yet, wait for the next ProjectsLoaded state
+                                      // to verify the date was actually updated
+                                    } else if (state is ProjectsLoaded) {
+                                      // Check if the date was actually updated by looking at the current state
+                                      ProjectWithDetails? project;
+                                      try {
+                                        project = state.projects.firstWhere(
+                                          (p) => p.id == widget.projectId,
+                                        );
+                                      } catch (e) {
+                                        project = null;
+                                      }
+
+                                      if (project != null) {
+                                        Map<String, dynamic>? updatedMilestone;
+                                        try {
+                                          updatedMilestone = project.milestones
+                                              .firstWhere(
+                                                (m) =>
+                                                    m['id'] == milestone['id'],
+                                              );
+                                        } catch (e) {
+                                          updatedMilestone = null;
+                                        }
+
+                                        if (updatedMilestone != null) {
+                                          final updatedDueDateRaw =
+                                              updatedMilestone['dueDate'];
+                                          if (updatedDueDateRaw != null) {
+                                            DateTime? updatedDueDate;
+                                            if (updatedDueDateRaw is DateTime) {
+                                              updatedDueDate =
+                                                  updatedDueDateRaw;
+                                            } else if (updatedDueDateRaw
+                                                is Timestamp) {
+                                              updatedDueDate =
+                                                  updatedDueDateRaw.toDate();
+                                            }
+
+                                            // Only stop loading if the date matches the picked date
+                                            if (updatedDueDate != null &&
+                                                updatedDueDate.year ==
+                                                    pickedDate.year &&
+                                                updatedDueDate.month ==
+                                                    pickedDate.month &&
+                                                updatedDueDate.day ==
+                                                    pickedDate.day) {
+                                              _dateUpdateSubscription?.cancel();
+                                              if (mounted) {
+                                                setState(() {
+                                                  _isUpdatingDate = false;
+                                                });
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Due date updated successfully',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    } else if (state is ProjectsError) {
+                                      _dateUpdateSubscription?.cancel();
+                                      if (mounted) {
+                                        setState(() {
+                                          _isUpdatingDate = false;
+                                        });
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(state.message),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  });
+
+                                  try {
+                                    if (mounted) {
+                                      bloc.add(
+                                        UpdateMilestoneEvent(
+                                          organisationId: widget.organisationId,
+                                          projectId: widget.projectId,
+                                          milestoneId: milestone['id'],
+                                          name:
+                                              nameController.text.isNotEmpty
+                                                  ? nameController.text
+                                                  : (milestone['name'] ?? ''),
+                                          description:
+                                              descriptionController
+                                                      .text
+                                                      .isNotEmpty
+                                                  ? descriptionController.text
+                                                  : (milestone['description'] ??
+                                                      ''),
+                                          dueDate: pickedDate,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    _dateUpdateSubscription?.cancel();
+                                    if (mounted) {
+                                      setState(() {
+                                        _isUpdatingDate = false;
+                                      });
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                      label: Padding(
+                        padding: EdgeInsets.all(10),
+                        child: BlocBuilder<ProjectsBloc, ProjectsState>(
+                          builder: (context, state) {
+                            // Get the current milestone data from the bloc if available
+                            String displayDueDate = formattedDueDate;
+
+                            if (state is ProjectsLoaded) {
+                              // Try to find updated milestone data
+                              ProjectWithDetails? project;
+                              try {
+                                project = state.projects.firstWhere(
+                                  (p) => p.id == widget.projectId,
+                                );
+                              } catch (e) {
+                                project = null;
+                              }
+
+                              if (project != null) {
+                                Map<String, dynamic>? updatedMilestone;
+                                try {
+                                  updatedMilestone = project.milestones
+                                      .firstWhere(
+                                        (m) => m['id'] == milestone['id'],
+                                      );
+                                } catch (e) {
+                                  updatedMilestone = null;
+                                }
+
+                                if (updatedMilestone != null) {
+                                  // Format the updated due date
+                                  final updatedDueDateRaw =
+                                      updatedMilestone['dueDate'];
+                                  if (updatedDueDateRaw != null) {
+                                    DateTime? updatedDueDate;
+                                    if (updatedDueDateRaw is DateTime) {
+                                      updatedDueDate = updatedDueDateRaw;
+                                    } else if (updatedDueDateRaw is Timestamp) {
+                                      updatedDueDate =
+                                          updatedDueDateRaw.toDate();
+                                    }
+                                    if (updatedDueDate != null) {
+                                      displayDueDate = DateFormat(
+                                        'dd/MM/yy',
+                                      ).format(updatedDueDate);
+                                    }
+                                  }
+                                }
+                              }
+                            }
+
+                            return Text(
+                              displayDueDate,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                height: 1.5,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                    : Text(
+                      formattedDueDate,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+                SizedBox(height: 12),
                 Text(
-                  milestone['description'] ?? '',
+                  "Projects",
                   style: TextStyle(
                     fontSize: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    height: 1.5,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
+                SizedBox(height: 10),
+                BlocBuilder<OrganisationsBloc, OrganisationsState>(
+                  builder: (context, orgState) {
+                    if (orgState is OrganisationsLoaded) {
+                      final currentOrg = orgState.organisations.firstWhere(
+                        (org) => org.id == widget.organisationId,
+                        orElse: () => throw Exception('Organisation not found'),
+                      );
+
+                      // Get the sharedId of this milestone
+                      final sharedId = milestone['sharedId'];
+
+                      if (sharedId != null) {
+                        // Find all projects that have this milestone
+                        final assignedProjects =
+                            currentOrg.projects.where((project) {
+                              // For now, we'll show all projects since we can't easily check
+                              // which ones have this specific milestone without additional queries
+                              // In a real implementation, you might want to store this information
+                              return true; // Show all projects for now
+                            }).toList();
+
+                        if (assignedProjects.isNotEmpty) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children:
+                                assignedProjects.map((project) {
+                                  return Padding(
+                                    padding: EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Theme.of(context)
+                                                    .colorScheme
+                                                    .secondaryContainer,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.folder,
+                                            color:
+                                                Theme.of(context)
+                                                    .colorScheme
+                                                    .onSecondaryContainer,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            project.name,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color:
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                          );
+                        } else {
+                          return Text(
+                            'No projects assigned',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          );
+                        }
+                      } else {
+                        // If no sharedId, show only the current project
+                        return Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.folder,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSecondaryContainer,
+                                size: 16,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                widget.projectTitle,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    }
+
+                    // Loading state
+                    return Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Loading projects...',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                SizedBox(height: 20),
+
+                // Description
+                Text(
+                  "Description:",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 5),
+                _isEditing
+                    ? SizedBox(
+                      width: MediaQuery.of(context).size.width / 3 - 50,
+                      child: TextField(
+                        controller: descriptionController,
+                        decoration: InputDecoration(
+                          hintText: "Enter milestone description",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                      ),
+                    )
+                    : BlocBuilder<ProjectsBloc, ProjectsState>(
+                      builder: (context, state) {
+                        // Get the current milestone data from the bloc if available
+                        String displayDescription =
+                            descriptionController.text.isNotEmpty
+                                ? descriptionController.text
+                                : (milestone['description'] ?? '');
+
+                        if (state is ProjectsLoaded) {
+                          // Try to find updated milestone data
+                          ProjectWithDetails? project;
+                          try {
+                            project = state.projects.firstWhere(
+                              (p) => p.id == widget.projectId,
+                            );
+                          } catch (e) {
+                            project = null;
+                          }
+
+                          if (project != null) {
+                            Map<String, dynamic>? updatedMilestone;
+                            try {
+                              updatedMilestone = project.milestones.firstWhere(
+                                (m) => m['id'] == milestone['id'],
+                              );
+                            } catch (e) {
+                              updatedMilestone = null;
+                            }
+
+                            if (updatedMilestone != null) {
+                              displayDescription =
+                                  updatedMilestone['description'] ??
+                                  displayDescription;
+                              // Update the controller if the data changed
+                              if (descriptionController.text !=
+                                  displayDescription) {
+                                descriptionController.text = displayDescription;
+                              }
+                            }
+                          }
+                        }
+
+                        return Text(
+                          displayDescription,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            height: 1.5,
+                          ),
+                        );
+                      },
+                    ),
               ],
             ),
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 24),
 
           // Action button
           SizedBox(
@@ -393,28 +1068,33 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            SizedBox(width: 12),
+            Text(
+              "$label: ",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
-        SizedBox(width: 12),
-        Text(
-          "$label: ",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
+        SizedBox(height: 5),
         Text(
           value,
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],

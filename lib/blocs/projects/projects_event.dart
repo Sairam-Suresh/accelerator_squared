@@ -45,12 +45,14 @@ class AddMilestoneEvent extends ProjectsEvent {
   final String name;
   final String description;
   final DateTime dueDate;
+  final String? sharedId;
   AddMilestoneEvent({
     required this.organisationId,
     required this.projectId,
     required this.name,
     required this.description,
     required this.dueDate,
+    this.sharedId,
   });
 }
 

@@ -270,7 +270,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
       }
       final orgId = event.organisationId;
       final projectId = event.projectId;
-      final milestoneId = const Uuid().v4();
+      final milestoneId = event.sharedId ?? const Uuid().v4();
       await firestore
           .collection('organisations')
           .doc(orgId)
@@ -285,6 +285,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             'createdAt': FieldValue.serverTimestamp(),
             'createdBy': uid,
             'createdByEmail': auth.currentUser?.email ?? '',
+            'sharedId': event.sharedId,
           });
       emit(ProjectActionSuccess('Milestone added successfully'));
       add(FetchProjectsEvent(orgId));
@@ -331,14 +332,66 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
       final orgId = event.organisationId;
       final projectId = event.projectId;
       final milestoneId = event.milestoneId;
-      await firestore
-          .collection('organisations')
-          .doc(orgId)
-          .collection('projects')
-          .doc(projectId)
-          .collection('milestones')
-          .doc(milestoneId)
-          .delete();
+
+      // Get the milestone to check if it has a sharedId
+      final milestoneDoc =
+          await firestore
+              .collection('organisations')
+              .doc(orgId)
+              .collection('projects')
+              .doc(projectId)
+              .collection('milestones')
+              .doc(milestoneId)
+              .get();
+
+      if (milestoneDoc.exists) {
+        final milestoneData = milestoneDoc.data();
+        final sharedId = milestoneData?['sharedId'];
+
+        if (sharedId != null) {
+          // Delete from all projects that have this shared milestone
+          final projectsSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(orgId)
+                  .collection('projects')
+                  .get();
+
+          for (final projectDoc in projectsSnapshot.docs) {
+            final projectMilestoneDoc =
+                await firestore
+                    .collection('organisations')
+                    .doc(orgId)
+                    .collection('projects')
+                    .doc(projectDoc.id)
+                    .collection('milestones')
+                    .doc(sharedId)
+                    .get();
+
+            if (projectMilestoneDoc.exists) {
+              await firestore
+                  .collection('organisations')
+                  .doc(orgId)
+                  .collection('projects')
+                  .doc(projectDoc.id)
+                  .collection('milestones')
+                  .doc(sharedId)
+                  .delete();
+            }
+          }
+        } else {
+          // Delete only from the current project
+          await firestore
+              .collection('organisations')
+              .doc(orgId)
+              .collection('projects')
+              .doc(projectId)
+              .collection('milestones')
+              .doc(milestoneId)
+              .delete();
+        }
+      }
+
       emit(ProjectActionSuccess('Milestone deleted successfully'));
       add(FetchProjectsEvent(orgId));
     } catch (e) {
