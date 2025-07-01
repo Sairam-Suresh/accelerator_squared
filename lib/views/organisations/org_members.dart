@@ -113,7 +113,12 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         if (methods.isNotEmpty) {
           // User exists, try to get UID from Firestore users collection if you have one
           // (Assume users are stored in a 'users' collection with UID as doc ID and email field)
-          final userQuery = await firestore.collection('users').where('email', isEqualTo: email).limit(1).get();
+          final userQuery =
+              await firestore
+                  .collection('users')
+                  .where('email', isEqualTo: email)
+                  .limit(1)
+                  .get();
           if (userQuery.docs.isNotEmpty) {
             uid = userQuery.docs.first.id;
           }
@@ -420,12 +425,13 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
           ],
           _buildSectionHeader(context, "Teachers", teachers.length),
           _buildMemberList(context, teachers, "Teacher"),
           const SizedBox(height: 16),
           Divider(),
+          SizedBox(height: 5),
           _buildSectionHeader(
             context,
             "Student Teachers",
@@ -434,6 +440,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           _buildMemberList(context, studentTeachers, "Student Teacher"),
           const SizedBox(height: 16),
           Divider(),
+          SizedBox(height: 5),
           _buildSectionHeader(context, "Members", regularMembers.length),
           _buildMemberList(context, regularMembers, "Member"),
         ],
@@ -486,7 +493,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       itemCount: members.length,
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
-      separatorBuilder: (context, index) => SizedBox(height: 8),
+      separatorBuilder: (context, index) => SizedBox(height: 7.5),
       itemBuilder: (context, index) {
         final member = members[index];
         return Card(
@@ -496,7 +503,10 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12.5,
+              vertical: 7.5,
+            ),
             leading: CircleAvatar(
               backgroundColor: Theme.of(
                 context,

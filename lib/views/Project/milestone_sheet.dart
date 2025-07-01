@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
-import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'dart:async';
 
 class MilestoneSheet extends StatefulWidget {
@@ -601,159 +600,158 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                       ),
                     ),
                 SizedBox(height: 12),
-                Text(
-                  "Projects",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                SizedBox(height: 10),
-                BlocBuilder<OrganisationsBloc, OrganisationsState>(
-                  builder: (context, orgState) {
-                    if (orgState is OrganisationsLoaded) {
-                      final currentOrg = orgState.organisations.firstWhere(
-                        (org) => org.id == widget.organisationId,
-                        orElse: () => throw Exception('Organisation not found'),
-                      );
+                // Text(
+                //   "Projects",
+                //   style: TextStyle(
+                //     fontSize: 16,
+                //     fontWeight: FontWeight.w600,
+                //     color: Theme.of(context).colorScheme.onSurface,
+                //   ),
+                // ),
+                // SizedBox(height: 10),
 
-                      // Get the sharedId of this milestone
-                      final sharedId = milestone['sharedId'];
+                // BlocBuilder<OrganisationsBloc, OrganisationsState>(
+                //   builder: (context, orgState) {
+                //     if (orgState is OrganisationsLoaded) {
+                //       final currentOrg = orgState.organisations.firstWhere(
+                //         (org) => org.id == widget.organisationId,
+                //         orElse: () => throw Exception('Organisation not found'),
+                //       );
 
-                      if (sharedId != null) {
-                        // Find all projects that have this milestone
-                        final assignedProjects =
-                            currentOrg.projects.where((project) {
-                              // For now, we'll show all projects since we can't easily check
-                              // which ones have this specific milestone without additional queries
-                              // In a real implementation, you might want to store this information
-                              return true; // Show all projects for now
-                            }).toList();
+                //       // Get the sharedId of this milestone
+                //       final sharedId = milestone['sharedId'];
 
-                        if (assignedProjects.isNotEmpty) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children:
-                                assignedProjects.map((project) {
-                                  return Padding(
-                                    padding: EdgeInsets.only(bottom: 8),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Theme.of(context)
-                                                    .colorScheme
-                                                    .secondaryContainer,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.folder,
-                                            color:
-                                                Theme.of(context)
-                                                    .colorScheme
-                                                    .onSecondaryContainer,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            project.name,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color:
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                          );
-                        } else {
-                          return Text(
-                            'No projects assigned',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          );
-                        }
-                      } else {
-                        // If no sharedId, show only the current project
-                        return Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.folder,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.onSecondaryContainer,
-                                size: 16,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                widget.projectTitle,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    }
+                //       if (sharedId != null) {
+                //         // Find all projects that have this milestone
+                //         final assignedProjects =
+                //             currentOrg.projects.where((project) {
+                //               // For now, we'll show all projects since we can't easily check
+                //               // which ones have this specific milestone without additional queries
+                //               // In a real implementation, you might want to store this information
+                //               return true; // Show all projects for now
+                //             }).toList();
 
-                    // Loading state
-                    return Row(
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Loading projects...',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                //         if (assignedProjects.isNotEmpty) {
+                //           return Column(
+                //             crossAxisAlignment: CrossAxisAlignment.start,
+                //             children:
+                //                 assignedProjects.map((project) {
+                //                   return Padding(
+                //                     padding: EdgeInsets.only(bottom: 8),
+                //                     child: Row(
+                //                       children: [
+                //                         Container(
+                //                           padding: EdgeInsets.all(10),
+                //                           decoration: BoxDecoration(
+                //                             color:
+                //                                 Theme.of(context)
+                //                                     .colorScheme
+                //                                     .secondaryContainer,
+                //                             borderRadius: BorderRadius.circular(
+                //                               8,
+                //                             ),
+                //                           ),
+                //                           child: Icon(
+                //                             Icons.folder,
+                //                             color:
+                //                                 Theme.of(context)
+                //                                     .colorScheme
+                //                                     .onSecondaryContainer,
+                //                             size: 20,
+                //                           ),
+                //                         ),
+                //                         SizedBox(width: 12),
+                //                         Expanded(
+                //                           child: Text(
+                //                             project.name,
+                //                             style: TextStyle(
+                //                               fontSize: 16,
+                //                               color:
+                //                                   Theme.of(context)
+                //                                       .colorScheme
+                //                                       .onSurfaceVariant,
+                //                             ),
+                //                           ),
+                //                         ),
+                //                       ],
+                //                     ),
+                //                   );
+                //                 }).toList(),
+                //           );
+                //         } else {
+                //           return Text(
+                //             'No projects assigned',
+                //             style: TextStyle(
+                //               fontSize: 14,
+                //               color:
+                //                   Theme.of(
+                //                     context,
+                //                   ).colorScheme.onSurfaceVariant,
+                //               fontStyle: FontStyle.italic,
+                //             ),
+                //           );
+                //         }
+                //       } else {
+                //         // If no sharedId, show only the current project
+                //         return Row(
+                //           children: [
+                //             Container(
+                //               padding: EdgeInsets.all(8),
+                //               decoration: BoxDecoration(
+                //                 color:
+                //                     Theme.of(
+                //                       context,
+                //                     ).colorScheme.secondaryContainer,
+                //                 borderRadius: BorderRadius.circular(8),
+                //               ),
+                //               child: Icon(
+                //                 Icons.folder,
+                //                 color:
+                //                     Theme.of(
+                //                       context,
+                //                     ).colorScheme.onSecondaryContainer,
+                //                 size: 16,
+                //               ),
+                //             ),
+                //             SizedBox(width: 12),
+                //             Expanded(
+                //               child: Text(
+                //                 widget.projectTitle,
+                //                 style: TextStyle(
+                //                   fontSize: 14,
+                //                   color:
+                //                       Theme.of(
+                //                         context,
+                //                       ).colorScheme.onSurfaceVariant,
+                //                 ),
+                //               ),
+                //             ),
+                //           ],
+                //         );
+                //       }
+                //     }
 
-                SizedBox(height: 20),
+                //     // Loading state
+                //     return Row(
+                //       children: [
+                //         SizedBox(
+                //           width: 16,
+                //           height: 16,
+                //           child: CircularProgressIndicator(strokeWidth: 2),
+                //         ),
+                //         SizedBox(width: 12),
+                //         Text(
+                //           'Loading projects...',
+                //           style: TextStyle(
+                //             fontSize: 14,
+                //             color:
+                //                 Theme.of(context).colorScheme.onSurfaceVariant,
+                //           ),
+                //         ),
+                //       ],
+                //     );
+                //   },
+                // ),
 
                 // Description
                 Text(

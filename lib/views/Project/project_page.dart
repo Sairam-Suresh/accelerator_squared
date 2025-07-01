@@ -5,6 +5,7 @@ import 'package:accelerator_squared/views/Project/create_new_project.dart';
 import 'package:accelerator_squared/views/Project/project_card.dart';
 import 'package:accelerator_squared/views/Project/project_details.dart';
 import 'package:accelerator_squared/views/organisations/org_members.dart';
+import 'package:accelerator_squared/views/organisations/org_milestones.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/organisations/org_stats.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/project_requests.dart';
@@ -415,6 +416,10 @@ class _ProjectPageState extends State<ProjectPage>
                             label: Text("Project Requests"),
                           ),
                           NavigationRailDestination(
+                            icon: Icon(Icons.flag),
+                            label: Text("Milestones"),
+                          ),
+                          NavigationRailDestination(
                             icon: Icon(Icons.groups),
                             label: Text("Members"),
                           ),
@@ -538,6 +543,10 @@ class _ProjectPageState extends State<ProjectPage>
                               ? ProjectRequests(
                                 organisationId: widget.organisationId,
                                 projectRequests: projectRequests,
+                              )
+                              : _selectedIndex == 3
+                              ? OrgMilestones(
+                                organisationId: widget.organisationId,
                               )
                               : OrgMembers(
                                 teacherView: true,
