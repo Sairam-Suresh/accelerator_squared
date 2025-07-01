@@ -27,6 +27,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     on<AddCommentEvent>(_onAddComment);
     on<UpdateCommentEvent>(_onUpdateComment);
     on<DeleteCommentEvent>(_onDeleteComment);
+    on<AddTaskEvent>(_onAddTask);
     on<_EmitProjectsLoaded>(
       (event, emit) => emit(ProjectsLoaded(event.projects)),
     );
@@ -477,6 +478,43 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .doc(commentId)
           .delete();
       emit(ProjectActionSuccess('Comment deleted successfully'));
+      add(FetchProjectsEvent(orgId));
+    } catch (e) {
+      emit(ProjectsError(e.toString()));
+    }
+  }
+
+  Future<void> _onAddTask(
+    AddTaskEvent event,
+    Emitter<ProjectsState> emit,
+  ) async {
+    emit(ProjectsLoading());
+    try {
+      final uid = auth.currentUser?.uid ?? '';
+      if (uid.isEmpty) {
+        emit(ProjectsError('User not authenticated'));
+        return;
+      }
+      final orgId = event.organisationId;
+      final projectId = event.projectId;
+      final taskId = const Uuid().v4();
+      await firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('projects')
+          .doc(projectId)
+          .collection('tasks')
+          .doc(taskId)
+          .set({
+            'name': event.name,
+            'content': event.content,
+            'deadline': event.deadline,
+            'isCompleted': event.isCompleted,
+            'milestoneId': event.milestoneId,
+            'createdAt': FieldValue.serverTimestamp(),
+            'createdBy': uid,
+          });
+      emit(ProjectActionSuccess('Task added successfully'));
       add(FetchProjectsEvent(orgId));
     } catch (e) {
       emit(ProjectsError(e.toString()));

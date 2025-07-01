@@ -439,6 +439,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                         borderRadius: BorderRadius.circular(20),
                                         onTap: () {
                                           aweSideSheet(
+                                            footer: SizedBox(height: 10),
                                             sheetWidth:
                                                 MediaQuery.of(
                                                   context,

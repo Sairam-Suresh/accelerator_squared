@@ -34,10 +34,10 @@ class _OrgMilestonesState extends State<OrgMilestones> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Project-wide milestones",
+            "Organization wide milestones",
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 14),
           widget.isTeacher
               ? SizedBox(
                 height: 45,
@@ -156,7 +156,14 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                         }
                         if (orgWideMilestones.isEmpty) {
                           return Center(
-                            child: Text('No organisation-wide milestones.'),
+                            child: Text(
+                              'No milestones found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           );
                         }
                         // Use the rest of the milestone list UI as before, but use projects[0].id for projectId
@@ -174,6 +181,7 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                                 onTap: () {
                                   // Open milestone sheet
                                   aweSideSheet(
+                                    footer: SizedBox(height: 10),
                                     sheetWidth:
                                         MediaQuery.of(context).size.width / 3,
                                     context: context,

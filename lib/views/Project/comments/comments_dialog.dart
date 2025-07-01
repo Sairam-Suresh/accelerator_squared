@@ -39,6 +39,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
                       child: ListTile(
                         onTap: () {
                           aweSideSheet(
+                            footer: SizedBox(height: 10),
                             onCancel: () => Navigator.of(context).pop(),
                             header: SizedBox(height: 20),
                             sheetPosition: SheetPosition.right,

@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/views/Project/tasks/create_task_dialog.dart';
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
 import 'package:flutter/material.dart';
@@ -40,13 +41,39 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   StreamSubscription? _deleteSubscription;
   StreamSubscription? _saveSubscription;
   StreamSubscription? _dateUpdateSubscription;
+  List<Map<String, dynamic>> _tasks = [];
+  StreamSubscription? _tasksSubscription;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     nameController.text = widget.milestone['name'] ?? '';
     descriptionController.text = widget.milestone['description'] ?? '';
+    _listenToTasks();
+  }
+
+  void _listenToTasks() {
+    _tasksSubscription?.cancel();
+    final orgId = widget.organisationId;
+    final projectId = widget.projectId;
+    _tasksSubscription = FirebaseFirestore.instance
+        .collection('organisations')
+        .doc(orgId)
+        .collection('projects')
+        .doc(projectId)
+        .collection('tasks')
+        .snapshots()
+        .listen((snapshot) {
+          setState(() {
+            _tasks =
+                snapshot.docs
+                    .map((doc) => {...doc.data(), 'id': doc.id})
+                    .where(
+                      (task) => task['milestoneId'] == widget.milestone['id'],
+                    )
+                    .toList();
+          });
+        });
   }
 
   @override
@@ -54,6 +81,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
     _deleteSubscription?.cancel();
     _saveSubscription?.cancel();
     _dateUpdateSubscription?.cancel();
+    _tasksSubscription?.cancel();
     super.dispose();
   }
 
@@ -61,7 +89,6 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   Widget build(BuildContext context) {
     final milestone = widget.milestone;
     final projectTitle = widget.projectTitle;
-    final tasks = (milestone['tasks'] as List?) ?? [];
     // Format due date
     String formattedDueDate = 'Unknown';
     final dueDateRaw = milestone['dueDate'];
@@ -769,6 +796,8 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ? SizedBox(
                       width: MediaQuery.of(context).size.width / 3 - 50,
                       child: TextField(
+                        minLines: 3,
+                        maxLines: 5,
                         controller: descriptionController,
                         decoration: InputDecoration(
                           hintText: "Enter milestone description",
@@ -853,7 +882,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 elevation: 2,
               ),
               onPressed: () {
-                Navigator.of(context).pop();
+                // Navigator.of(context).pop();
               },
               icon: Icon(Icons.send_rounded, size: 20),
               label: Text(
@@ -1001,6 +1030,39 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
+              SizedBox(width: 24),
+              SizedBox(
+                height: 35,
+                width: 175,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) {
+                        return CreateTaskDialog(
+                          organisationId: widget.organisationId,
+                          projectId: widget.projectId,
+                          milestoneId: widget.milestone['id'],
+                        );
+                      },
+                    );
+                    // Optionally, refresh tasks here if not using real-time
+                  },
+                  icon: Icon(Icons.add, size: 20),
+                  label: Text(
+                    "Create task",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
             ],
           ),
 
@@ -1029,13 +1091,13 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                   ),
                   title: Text(
-                    tasks[index]['name'] ?? '',
+                    _tasks[index]['name'] ?? '',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   subtitle: Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
-                      tasks[index]['description'] ?? '',
+                      _tasks[index]['content'] ?? '',
                       maxLines: 2,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1049,12 +1111,13 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   ),
                   onTap: () {
                     aweSideSheet(
+                      footer: SizedBox(height: 10),
                       sheetPosition: SheetPosition.right,
                       sheetWidth: MediaQuery.of(context).size.width / 3,
                       context: context,
                       body: Padding(
                         padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
-                        child: _buildTaskDetailSheet(index, tasks),
+                        child: _buildTaskDetailSheet(index, _tasks),
                       ),
                       header: SizedBox(height: 20),
                       onCancel: () => Navigator.of(context).pop(),
@@ -1064,7 +1127,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
               );
             },
             separatorBuilder: (context, index) => SizedBox(height: 8),
-            itemCount: tasks.length,
+            itemCount: _tasks.length,
             shrinkWrap: true,
           ),
         ],
@@ -1108,7 +1171,26 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
 
   Widget _buildTaskDetailSheet(int index, [List? tasksOverride]) {
     final milestone = widget.milestone;
-    final tasks = tasksOverride ?? (milestone['tasks'] as List?) ?? [];
+    final tasks = tasksOverride ?? _tasks;
+    final task = tasks[index];
+    String formattedDueDate = 'Unknown';
+    final dueDateRaw = task['deadline'];
+    if (dueDateRaw != null) {
+      DateTime? dueDate;
+      if (dueDateRaw is DateTime) {
+        dueDate = dueDateRaw;
+      } else if (dueDateRaw is String) {
+        try {
+          dueDate = DateTime.parse(dueDateRaw);
+        } catch (_) {}
+      } else if (dueDateRaw is Timestamp) {
+        dueDate = dueDateRaw.toDate();
+      }
+      if (dueDate != null) {
+        formattedDueDate =
+            '${dueDate.day.toString().padLeft(2, '0')}/${dueDate.month.toString().padLeft(2, '0')}/${dueDate.year.toString().substring(2)}';
+      }
+    }
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1140,7 +1222,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      tasks[index]['name'] ?? '',
+                      task['name'] ?? '',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -1181,9 +1263,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
               _buildInfoRow(
                 Icons.calendar_today_rounded,
                 "Due on",
-                tasks[index]['dueDate'] != null
-                    ? tasks[index]['dueDate'].toString()
-                    : 'Unknown',
+                formattedDueDate,
               ),
               SizedBox(height: 20),
 
@@ -1197,7 +1277,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
               ),
               SizedBox(height: 8),
               Text(
-                tasks[index]['description'] ?? '',
+                task['content'] ?? '',
                 style: TextStyle(
                   fontSize: 16,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

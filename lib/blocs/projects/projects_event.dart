@@ -118,3 +118,22 @@ class DeleteCommentEvent extends ProjectsEvent {
     required this.commentId,
   });
 }
+
+class AddTaskEvent extends ProjectsEvent {
+  final String organisationId;
+  final String projectId;
+  final String milestoneId;
+  final String name;
+  final String content;
+  final DateTime deadline;
+  final bool isCompleted;
+  AddTaskEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.milestoneId,
+    required this.name,
+    required this.content,
+    required this.deadline,
+    required this.isCompleted,
+  });
+}

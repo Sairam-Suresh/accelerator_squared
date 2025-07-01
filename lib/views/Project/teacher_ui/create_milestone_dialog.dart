@@ -235,7 +235,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                         TextField(
                           controller: descriptionController,
                           minLines: 3,
-                          maxLines: 4,
+                          maxLines: 6,
                           decoration: InputDecoration(
                             hintText: "Enter milestone description",
                             label: Text("Milestone Description"),
