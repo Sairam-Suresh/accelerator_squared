@@ -454,6 +454,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 10,
                                               ),
                                               child: MilestoneSheet(
+                                                isTeacher: widget.isTeacher,
                                                 milestone: milestone,
                                                 projectTitle: projectName,
                                                 organisationId:

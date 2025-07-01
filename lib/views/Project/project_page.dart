@@ -254,6 +254,10 @@ class _ProjectPageState extends State<ProjectPage>
                             label: Text("Projects"),
                           ),
                           NavigationRailDestination(
+                            icon: Icon(Icons.flag),
+                            label: Text("Milestones"),
+                          ),
+                          NavigationRailDestination(
                             icon: Icon(Icons.groups),
                             label: Text("Members"),
                           ),
@@ -373,6 +377,11 @@ class _ProjectPageState extends State<ProjectPage>
                                             ],
                                           ),
                                 ),
+                              )
+                              : _selectedIndex == 1
+                              ? OrgMilestones(
+                                isTeacher: widget.userRole != 'member',
+                                organisationId: widget.organisationId,
                               )
                               : OrgMembers(
                                 teacherView: false,
@@ -546,6 +555,7 @@ class _ProjectPageState extends State<ProjectPage>
                               )
                               : _selectedIndex == 3
                               ? OrgMilestones(
+                                isTeacher: widget.userRole != 'member',
                                 organisationId: widget.organisationId,
                               )
                               : OrgMembers(

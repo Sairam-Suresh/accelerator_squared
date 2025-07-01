@@ -14,8 +14,10 @@ class MilestoneSheet extends StatefulWidget {
     required this.projectTitle,
     required this.organisationId,
     required this.projectId,
+    required this.isTeacher,
   });
 
+  final bool isTeacher;
   final Map<String, dynamic> milestone;
   final String projectTitle;
   final String organisationId;
@@ -863,117 +865,122 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
 
           SizedBox(height: 20),
 
-          SizedBox(
-            height: 56,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-              onPressed:
-                  _isDeleting
-                      ? null
-                      : () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder:
-                              (context) => AlertDialog(
-                                title: Text('Delete Milestone'),
-                                content: Text(
-                                  'Are you sure you want to delete this milestone?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(false),
-                                    child: Text('Cancel'),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
+          widget.isTeacher
+              ? SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  onPressed:
+                      _isDeleting
+                          ? null
+                          : () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: Text('Delete Milestone'),
+                                    content: Text(
+                                      'Are you sure you want to delete this milestone?',
                                     ),
-                                    onPressed:
-                                        () => Navigator.of(context).pop(true),
-                                    child: Text('Delete'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                        child: Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        onPressed:
+                                            () =>
+                                                Navigator.of(context).pop(true),
+                                        child: Text('Delete'),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                        );
-                        if (confirm == true) {
-                          setState(() => _isDeleting = true);
-                          final bloc = context.read<ProjectsBloc>();
-                          _deleteSubscription?.cancel();
-                          _deleteSubscription = bloc.stream.listen((state) {
-                            if (state is ProjectActionSuccess) {
+                            );
+                            if (confirm == true) {
+                              setState(() => _isDeleting = true);
+                              final bloc = context.read<ProjectsBloc>();
                               _deleteSubscription?.cancel();
-                              if (mounted) {
-                                bloc.add(
-                                  FetchProjectsEvent(
-                                    widget.organisationId,
-                                    projectId: widget.projectId,
-                                  ),
-                                );
-                                Navigator.of(context).pop();
+                              _deleteSubscription = bloc.stream.listen((state) {
+                                if (state is ProjectActionSuccess) {
+                                  _deleteSubscription?.cancel();
+                                  if (mounted) {
+                                    bloc.add(
+                                      FetchProjectsEvent(
+                                        widget.organisationId,
+                                        projectId: widget.projectId,
+                                      ),
+                                    );
+                                    Navigator.of(context).pop();
+                                  }
+                                } else if (state is ProjectsError) {
+                                  _deleteSubscription?.cancel();
+                                  if (mounted) {
+                                    setState(() => _isDeleting = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(state.message),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              });
+                              try {
+                                if (mounted) {
+                                  bloc.add(
+                                    DeleteMilestoneEvent(
+                                      organisationId: widget.organisationId,
+                                      projectId: widget.projectId,
+                                      milestoneId: milestone['id'],
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                _deleteSubscription?.cancel();
+                                if (mounted) {
+                                  setState(() => _isDeleting = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               }
-                            } else if (state is ProjectsError) {
-                              _deleteSubscription?.cancel();
-                              if (mounted) {
-                                setState(() => _isDeleting = false);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(state.message),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
                             }
-                          });
-                          try {
-                            if (mounted) {
-                              bloc.add(
-                                DeleteMilestoneEvent(
-                                  organisationId: widget.organisationId,
-                                  projectId: widget.projectId,
-                                  milestoneId: milestone['id'],
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            _deleteSubscription?.cancel();
-                            if (mounted) {
-                              setState(() => _isDeleting = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
-              icon:
-                  _isDeleting
-                      ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                      : Icon(Icons.delete, size: 20),
-              label: Text(
-                "Delete milestone",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
+                          },
+                  icon:
+                      _isDeleting
+                          ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : Icon(Icons.delete, size: 20),
+                  label: Text(
+                    "Delete milestone",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              )
+              : SizedBox(),
 
           SizedBox(height: 24),
 
