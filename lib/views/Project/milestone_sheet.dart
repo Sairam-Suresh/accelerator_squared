@@ -38,6 +38,10 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   TextEditingController nameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
   TextEditingController dueDateController = TextEditingController();
+  TextEditingController taskNameController = TextEditingController();
+  TextEditingController taskDescriptionController = TextEditingController();
+  DateTime? taskDueDate;
+  int? editingTaskIndex;
 
   StreamSubscription? _deleteSubscription;
   StreamSubscription? _saveSubscription;
@@ -423,167 +427,18 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                             _isUpdatingDate
                                 ? null
                                 : () async {
-                                  // Get current due date as initial date
-                                  DateTime initialDate = DateTime.now();
-                                  final dueDateRaw = milestone['dueDate'];
-                                  if (dueDateRaw != null) {
-                                    if (dueDateRaw is DateTime) {
-                                      initialDate = dueDateRaw;
-                                    } else if (dueDateRaw is Timestamp) {
-                                      initialDate = dueDateRaw.toDate();
-                                    }
-                                  }
-
-                                  final DateTime? pickedDate =
-                                      await showDatePicker(
-                                        context: context,
-                                        initialDate: initialDate,
-                                        firstDate: DateTime.now(),
-                                        lastDate: DateTime.now().add(
-                                          Duration(days: 365),
-                                        ),
-                                      );
-
-                                  if (pickedDate != null) {
+                                  final DateTime initialDate =
+                                      taskDueDate ?? DateTime.now();
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: initialDate,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (picked != null) {
                                     setState(() {
-                                      _isUpdatingDate = true;
+                                      taskDueDate = picked;
                                     });
-
-                                    final bloc = context.read<ProjectsBloc>();
-                                    _dateUpdateSubscription = bloc.stream.listen((
-                                      state,
-                                    ) {
-                                      if (state is ProjectActionSuccess) {
-                                        // Don't stop loading yet, wait for the next ProjectsLoaded state
-                                        // to verify the date was actually updated
-                                      } else if (state is ProjectsLoaded) {
-                                        // Check if the date was actually updated by looking at the current state
-                                        ProjectWithDetails? project;
-                                        try {
-                                          project = state.projects.firstWhere(
-                                            (p) => p.id == widget.projectId,
-                                          );
-                                        } catch (e) {
-                                          project = null;
-                                        }
-
-                                        if (project != null) {
-                                          Map<String, dynamic>?
-                                          updatedMilestone;
-                                          try {
-                                            updatedMilestone = project
-                                                .milestones
-                                                .firstWhere(
-                                                  (m) =>
-                                                      m['id'] ==
-                                                      milestone['id'],
-                                                );
-                                          } catch (e) {
-                                            updatedMilestone = null;
-                                          }
-
-                                          if (updatedMilestone != null) {
-                                            final updatedDueDateRaw =
-                                                updatedMilestone['dueDate'];
-                                            if (updatedDueDateRaw != null) {
-                                              DateTime? updatedDueDate;
-                                              if (updatedDueDateRaw
-                                                  is DateTime) {
-                                                updatedDueDate =
-                                                    updatedDueDateRaw;
-                                              } else if (updatedDueDateRaw
-                                                  is Timestamp) {
-                                                updatedDueDate =
-                                                    updatedDueDateRaw.toDate();
-                                              }
-
-                                              // Only stop loading if the date matches the picked date
-                                              if (updatedDueDate != null &&
-                                                  updatedDueDate.year ==
-                                                      pickedDate.year &&
-                                                  updatedDueDate.month ==
-                                                      pickedDate.month &&
-                                                  updatedDueDate.day ==
-                                                      pickedDate.day) {
-                                                _dateUpdateSubscription
-                                                    ?.cancel();
-                                                if (mounted) {
-                                                  setState(() {
-                                                    _isUpdatingDate = false;
-                                                  });
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        'Due date updated successfully',
-                                                      ),
-                                                      backgroundColor:
-                                                          Colors.green,
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                            }
-                                          }
-                                        }
-                                      } else if (state is ProjectsError) {
-                                        _dateUpdateSubscription?.cancel();
-                                        if (mounted) {
-                                          setState(() {
-                                            _isUpdatingDate = false;
-                                          });
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(state.message),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    });
-
-                                    try {
-                                      if (mounted) {
-                                        bloc.add(
-                                          UpdateMilestoneEvent(
-                                            organisationId:
-                                                widget.organisationId,
-                                            projectId: widget.projectId,
-                                            milestoneId: milestone['id'],
-                                            name:
-                                                nameController.text.isNotEmpty
-                                                    ? nameController.text
-                                                    : (milestone['name'] ?? ''),
-                                            description:
-                                                descriptionController
-                                                        .text
-                                                        .isNotEmpty
-                                                    ? descriptionController.text
-                                                    : (milestone['description'] ??
-                                                        ''),
-                                            dueDate: pickedDate,
-                                          ),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      _dateUpdateSubscription?.cancel();
-                                      if (mounted) {
-                                        setState(() {
-                                          _isUpdatingDate = false;
-                                        });
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Error: $e'),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                      }
-                                    }
                                   }
                                 },
                         label: Padding(
@@ -1285,211 +1140,475 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   }
 
   Widget _buildTaskDetailSheet(int index, [List? tasksOverride]) {
-    final milestone = widget.milestone;
     final tasks = tasksOverride ?? _tasks;
     final task = tasks[index];
-    String formattedDueDate = 'Unknown';
     final dueDateRaw = task['deadline'];
-    if (dueDateRaw != null) {
-      DateTime? dueDate;
+    // Update controllers if switching tasks or if data changed
+    if (editingTaskIndex != index ||
+        taskNameController.text != (task['name'] ?? '') ||
+        taskDescriptionController.text != (task['content'] ?? '')) {
+      taskNameController.text = task['name'] ?? '';
+      taskDescriptionController.text = task['content'] ?? '';
       if (dueDateRaw is DateTime) {
-        dueDate = dueDateRaw;
-      } else if (dueDateRaw is String) {
-        try {
-          dueDate = DateTime.parse(dueDateRaw);
-        } catch (_) {}
+        taskDueDate = dueDateRaw;
       } else if (dueDateRaw is Timestamp) {
-        dueDate = dueDateRaw.toDate();
+        taskDueDate = dueDateRaw.toDate();
+      } else if (dueDateRaw is String) {
+        taskDueDate = DateTime.tryParse(dueDateRaw);
+      } else {
+        taskDueDate = DateTime.now();
       }
-      if (dueDate != null) {
-        formattedDueDate =
-            '${dueDate.day.toString().padLeft(2, '0')}/${dueDate.month.toString().padLeft(2, '0')}/${dueDate.year.toString().substring(2)}';
-      }
+      editingTaskIndex = index;
     }
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Task header
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
+    String formattedDueDate = 'Unknown';
+    if (taskDueDate != null) {
+      formattedDueDate =
+          '${taskDueDate!.day.toString().padLeft(2, '0')}/${taskDueDate!.month.toString().padLeft(2, '0')}/${taskDueDate!.year.toString().substring(2)}';
+    }
+    bool isEditingTask = false;
+    bool isSavingTask = false;
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return BlocListener<ProjectsBloc, ProjectsState>(
+          listener: (context, state) {
+            if (state is ProjectsLoaded) {
+              final updatedTasks =
+                  state.projects
+                      .expand(
+                        (p) =>
+                            p.id == widget.projectId
+                                ? p.data['tasks'] ?? []
+                                : [],
+                      )
+                      .toList();
+              if (updatedTasks.isNotEmpty && index < updatedTasks.length) {
+                final updatedTask = updatedTasks[index];
+                if (taskNameController.text != (updatedTask['name'] ?? '')) {
+                  taskNameController.text = updatedTask['name'] ?? '';
+                }
+                if (taskDescriptionController.text !=
+                    (updatedTask['content'] ?? '')) {
+                  taskDescriptionController.text = updatedTask['content'] ?? '';
+                }
+              }
+            }
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Task header
               Container(
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  Icons.task_rounded,
-                  color: Theme.of(context).colorScheme.onSecondary,
-                  size: 24,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.task_rounded,
+                        color: Theme.of(context).colorScheme.onSecondary,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        isEditingTask
+                            ? SizedBox(
+                              width: MediaQuery.of(context).size.width / 5,
+                              child: TextField(
+                                controller: taskNameController,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Task name',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                              ),
+                            )
+                            : Text(
+                              task['name'] ?? '',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                        SizedBox(height: 4),
+                        Text("Task"),
+                      ],
+                    ),
+                    Spacer(),
+                    if (!isEditingTask)
+                      IconButton(
+                        icon: Icon(Icons.edit, size: 20),
+                        tooltip: 'Edit task',
+                        onPressed: () {
+                          setState(() {
+                            isEditingTask = true;
+                          });
+                        },
+                      ),
+                  ],
                 ),
               ),
-              SizedBox(width: 16),
-              Expanded(
+              SizedBox(height: 24),
+              // Task details
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today_rounded, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Due on: ',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        if (isEditingTask)
+                          TextButton(
+                            onPressed: () async {
+                              final DateTime initialDate =
+                                  taskDueDate ?? DateTime.now();
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: initialDate,
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  taskDueDate = picked;
+                                });
+                              }
+                            },
+                            child: Text(
+                              '${taskDueDate!.day.toString().padLeft(2, '0')}/${taskDueDate!.month.toString().padLeft(2, '0')}/${taskDueDate!.year.toString().substring(2)}',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        else
+                          Text(
+                            formattedDueDate,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
                     Text(
-                      task['name'] ?? '',
+                      'Description',
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Task",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                    SizedBox(height: 8),
+                    isEditingTask
+                        ? TextField(
+                          controller: taskDescriptionController,
+                          minLines: 3,
+                          maxLines: 6,
+                          decoration: InputDecoration(
+                            hintText: 'Task description',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        )
+                        : Text(
+                          task['content'] ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            height: 1.5,
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 24),
+              if (isEditingTask)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        onPressed:
+                            isSavingTask
+                                ? null
+                                : () async {
+                                  final name = taskNameController.text.trim();
+                                  final content =
+                                      taskDescriptionController.text.trim();
+                                  if (name.isEmpty || content.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Name and description cannot be empty',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  setState(() {
+                                    isSavingTask = true;
+                                  });
+                                  final bloc = context.read<ProjectsBloc>();
+                                  StreamSubscription? subscription;
+                                  subscription = bloc.stream.listen((state) {
+                                    if (state is ProjectActionSuccess &&
+                                        state.message ==
+                                            'Task updated successfully') {
+                                      subscription?.cancel();
+                                      if (mounted) {
+                                        setState(() {
+                                          isEditingTask = false;
+                                          isSavingTask = false;
+                                        });
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Task updated successfully',
+                                            ),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      }
+                                    } else if (state is ProjectsError) {
+                                      subscription?.cancel();
+                                      if (mounted) {
+                                        setState(() {
+                                          isSavingTask = false;
+                                        });
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(state.message),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  });
+                                  try {
+                                    if (mounted) {
+                                      bloc.add(
+                                        UpdateTaskEvent(
+                                          organisationId: widget.organisationId,
+                                          projectId: widget.projectId,
+                                          taskId: task['id'],
+                                          name: name,
+                                          content: content,
+                                          deadline:
+                                              taskDueDate ?? DateTime.now(),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    subscription?.cancel();
+                                    if (mounted) {
+                                      setState(() {
+                                        isSavingTask = false;
+                                      });
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Error: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                        icon:
+                            isSavingTask
+                                ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : Icon(Icons.save, size: 20),
+                        label: Text(
+                          'Save',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: TextButton(
+                        onPressed:
+                            isSavingTask
+                                ? null
+                                : () {
+                                  setState(() {
+                                    isEditingTask = false;
+                                  });
+                                },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 24),
 
-        // Task details
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            color: Theme.of(context).colorScheme.surface,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildInfoRow(
-                Icons.calendar_today_rounded,
-                "Due on",
-                formattedDueDate,
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  onPressed: () {
+                    // Show confirmation dialog
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('Delete Task'),
+                          content: Text(
+                            'Are you sure you want to delete this task? This action cannot be undone.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                // Delete the task
+                                context.read<ProjectsBloc>().add(
+                                  DeleteTaskEvent(
+                                    organisationId: widget.organisationId,
+                                    projectId: widget.projectId,
+                                    taskId: task['id'],
+                                  ),
+                                );
+                                // Close the task detail sheet
+                                Navigator.of(context).pop();
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.error,
+                              ),
+                              child: Text('Delete'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  label: Text(
+                    'Delete Task',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  icon: Icon(Icons.delete, size: 20),
+                ),
               ),
               SizedBox(height: 20),
-
-              Text(
-                "Description",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                task['content'] ?? '',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
+              // Complete button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  onPressed: () {
+                    var navigator = Navigator.of(context);
+                    navigator.pop();
+                  },
+                  icon: Icon(Icons.check_rounded, size: 20),
+                  label: Text(
+                    'Mark as Completed',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-        SizedBox(height: 24),
-
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-            ),
-            onPressed: () {
-              // Show confirmation dialog
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('Delete Task'),
-                    content: Text(
-                      'Are you sure you want to delete this task? This action cannot be undone.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          // Delete the task
-                          context.read<ProjectsBloc>().add(
-                            DeleteTaskEvent(
-                              organisationId: widget.organisationId,
-                              projectId: widget.projectId,
-                              taskId: task['id'],
-                            ),
-                          );
-                          // Close the task detail sheet
-                          Navigator.of(context).pop();
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                        child: Text('Delete'),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-            label: Text(
-              "Delete Task",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            icon: Icon(Icons.delete, size: 20),
-          ),
-        ),
-        SizedBox(height: 20),
-        // Complete button
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-            ),
-            onPressed: () {
-              var navigator = Navigator.of(context);
-              navigator.pop();
-            },
-            icon: Icon(Icons.check_rounded, size: 20),
-            label: Text(
-              "Mark as Completed",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

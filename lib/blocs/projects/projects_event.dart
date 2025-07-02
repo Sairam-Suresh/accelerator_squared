@@ -148,3 +148,20 @@ class DeleteTaskEvent extends ProjectsEvent {
     required this.taskId,
   });
 }
+
+class UpdateTaskEvent extends ProjectsEvent {
+  final String organisationId;
+  final String projectId;
+  final String taskId;
+  final String name;
+  final String content;
+  final DateTime deadline;
+  UpdateTaskEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.taskId,
+    required this.name,
+    required this.content,
+    required this.deadline,
+  });
+}

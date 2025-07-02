@@ -29,6 +29,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     on<DeleteCommentEvent>(_onDeleteComment);
     on<AddTaskEvent>(_onAddTask);
     on<DeleteTaskEvent>(_onDeleteTask);
+    on<UpdateTaskEvent>(_onUpdateTask);
     on<_EmitProjectsLoaded>(
       (event, emit) => emit(ProjectsLoaded(event.projects)),
     );
@@ -541,6 +542,32 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .delete();
       emit(ProjectActionSuccess('Task deleted successfully'));
       add(FetchProjectsEvent(orgId));
+    } catch (e) {
+      emit(ProjectsError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateTask(
+    UpdateTaskEvent event,
+    Emitter<ProjectsState> emit,
+  ) async {
+    emit(ProjectsLoading());
+    try {
+      await firestore
+          .collection('organisations')
+          .doc(event.organisationId)
+          .collection('projects')
+          .doc(event.projectId)
+          .collection('tasks')
+          .doc(event.taskId)
+          .update({
+            'name': event.name,
+            'content': event.content,
+            'deadline': event.deadline,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+      emit(ProjectActionSuccess('Task updated successfully'));
+      add(FetchProjectsEvent(event.organisationId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
