@@ -25,8 +25,7 @@ class ProjectSettings extends StatefulWidget {
 }
 
 class _ProjectSettingsState extends State<ProjectSettings> {
-  bool editingName = false;
-  bool editingDescription = false;
+  bool editing = false;
   bool isSaving = false;
   TextEditingController nameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
@@ -45,8 +44,7 @@ class _ProjectSettingsState extends State<ProjectSettings> {
         if (state is ProjectActionSuccess && isSaving) {
           setState(() {
             isSaving = false;
-            editingName = false;
-            editingDescription = false;
+            editing = false;
           });
           Navigator.of(context).pop();
           if (widget.onProjectUpdated != null) {
@@ -83,42 +81,53 @@ class _ProjectSettingsState extends State<ProjectSettings> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
               ),
             ),
-            if (widget.isTeacher && (editingName || editingDescription))
-              IconButton(
-                onPressed:
-                    isSaving
-                        ? null
-                        : () {
-                          setState(() {
-                            isSaving = true;
-                          });
-                          context.read<ProjectsBloc>().add(
-                            UpdateProjectEvent(
-                              organisationId: widget.organisationId,
-                              projectId: widget.projectId,
-                              title: nameController.text,
-                              description: descriptionController.text,
-                            ),
-                          );
-                        },
-                icon:
-                    isSaving
-                        ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        )
-                        : Icon(
-                          Icons.save,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                tooltip: "Save changes",
-              ),
+            widget.isTeacher
+                ? editing
+                    ? IconButton(
+                      onPressed:
+                          isSaving
+                              ? null
+                              : () {
+                                setState(() {
+                                  isSaving = true;
+                                });
+                                context.read<ProjectsBloc>().add(
+                                  UpdateProjectEvent(
+                                    organisationId: widget.organisationId,
+                                    projectId: widget.projectId,
+                                    title: nameController.text,
+                                    description: descriptionController.text,
+                                  ),
+                                );
+                              },
+                      icon:
+                          isSaving
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              )
+                              : Icon(
+                                Icons.save,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                      tooltip: "Save changes",
+                    )
+                    : IconButton(
+                      onPressed: () {
+                        setState(() {
+                          editing = true;
+                        });
+                      },
+                      icon: Icon(Icons.edit, size: 20),
+                      tooltip: "Edit name",
+                    )
+                : SizedBox(),
           ],
         ),
         content: SizedBox(
@@ -151,20 +160,10 @@ class _ProjectSettingsState extends State<ProjectSettings> {
                               ),
                             ),
                             Spacer(),
-                            if (widget.isTeacher)
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    editingName = true;
-                                  });
-                                },
-                                icon: Icon(Icons.edit, size: 20),
-                                tooltip: "Edit name",
-                              ),
                           ],
                         ),
                         SizedBox(height: 8),
-                        editingName
+                        editing
                             ? Row(
                               children: [
                                 Expanded(
@@ -181,17 +180,6 @@ class _ProjectSettingsState extends State<ProjectSettings> {
                                       ),
                                     ),
                                   ),
-                                ),
-                                SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      editingName = false;
-                                      nameController.text = widget.projectName;
-                                    });
-                                  },
-                                  icon: Icon(Icons.close, color: Colors.red),
-                                  tooltip: "Cancel",
                                 ),
                               ],
                             )
@@ -229,21 +217,10 @@ class _ProjectSettingsState extends State<ProjectSettings> {
                                 fontSize: 20,
                               ),
                             ),
-                            Spacer(),
-                            if (widget.isTeacher)
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    editingDescription = true;
-                                  });
-                                },
-                                icon: Icon(Icons.edit, size: 20),
-                                tooltip: "Edit description",
-                              ),
                           ],
                         ),
                         SizedBox(height: 8),
-                        editingDescription
+                        editing
                             ? Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -267,21 +244,6 @@ class _ProjectSettingsState extends State<ProjectSettings> {
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          editingDescription = false;
-                                          descriptionController.text =
-                                              widget.projectDescription;
-                                        });
-                                      },
-                                      icon: Icon(
-                                        Icons.close,
-                                        color: Colors.red,
-                                      ),
-                                      tooltip: "Cancel",
                                     ),
                                   ],
                                 ),

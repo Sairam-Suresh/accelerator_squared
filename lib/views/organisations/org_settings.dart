@@ -26,8 +26,7 @@ class OrganisationSettingsDialog extends StatefulWidget {
 
 class _OrganisationSettingsDialogState
     extends State<OrganisationSettingsDialog> {
-  bool editingName = false;
-  bool editingDescription = false;
+  bool editing = false;
   bool isSaving = false;
   bool isRefreshingJoinCode = false;
   bool isLeaving = false;
@@ -52,8 +51,8 @@ class _OrganisationSettingsDialogState
           if (isSaving) {
             setState(() {
               isSaving = false;
+              editing = false;
             });
-            Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -160,41 +159,51 @@ class _OrganisationSettingsDialogState
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
               ),
             ),
-            if (widget.isTeacher && (editingName || editingDescription))
-              IconButton(
-                onPressed:
-                    isSaving
-                        ? null
-                        : () {
-                          setState(() {
-                            isSaving = true;
-                          });
-                          context.read<OrganisationsBloc>().add(
-                            UpdateOrganisationEvent(
-                              organisationId: widget.organisationId,
-                              name: nameFieldController.text,
-                              description: descriptionFieldController.text,
+            if (widget.isTeacher)
+              editing
+                  ? IconButton(
+                    onPressed:
+                        isSaving
+                            ? null
+                            : () {
+                              setState(() {
+                                isSaving = true;
+                              });
+                              context.read<OrganisationsBloc>().add(
+                                UpdateOrganisationEvent(
+                                  organisationId: widget.organisationId,
+                                  name: nameFieldController.text,
+                                  description: descriptionFieldController.text,
+                                ),
+                              );
+                            },
+                    icon:
+                        isSaving
+                            ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            )
+                            : Icon(
+                              Icons.save,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
-                          );
-                        },
-                icon:
-                    isSaving
-                        ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        )
-                        : Icon(
-                          Icons.save,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                tooltip: "Save changes",
-              ),
+                    tooltip: "Save changes",
+                  )
+                  : IconButton(
+                    onPressed: () {
+                      setState(() {
+                        editing = true;
+                      });
+                    },
+                    icon: Icon(Icons.edit, size: 20),
+                    tooltip: "Edit name",
+                  ),
           ],
         ),
         content: SizedBox(
@@ -227,20 +236,10 @@ class _OrganisationSettingsDialogState
                               ),
                             ),
                             Spacer(),
-                            if (widget.isTeacher)
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    editingName = true;
-                                  });
-                                },
-                                icon: Icon(Icons.edit, size: 20),
-                                tooltip: "Edit name",
-                              ),
                           ],
                         ),
                         SizedBox(height: 8),
-                        editingName
+                        editing
                             ? Row(
                               children: [
                                 Expanded(
@@ -257,17 +256,6 @@ class _OrganisationSettingsDialogState
                                       ),
                                     ),
                                   ),
-                                ),
-                                SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      editingName = false;
-                                      nameFieldController.text = widget.orgName;
-                                    });
-                                  },
-                                  icon: Icon(Icons.close, color: Colors.red),
-                                  tooltip: "Cancel",
                                 ),
                               ],
                             )
@@ -306,20 +294,10 @@ class _OrganisationSettingsDialogState
                               ),
                             ),
                             Spacer(),
-                            if (widget.isTeacher)
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    editingDescription = true;
-                                  });
-                                },
-                                icon: Icon(Icons.edit, size: 20),
-                                tooltip: "Edit description",
-                              ),
                           ],
                         ),
                         SizedBox(height: 8),
-                        editingDescription
+                        editing
                             ? Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -344,21 +322,6 @@ class _OrganisationSettingsDialogState
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          editingDescription = false;
-                                          descriptionFieldController.text =
-                                              widget.orgDescription;
-                                        });
-                                      },
-                                      icon: Icon(
-                                        Icons.close,
-                                        color: Colors.red,
-                                      ),
-                                      tooltip: "Cancel",
                                     ),
                                   ],
                                 ),
