@@ -4,7 +4,7 @@ import 'package:accelerator_squared/views/Project/milestone_sheet.dart';
 import 'package:accelerator_squared/views/Project/project_files.dart';
 import 'package:accelerator_squared/views/Project/project_settings.dart';
 import 'package:accelerator_squared/views/Project/teacher_ui/create_milestone_dialog.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/project_members.dart'
+import 'package:accelerator_squared/views/Project/project_members.dart'
     show ProjectMembersDialog;
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
