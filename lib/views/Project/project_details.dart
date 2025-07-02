@@ -106,7 +106,10 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                   builder: (context) {
                     return StatefulBuilder(
                       builder: (context, StateSetter setState) {
-                        return ProjectMembersDialog();
+                        return ProjectMembersDialog(
+                          organisationId: widget.organisationId,
+                          projectId: widget.project.id,
+                        );
                       },
                     );
                   },
