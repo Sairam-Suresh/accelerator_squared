@@ -137,3 +137,14 @@ class AddTaskEvent extends ProjectsEvent {
     required this.isCompleted,
   });
 }
+
+class DeleteTaskEvent extends ProjectsEvent {
+  final String organisationId;
+  final String projectId;
+  final String taskId;
+  DeleteTaskEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.taskId,
+  });
+}
