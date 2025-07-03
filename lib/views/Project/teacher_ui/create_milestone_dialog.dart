@@ -61,28 +61,14 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
   }
 
   void _createMilestone(BuildContext context) async {
-    final selectedProjects =
-        widget.isOrgWide
-            ? projectIdToName.keys.toList()
-            : projectStates.entries
-                .where((e) => e.value)
-                .map((e) => e.key)
-                .toList();
     final title = titleController.text.trim();
     final description = descriptionController.text.trim();
     final dueDate = selectedDate;
 
-    if (title.isEmpty ||
-        description.isEmpty ||
-        dueDate == null ||
-        selectedProjects.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please fill all fields and select at least one project.',
-          ),
-        ),
-      );
+    if (title.isEmpty || description.isEmpty || dueDate == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Please fill all fields.')));
       return;
     }
 
@@ -90,32 +76,63 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
       isLoading = true;
     });
     final bloc = BlocProvider.of<ProjectsBloc>(context);
-    int completed = 0;
-    int total = selectedProjects.length;
     bool errorOccurred = false;
 
-    // Generate a single shared milestone ID for all projects
-    final sharedMilestoneId = const Uuid().v4();
+    if (widget.isOrgWide) {
+      // Org-wide: assign to all projects, generate sharedId
+      final selectedProjects = projectIdToName.keys.toList();
+      final sharedMilestoneId = const Uuid().v4();
+      int completed = 0;
+      int total = selectedProjects.length;
+      void onDone() {
+        completed++;
+        if (completed == total) {
+          setState(() {
+            isLoading = false;
+          });
+          final bloc = BlocProvider.of<ProjectsBloc>(context);
+          bloc.add(
+            FetchProjectsEvent(
+              widget.organisationId,
+              projectId: widget.projects.first.id,
+            ),
+          );
+          if (!errorOccurred) Navigator.of(context).pop();
+        }
+      }
 
-    void onDone() {
-      completed++;
-      if (completed == total) {
-        setState(() {
-          isLoading = false;
-        });
-        // Always refresh milestones after adding
-        final bloc = BlocProvider.of<ProjectsBloc>(context);
+      for (final projectId in selectedProjects) {
         bloc.add(
-          FetchProjectsEvent(
-            widget.organisationId,
-            projectId: widget.projects.first.id,
+          AddMilestoneEvent(
+            organisationId: widget.organisationId,
+            projectId: projectId,
+            name: title,
+            description: description,
+            dueDate: dueDate,
+            sharedId: sharedMilestoneId,
           ),
         );
-        if (!errorOccurred) Navigator.of(context).pop();
+        bloc.stream
+            .firstWhere(
+              (state) =>
+                  state is ProjectActionSuccess || state is ProjectsError,
+            )
+            .then((state) {
+              if (state is ProjectsError) {
+                errorOccurred = true;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+              onDone();
+            });
       }
-    }
-
-    for (final projectId in selectedProjects) {
+    } else {
+      // Project-level: assign to current project only, no sharedId
+      final projectId = widget.projects.first.id;
       bloc.add(
         AddMilestoneEvent(
           organisationId: widget.organisationId,
@@ -123,7 +140,7 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
           name: title,
           description: description,
           dueDate: dueDate,
-          sharedId: sharedMilestoneId,
+          sharedId: null,
         ),
       );
       bloc.stream
@@ -131,16 +148,23 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
             (state) => state is ProjectActionSuccess || state is ProjectsError,
           )
           .then((state) {
+            setState(() {
+              isLoading = false;
+            });
             if (state is ProjectsError) {
-              errorOccurred = true;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
                   backgroundColor: Colors.red,
                 ),
               );
+            } else {
+              final bloc = BlocProvider.of<ProjectsBloc>(context);
+              bloc.add(
+                FetchProjectsEvent(widget.organisationId, projectId: projectId),
+              );
+              Navigator.of(context).pop();
             }
-            onDone();
           });
     }
   }
@@ -307,122 +331,19 @@ class _CreateMilestoneDialogState extends State<CreateMilestoneDialog> {
                             ).colorScheme.surfaceContainerHighest.withAlpha(77),
                           ),
                         ),
-                        SizedBox(height: 24),
+                        SizedBox(height: 16),
                         if (!widget.isOrgWide) ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.folder_rounded,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                "Assign to Projects",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          // Select all checkbox
-                          CheckboxListTile(
-                            title: Text(
-                              "Select All",
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              "Creating milestone in: ${projectIdToName[widget.projects.first.id]}",
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            value: allSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                allSelected = value ?? false;
-                                for (var project in projectStates.keys) {
-                                  projectStates[project] = allSelected;
-                                }
-                              });
-                            },
-                            controlAffinity: ListTileControlAffinity.leading,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
                           ),
-                          SizedBox(height: 12),
-                          // Projects list
-                          ListView.builder(
-                            itemBuilder: (context, index) {
-                              final projectId = projectIdToName.keys.elementAt(
-                                index,
-                              );
-                              final isSelected =
-                                  projectStates[projectId] ?? false;
-                              return Card(
-                                elevation: 1,
-                                margin: EdgeInsets.only(bottom: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: CheckboxListTile(
-                                  title: Row(
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.primaryContainer,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.flag,
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                          size: 24,
-                                        ),
-                                      ),
-                                      SizedBox(width: 15),
-                                      Text(
-                                        projectIdToName[projectId] ?? projectId,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  value: isSelected,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      projectStates[projectId] = value ?? false;
-                                      // Update select all state
-                                      allSelected = projectStates.values.every(
-                                        (v) => v,
-                                      );
-                                    });
-                                  },
-                                  controlAffinity:
-                                      ListTileControlAffinity.leading,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                ),
-                              );
-                            },
-                            itemCount: projectIdToName.length,
-                            shrinkWrap: true,
-                          ),
-                          SizedBox(height: 24),
+                          // (remove project selection UI here)
                         ],
                       ],
                     ),

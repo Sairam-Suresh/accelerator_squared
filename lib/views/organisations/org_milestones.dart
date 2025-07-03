@@ -200,6 +200,7 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                                         organisationId: widget.organisationId,
                                         projectId:
                                             projects[0].id, // Use any projectId
+                                        allowEdit: true,
                                       ),
                                     ),
                                     header: SizedBox(height: 20),

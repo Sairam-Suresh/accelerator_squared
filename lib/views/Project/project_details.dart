@@ -464,6 +464,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 organisationId:
                                                     widget.organisationId,
                                                 projectId: widget.project.id,
+                                                allowEdit:
+                                                    milestone['sharedId'] ==
+                                                    null,
                                               ),
                                             ),
                                             header: SizedBox(height: 20),
@@ -493,9 +496,48 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ),
                                             ),
 
-                                            title: Text(
-                                              milestone['name'] ?? '',
-                                              style: TextStyle(fontSize: 20),
+                                            title: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    milestone['name'] ?? '',
+                                                    style: TextStyle(
+                                                      fontSize: 20,
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (milestone['sharedId'] !=
+                                                    null)
+                                                  Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blue
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: Colors.blue
+                                                            .withOpacity(0.3),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      'Organization-wide milestone',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.blue,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
                                             subtitle: Column(
                                               crossAxisAlignment:
@@ -526,7 +568,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ],
                                             ),
                                             trailing:
-                                                widget.isTeacher
+                                                widget.isTeacher &&
+                                                        milestone['sharedId'] ==
+                                                            null
                                                     ? (_deletingMilestoneIds
                                                             .contains(
                                                               milestone['id'],

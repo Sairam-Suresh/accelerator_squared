@@ -16,6 +16,7 @@ class MilestoneSheet extends StatefulWidget {
     required this.organisationId,
     required this.projectId,
     required this.isTeacher,
+    this.allowEdit = false,
   });
 
   final bool isTeacher;
@@ -23,6 +24,7 @@ class MilestoneSheet extends StatefulWidget {
   final String projectTitle;
   final String organisationId;
   final String projectId;
+  final bool allowEdit;
 
   @override
   State<MilestoneSheet> createState() => _MilestoneSheetState();
@@ -225,154 +227,220 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                 }
                               }
 
-                              return Text(
-                                displayName,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayName,
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  widget.milestone['sharedId'] != null
+                                      ? Padding(
+                                        padding: EdgeInsets.only(top: 4),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.blue.withOpacity(
+                                                0.3,
+                                              ),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Organization-wide milestone',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.blue,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      : Padding(
+                                        padding: EdgeInsets.only(top: 4),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.blue.withOpacity(
+                                                0.3,
+                                              ),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Milestone',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.blue,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                ],
                               );
                             },
                           ),
-                      SizedBox(height: 4),
-                      Text(
-                        "Milestone",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
                     ],
                   ),
                   Spacer(),
-                  !_isEditing
-                      ? IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _isEditing = true;
-                          });
-                        },
-                        icon: Icon(Icons.edit, size: 20),
-                        tooltip: "Edit milestone",
-                      )
-                      : IconButton(
-                        onPressed:
-                            _isSaving
-                                ? null
-                                : () async {
-                                  final name = nameController.text.trim();
-                                  final description =
-                                      descriptionController.text.trim();
+                  // Only show edit button if milestone is not organization-wide (no sharedId) or allowEdit is true
+                  (widget.milestone['sharedId'] == null || widget.allowEdit)
+                      ? (!_isEditing
+                          ? IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _isEditing = true;
+                              });
+                            },
+                            icon: Icon(Icons.edit, size: 20),
+                            tooltip: "Edit milestone",
+                          )
+                          : IconButton(
+                            onPressed:
+                                _isSaving
+                                    ? null
+                                    : () async {
+                                      final name = nameController.text.trim();
+                                      final description =
+                                          descriptionController.text.trim();
 
-                                  if (name.isEmpty || description.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Name and description cannot be empty',
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  setState(() {
-                                    _isSaving = true;
-                                  });
-
-                                  final bloc = context.read<ProjectsBloc>();
-                                  _saveSubscription = bloc.stream.listen((
-                                    state,
-                                  ) {
-                                    if (state is ProjectActionSuccess) {
-                                      _saveSubscription?.cancel();
-                                      if (mounted) {
-                                        setState(() {
-                                          _isEditing = false;
-                                          _isSaving = false;
-                                        });
+                                      if (name.isEmpty || description.isEmpty) {
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              'Milestone updated successfully',
+                                              'Name and description cannot be empty',
                                             ),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
-                                      }
-                                    } else if (state is ProjectsError) {
-                                      _saveSubscription?.cancel();
-                                      if (mounted) {
-                                        setState(() {
-                                          _isSaving = false;
-                                        });
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(state.message),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
+                                        return;
                                       }
-                                    }
-                                  });
 
-                                  try {
-                                    if (mounted) {
-                                      bloc.add(
-                                        UpdateMilestoneEvent(
-                                          organisationId: widget.organisationId,
-                                          projectId: widget.projectId,
-                                          milestoneId: milestone['id'],
-                                          name: name,
-                                          description: description,
-                                          dueDate:
-                                              milestone['dueDate'] is DateTime
-                                                  ? milestone['dueDate']
-                                                  : (milestone['dueDate']
-                                                          is Timestamp
-                                                      ? milestone['dueDate']
-                                                          .toDate()
-                                                      : DateTime.now()),
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    _saveSubscription?.cancel();
-                                    if (mounted) {
                                       setState(() {
-                                        _isSaving = false;
+                                        _isSaving = true;
                                       });
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Error: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                        icon:
-                            _isSaving
-                                ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                  ),
-                                )
-                                : Icon(Icons.save),
-                      ),
+
+                                      final bloc = context.read<ProjectsBloc>();
+                                      _saveSubscription = bloc.stream.listen((
+                                        state,
+                                      ) {
+                                        if (state is ProjectActionSuccess) {
+                                          _saveSubscription?.cancel();
+                                          if (mounted) {
+                                            setState(() {
+                                              _isEditing = false;
+                                              _isSaving = false;
+                                            });
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Milestone updated successfully',
+                                                ),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          }
+                                        } else if (state is ProjectsError) {
+                                          _saveSubscription?.cancel();
+                                          if (mounted) {
+                                            setState(() {
+                                              _isSaving = false;
+                                            });
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(state.message),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      });
+
+                                      try {
+                                        if (mounted) {
+                                          bloc.add(
+                                            UpdateMilestoneEvent(
+                                              organisationId:
+                                                  widget.organisationId,
+                                              projectId: widget.projectId,
+                                              milestoneId: milestone['id'],
+                                              name: name,
+                                              description: description,
+                                              dueDate:
+                                                  milestone['dueDate']
+                                                          is DateTime
+                                                      ? milestone['dueDate']
+                                                      : (milestone['dueDate']
+                                                              is Timestamp
+                                                          ? milestone['dueDate']
+                                                              .toDate()
+                                                          : DateTime.now()),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        _saveSubscription?.cancel();
+                                        if (mounted) {
+                                          setState(() {
+                                            _isSaving = false;
+                                          });
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: $e'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                            icon:
+                                _isSaving
+                                    ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimary,
+                                      ),
+                                    )
+                                    : Icon(Icons.save),
+                          ))
+                      : SizedBox(), // Hide edit button for organization-wide milestones
                 ],
               ),
             ),
@@ -399,6 +467,41 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     "Assigned by",
                     milestone['createdByEmail'] ?? 'Unknown',
                   ),
+                  if (widget.milestone['sharedId'] != null &&
+                      !widget.allowEdit) ...[
+                    SizedBox(height: 12),
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.blue.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.blue,
+                            size: 16,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'This is an organization-wide milestone. It can only be edited or deleted from the organization milestones page.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   SizedBox(height: 12),
                   Text(
                     "Due on",
@@ -635,7 +738,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
 
             SizedBox(height: 20),
 
-            widget.isTeacher
+            // Only show delete button if milestone is not organization-wide (no sharedId) and user is teacher
+            widget.isTeacher &&
+                    (widget.milestone['sharedId'] == null || widget.allowEdit)
                 ? SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -935,7 +1040,12 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                           context: context,
                           body: Padding(
                             padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
-                            child: _buildTaskDetailSheet(index, _tasks),
+                            child: _buildTaskDetailSheet(
+                              index,
+                              widget.projectTitle,
+                              widget.milestone['name'] ?? '',
+                              _tasks,
+                            ),
                           ),
                           header: SizedBox(height: 20),
                           onCancel: () => Navigator.of(context).pop(),
@@ -988,7 +1098,12 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
     );
   }
 
-  Widget _buildTaskDetailSheet(int index, [List? tasksOverride]) {
+  Widget _buildTaskDetailSheet(
+    int index,
+    String projectName,
+    String milestoneName, [
+    List? tasksOverride,
+  ]) {
     final tasks = tasksOverride ?? _tasks;
     final task = tasks[index];
     final dueDateRaw = task['deadline'];
@@ -1178,6 +1293,42 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                     SizedBox(height: 20),
                     Text(
+                      'Project',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      projectName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Milestone',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      milestoneName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
                       'Description',
                       style: TextStyle(
                         fontSize: 16,
@@ -1185,7 +1336,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 6),
                     isEditingTask
                         ? TextField(
                           controller: taskDescriptionController,
@@ -1366,8 +1517,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                   ],
                 ),
-
-              SizedBox(height: 24),
+              SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 height: 56,

@@ -306,19 +306,76 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
       final orgId = event.organisationId;
       final projectId = event.projectId;
       final milestoneId = event.milestoneId;
-      await firestore
-          .collection('organisations')
-          .doc(orgId)
-          .collection('projects')
-          .doc(projectId)
-          .collection('milestones')
-          .doc(milestoneId)
-          .update({
-            'name': event.name,
-            'description': event.description,
-            'dueDate': event.dueDate,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+
+      // Get the milestone to check if it has a sharedId
+      final milestoneDoc =
+          await firestore
+              .collection('organisations')
+              .doc(orgId)
+              .collection('projects')
+              .doc(projectId)
+              .collection('milestones')
+              .doc(milestoneId)
+              .get();
+
+      if (milestoneDoc.exists) {
+        final milestoneData = milestoneDoc.data();
+        final sharedId = milestoneData?['sharedId'];
+
+        if (sharedId != null) {
+          // Update in all projects that have this shared milestone
+          final projectsSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(orgId)
+                  .collection('projects')
+                  .get();
+
+          for (final projectDoc in projectsSnapshot.docs) {
+            final projectMilestoneDoc =
+                await firestore
+                    .collection('organisations')
+                    .doc(orgId)
+                    .collection('projects')
+                    .doc(projectDoc.id)
+                    .collection('milestones')
+                    .doc(sharedId)
+                    .get();
+
+            if (projectMilestoneDoc.exists) {
+              await firestore
+                  .collection('organisations')
+                  .doc(orgId)
+                  .collection('projects')
+                  .doc(projectDoc.id)
+                  .collection('milestones')
+                  .doc(sharedId)
+                  .update({
+                    'name': event.name,
+                    'description': event.description,
+                    'dueDate': event.dueDate,
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+            }
+          }
+        } else {
+          // Update only in the current project
+          await firestore
+              .collection('organisations')
+              .doc(orgId)
+              .collection('projects')
+              .doc(projectId)
+              .collection('milestones')
+              .doc(milestoneId)
+              .update({
+                'name': event.name,
+                'description': event.description,
+                'dueDate': event.dueDate,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+        }
+      }
+
       emit(ProjectActionSuccess('Milestone updated successfully'));
       add(FetchProjectsEvent(orgId));
     } catch (e) {
