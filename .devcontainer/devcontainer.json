@@ -3,7 +3,8 @@
   "name": "Flutter",
   "image": "ghcr.io/thephaseless/devcontainers/flutter:latest",
   "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {}
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/sshd": {}
   }
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
