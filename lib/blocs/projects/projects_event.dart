@@ -170,9 +170,11 @@ class CompleteMilestoneEvent extends ProjectsEvent {
   final String organisationId;
   final String projectId;
   final String milestoneId;
+  final bool isCompleted;
   CompleteMilestoneEvent({
     required this.organisationId,
     required this.projectId,
     required this.milestoneId,
+    required this.isCompleted,
   });
 }

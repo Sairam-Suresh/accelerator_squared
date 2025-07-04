@@ -396,15 +396,17 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                     ),
                                   ),
                                   Spacer(),
-                                  Checkbox(
-                                    value: showingCompletedMilestones,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        showingCompletedMilestones = value!;
-                                      });
-                                    },
-                                  ),
-                                  Text("Show completed milestones"),
+                                  if (completedMilestones.isNotEmpty)
+                                    Checkbox(
+                                      value: showingCompletedMilestones,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          showingCompletedMilestones = value!;
+                                        });
+                                      },
+                                    ),
+                                  if (completedMilestones.isNotEmpty)
+                                    Text("Show completed milestones"),
                                 ],
                               ),
                               SizedBox(height: 10),

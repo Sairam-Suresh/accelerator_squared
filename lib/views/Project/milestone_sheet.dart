@@ -118,6 +118,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
         formattedDueDate = DateFormat('dd/MM/yy').format(dueDate);
       }
     }
+    final bool isCompleted = widget.milestone['isCompleted'] == true;
     return BlocListener<ProjectsBloc, ProjectsState>(
       listener: (context, state) {
         if (state is ProjectActionSuccess &&
@@ -732,16 +733,21 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                       organisationId: widget.organisationId,
                       projectId: widget.projectId,
                       milestoneId: widget.milestone['id'],
+                      isCompleted: !isCompleted,
                     ),
                   );
                   Navigator.of(context).pop();
                 },
                 icon:
                     widget.isTeacher
-                        ? Icon(Icons.check, size: 20)
+                        ? Icon(isCompleted ? Icons.undo : Icons.check, size: 20)
                         : Icon(Icons.send_rounded, size: 20),
                 label: Text(
-                  widget.isTeacher ? "Mark as completed" : "Send for review",
+                  widget.isTeacher
+                      ? (isCompleted
+                          ? "Mark as incomplete"
+                          : "Mark as completed")
+                      : "Send for review",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),

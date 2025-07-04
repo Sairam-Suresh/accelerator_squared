@@ -648,8 +648,13 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .doc(projectId)
           .collection('milestones')
           .doc(milestoneId)
-          .update({'isCompleted': true});
-      emit(ProjectActionSuccess('Milestone marked as completed'));
+          .update({'isCompleted': event.isCompleted});
+      emit(
+        ProjectActionSuccess(
+          'Milestone marked as ' +
+              (event.isCompleted ? 'completed' : 'incomplete'),
+        ),
+      );
       add(FetchProjectsEvent(orgId, projectId: projectId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
