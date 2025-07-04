@@ -726,11 +726,22 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   elevation: 2,
                 ),
                 onPressed: () {
-                  // Navigator.of(context).pop();
+                  final bloc = context.read<ProjectsBloc>();
+                  bloc.add(
+                    CompleteMilestoneEvent(
+                      organisationId: widget.organisationId,
+                      projectId: widget.projectId,
+                      milestoneId: widget.milestone['id'],
+                    ),
+                  );
+                  Navigator.of(context).pop();
                 },
-                icon: Icon(Icons.send_rounded, size: 20),
+                icon:
+                    widget.isTeacher
+                        ? Icon(Icons.check, size: 20)
+                        : Icon(Icons.send_rounded, size: 20),
                 label: Text(
-                  "Send for review",
+                  widget.isTeacher ? "Mark as completed" : "Send for review",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),

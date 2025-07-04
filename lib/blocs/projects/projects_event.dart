@@ -165,3 +165,14 @@ class UpdateTaskEvent extends ProjectsEvent {
     required this.deadline,
   });
 }
+
+class CompleteMilestoneEvent extends ProjectsEvent {
+  final String organisationId;
+  final String projectId;
+  final String milestoneId;
+  CompleteMilestoneEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.milestoneId,
+  });
+}

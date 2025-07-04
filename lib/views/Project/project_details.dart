@@ -33,6 +33,7 @@ class ProjectDetails extends StatefulWidget {
 class _ProjectDetailsState extends State<ProjectDetails> {
   Set<String> _deletingMilestoneIds = {};
   String? _pendingDeleteMilestoneId;
+  bool showingCompletedMilestones = false;
 
   @override
   void initState() {
@@ -213,11 +214,18 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                 if (milestones == null) {
                   milestones = [];
                 }
+
+                List<Map<String, dynamic>> completedMilestones =
+                    milestones.where((m) => m['isCompleted'] == true).toList();
+                List<Map<String, dynamic>> incompleteMilestones =
+                    milestones.where((m) => m['isCompleted'] != true).toList();
+
                 return Column(
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Left column: project info, files, etc. (unchanged)
                         SizedBox(
                           width: MediaQuery.of(context).size.width / 2 - 50,
                           child: Column(
@@ -227,9 +235,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                 key: ValueKey('header_${widget.project.id}'),
                                 builder: (context, state) {
                                   String projectName = widget.project.name;
-
                                   if (state is ProjectsLoaded) {
-                                    // Try to find updated project data
                                     ProjectWithDetails? project;
                                     try {
                                       project = state.projects.firstWhere(
@@ -238,9 +244,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                     } catch (e) {
                                       project = null;
                                     }
-
                                     if (project != null) {
-                                      // Get the updated project name from the bloc data
                                       final updatedName = project.data['title'];
                                       if (updatedName != null &&
                                           updatedName.isNotEmpty) {
@@ -248,7 +252,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       }
                                     }
                                   } else if (state is ProjectActionSuccess) {
-                                    // When a project action succeeds, trigger a refresh to get the latest data
                                     context.read<ProjectsBloc>().add(
                                       FetchProjectsEvent(
                                         widget.organisationId,
@@ -256,7 +259,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       ),
                                     );
                                   }
-
                                   return Text(
                                     projectName,
                                     style: TextStyle(
@@ -274,9 +276,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                 builder: (context, state) {
                                   String projectDescription =
                                       widget.project.description;
-
                                   if (state is ProjectsLoaded) {
-                                    // Try to find updated project data
                                     ProjectWithDetails? project;
                                     try {
                                       project = state.projects.firstWhere(
@@ -285,9 +285,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                     } catch (e) {
                                       project = null;
                                     }
-
                                     if (project != null) {
-                                      // Get the updated project description from the bloc data
                                       final updatedDescription =
                                           project.data['description'];
                                       if (updatedDescription != null &&
@@ -296,7 +294,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       }
                                     }
                                   } else if (state is ProjectActionSuccess) {
-                                    // When a project action succeeds, trigger a refresh to get the latest data
                                     context.read<ProjectsBloc>().add(
                                       FetchProjectsEvent(
                                         widget.organisationId,
@@ -304,7 +301,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       ),
                                     );
                                   }
-
                                   return Container(
                                     child: Text(
                                       projectDescription,
@@ -328,9 +324,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                     width:
                                         MediaQuery.of(context).size.width / 3,
                                     child: ElevatedButton(
-                                      onPressed: () {
-                                        //_launchUrl();
-                                      },
+                                      onPressed: () {},
                                       style: ElevatedButton.styleFrom(
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -387,16 +381,31 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                           ),
                         ),
                         SizedBox(width: 20),
+                        // Right column: milestones with expanding-upwards animation
                         SizedBox(
                           width: MediaQuery.of(context).size.width / 2 - 50,
                           child: Column(
                             children: [
-                              Text(
-                                "Milestones",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    "Milestones",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 24,
+                                    ),
+                                  ),
+                                  Spacer(),
+                                  Checkbox(
+                                    value: showingCompletedMilestones,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        showingCompletedMilestones = value!;
+                                      });
+                                    },
+                                  ),
+                                  Text("Show completed milestones"),
+                                ],
                               ),
                               SizedBox(height: 10),
                               if (state is ProjectsLoading)
@@ -419,86 +428,435 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                   ),
                                 )
                               else if (state is ProjectsLoaded)
-                                ListView.separated(
-                                  separatorBuilder: (context, index) {
-                                    return SizedBox(height: 10);
-                                  },
-                                  itemBuilder: (context, index) {
-                                    // Safety check to prevent index out of bounds
-                                    if (index >= milestones.length) {
-                                      return SizedBox.shrink();
-                                    }
-
-                                    final milestone = milestones[index];
-
-                                    // Safety check for milestone data
-                                    if (milestone == null ||
-                                        milestone['id'] == null) {
-                                      return SizedBox.shrink();
-                                    }
-
-                                    return Card(
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(20),
-                                        onTap: () {
-                                          aweSideSheet(
-                                            footer: SizedBox(height: 10),
-                                            sheetWidth:
-                                                MediaQuery.of(
-                                                  context,
-                                                ).size.width /
-                                                3,
-                                            context: context,
-                                            sheetPosition: SheetPosition.right,
-                                            body: Padding(
-                                              padding: EdgeInsets.fromLTRB(
-                                                20,
-                                                10,
-                                                20,
-                                                10,
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height - 130,
+                                  child: ListView.separated(
+                                    separatorBuilder: (context, index) {
+                                      // Add a divider between uncompleted and completed milestones
+                                      if (showingCompletedMilestones &&
+                                          index ==
+                                              incompleteMilestones.length - 1 &&
+                                          completedMilestones.isNotEmpty) {
+                                        return Column(
+                                          children: [
+                                            Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                vertical: 8,
                                               ),
-                                              child: MilestoneSheet(
-                                                isTeacher: widget.isTeacher,
-                                                milestone: milestone,
-                                                projectTitle: projectName,
-                                                organisationId:
-                                                    widget.organisationId,
-                                                projectId: widget.project.id,
-                                                allowEdit:
-                                                    milestone['sharedId'] ==
-                                                    null,
+                                              child: Text(
+                                                'Completed milestones',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.green,
+                                                  fontSize: 18,
+                                                ),
                                               ),
                                             ),
-                                            header: SizedBox(height: 20),
-                                            showHeaderDivider: false,
-                                          );
-                                        },
-                                        child: Padding(
-                                          padding: EdgeInsets.all(10),
-                                          child: ListTile(
-                                            leading: Container(
-                                              padding: EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .primaryContainer,
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: Icon(
-                                                Icons.flag,
-                                                color:
-                                                    Theme.of(
+                                          ],
+                                        );
+                                      }
+                                      return SizedBox(height: 10);
+                                    },
+                                    itemCount:
+                                        showingCompletedMilestones
+                                            ? incompleteMilestones.length +
+                                                completedMilestones.length
+                                            : incompleteMilestones.length,
+                                    itemBuilder: (context, index) {
+                                      if (index < incompleteMilestones.length) {
+                                        final milestone =
+                                            incompleteMilestones[index];
+
+                                        // Safety check for milestone data
+                                        if (milestone == null ||
+                                            milestone['id'] == null) {
+                                          return SizedBox.shrink();
+                                        }
+
+                                        return Card(
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            onTap: () {
+                                              aweSideSheet(
+                                                footer: SizedBox(height: 10),
+                                                sheetWidth:
+                                                    MediaQuery.of(
                                                       context,
-                                                    ).colorScheme.primary,
-                                                size: 24,
+                                                    ).size.width /
+                                                    3,
+                                                context: context,
+                                                sheetPosition:
+                                                    SheetPosition.right,
+                                                body: Padding(
+                                                  padding: EdgeInsets.fromLTRB(
+                                                    20,
+                                                    10,
+                                                    20,
+                                                    10,
+                                                  ),
+                                                  child: MilestoneSheet(
+                                                    isTeacher: widget.isTeacher,
+                                                    milestone: milestone,
+                                                    projectTitle: projectName,
+                                                    organisationId:
+                                                        widget.organisationId,
+                                                    projectId:
+                                                        widget.project.id,
+                                                    allowEdit:
+                                                        milestone['sharedId'] ==
+                                                        null,
+                                                  ),
+                                                ),
+                                                header: SizedBox(height: 20),
+                                                showHeaderDivider: false,
+                                              );
+                                            },
+                                            child: Padding(
+                                              padding: EdgeInsets.all(10),
+                                              child: ListTile(
+                                                leading: Container(
+                                                  padding: EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        Theme.of(context)
+                                                            .colorScheme
+                                                            .primaryContainer,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.flag,
+                                                    color:
+                                                        Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary,
+                                                    size: 24,
+                                                  ),
+                                                ),
+
+                                                title: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        milestone['name'] ?? '',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    if (milestone['sharedId'] !=
+                                                        null)
+                                                      Container(
+                                                        padding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.blue
+                                                              .withOpacity(0.1),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: Colors.blue
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
+                                                            width: 1,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          'Organization-wide milestone',
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            color: Colors.blue,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                                subtitle: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      milestone['description'] ??
+                                                          '',
+                                                      maxLines: 3,
+                                                    ),
+                                                    if (milestone['dueDate'] !=
+                                                        null)
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              top: 2.0,
+                                                            ),
+                                                        child: Text(
+                                                          _formatDueDate(
+                                                            milestone['dueDate'],
+                                                          ),
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color:
+                                                                Colors
+                                                                    .grey[600],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                                trailing:
+                                                    widget.isTeacher &&
+                                                            milestone['sharedId'] ==
+                                                                null
+                                                        ? (_deletingMilestoneIds
+                                                                .contains(
+                                                                  milestone['id'],
+                                                                )
+                                                            ? SizedBox(
+                                                              width: 24,
+                                                              height: 24,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2,
+                                                                    color:
+                                                                        Colors
+                                                                            .red,
+                                                                  ),
+                                                            )
+                                                            : IconButton(
+                                                              icon: Icon(
+                                                                Icons.delete,
+                                                              ),
+                                                              color:
+                                                                  Colors.white,
+                                                              style: ButtonStyle(
+                                                                iconColor:
+                                                                    MaterialStateProperty.all<
+                                                                      Color
+                                                                    >(
+                                                                      Colors
+                                                                          .red,
+                                                                    ),
+                                                              ),
+                                                              onPressed: () async {
+                                                                final confirm = await showDialog<
+                                                                  bool
+                                                                >(
+                                                                  context:
+                                                                      context,
+                                                                  builder:
+                                                                      (
+                                                                        context,
+                                                                      ) => AlertDialog(
+                                                                        title: Text(
+                                                                          'Delete Milestone',
+                                                                        ),
+                                                                        content:
+                                                                            Text(
+                                                                              'Are you sure you want to delete this milestone?',
+                                                                            ),
+                                                                        actions: [
+                                                                          TextButton(
+                                                                            onPressed:
+                                                                                () => Navigator.of(
+                                                                                  context,
+                                                                                ).pop(
+                                                                                  false,
+                                                                                ),
+                                                                            child: Text(
+                                                                              'Cancel',
+                                                                            ),
+                                                                          ),
+                                                                          ElevatedButton(
+                                                                            style: ElevatedButton.styleFrom(
+                                                                              backgroundColor:
+                                                                                  Colors.red,
+                                                                              foregroundColor:
+                                                                                  Colors.white,
+                                                                            ),
+                                                                            onPressed:
+                                                                                () => Navigator.of(
+                                                                                  context,
+                                                                                ).pop(
+                                                                                  true,
+                                                                                ),
+                                                                            child: Text(
+                                                                              'Delete',
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                );
+                                                                if (confirm ==
+                                                                    true) {
+                                                                  setState(() {
+                                                                    _deletingMilestoneIds
+                                                                        .add(
+                                                                          milestone['id'],
+                                                                        );
+                                                                    _pendingDeleteMilestoneId =
+                                                                        milestone['id'];
+                                                                  });
+                                                                  final bloc =
+                                                                      context
+                                                                          .read<
+                                                                            ProjectsBloc
+                                                                          >();
+                                                                  late final StreamSubscription
+                                                                  subscription;
+                                                                  subscription = bloc.stream.listen((
+                                                                    state,
+                                                                  ) {
+                                                                    if (state
+                                                                        is ProjectActionSuccess) {
+                                                                      bloc.add(
+                                                                        FetchProjectsEvent(
+                                                                          widget
+                                                                              .organisationId,
+                                                                          projectId:
+                                                                              widget.project.id,
+                                                                        ),
+                                                                      );
+                                                                      subscription
+                                                                          .cancel();
+                                                                      if (mounted) {
+                                                                        setState(() {
+                                                                          _deletingMilestoneIds.remove(
+                                                                            milestone['id'],
+                                                                          );
+                                                                          _pendingDeleteMilestoneId =
+                                                                              null;
+                                                                        });
+                                                                      }
+                                                                    } else if (state
+                                                                        is ProjectsError) {
+                                                                      subscription
+                                                                          .cancel();
+                                                                      if (mounted) {
+                                                                        setState(() {
+                                                                          _deletingMilestoneIds.remove(
+                                                                            milestone['id'],
+                                                                          );
+                                                                          _pendingDeleteMilestoneId =
+                                                                              null;
+                                                                        });
+                                                                        ScaffoldMessenger.of(
+                                                                          context,
+                                                                        ).showSnackBar(
+                                                                          SnackBar(
+                                                                            content: Text(
+                                                                              state.message,
+                                                                            ),
+                                                                            backgroundColor:
+                                                                                Colors.red,
+                                                                          ),
+                                                                        );
+                                                                      }
+                                                                    }
+                                                                  });
+                                                                  bloc.add(
+                                                                    DeleteMilestoneEvent(
+                                                                      organisationId:
+                                                                          widget
+                                                                              .organisationId,
+                                                                      projectId:
+                                                                          widget
+                                                                              .project
+                                                                              .id,
+                                                                      milestoneId:
+                                                                          milestone['id'],
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              },
+                                                            ))
+                                                        : null,
                                               ),
                                             ),
+                                          ),
+                                        );
+                                      } else {
+                                        // Completed milestones
+                                        final completedIndex =
+                                            index - incompleteMilestones.length;
+                                        final milestone =
+                                            completedMilestones[completedIndex];
+                                        return Card(
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            onTap: () {
+                                              aweSideSheet(
+                                                footer: SizedBox(height: 10),
+                                                sheetWidth:
+                                                    MediaQuery.of(
+                                                      context,
+                                                    ).size.width /
+                                                    3,
+                                                context: context,
+                                                sheetPosition:
+                                                    SheetPosition.right,
+                                                body: Padding(
+                                                  padding: EdgeInsets.fromLTRB(
+                                                    20,
+                                                    10,
+                                                    20,
+                                                    10,
+                                                  ),
+                                                  child: MilestoneSheet(
+                                                    isTeacher: widget.isTeacher,
+                                                    milestone: milestone,
+                                                    projectTitle: projectName,
+                                                    organisationId:
+                                                        widget.organisationId,
+                                                    projectId:
+                                                        widget.project.id,
+                                                    allowEdit: false,
+                                                  ),
+                                                ),
+                                                header: SizedBox(height: 20),
+                                                showHeaderDivider: false,
+                                              );
+                                            },
+                                            child: Padding(
+                                              padding: EdgeInsets.all(10),
+                                              child: ListTile(
+                                                leading: Container(
+                                                  padding: EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        Theme.of(context)
+                                                            .colorScheme
+                                                            .primaryContainer,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                  child: Opacity(
+                                                    opacity: 0.5,
+                                                    child: Icon(
+                                                      Icons.flag,
+                                                      color: Colors.green,
+                                                      size: 24,
+                                                    ),
+                                                  ),
+                                                ),
 
-                                            title: Row(
-                                              children: [
-                                                Expanded(
+                                                title: Opacity(
+                                                  opacity: 0.5,
                                                   child: Text(
                                                     milestone['name'] ?? '',
                                                     style: TextStyle(
@@ -506,242 +864,23 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                     ),
                                                   ),
                                                 ),
-                                                if (milestone['sharedId'] !=
-                                                    null)
-                                                  Container(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.blue
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: Colors.blue
-                                                            .withOpacity(0.3),
-                                                        width: 1,
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      'Organization-wide milestone',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.blue,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                    ),
+                                                subtitle: Opacity(
+                                                  opacity: 0.5,
+                                                  child: Text(
+                                                    milestone['description'] ??
+                                                        '',
                                                   ),
-                                              ],
-                                            ),
-                                            subtitle: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  milestone['description'] ??
-                                                      '',
-                                                  maxLines: 3,
                                                 ),
-                                                if (milestone['dueDate'] !=
-                                                    null)
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                          top: 2.0,
-                                                        ),
-                                                    child: Text(
-                                                      _formatDueDate(
-                                                        milestone['dueDate'],
-                                                      ),
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                    ),
-                                                  ),
-                                              ],
+                                              ),
                                             ),
-                                            trailing:
-                                                widget.isTeacher &&
-                                                        milestone['sharedId'] ==
-                                                            null
-                                                    ? (_deletingMilestoneIds
-                                                            .contains(
-                                                              milestone['id'],
-                                                            )
-                                                        ? SizedBox(
-                                                          width: 24,
-                                                          height: 24,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                strokeWidth: 2,
-                                                                color:
-                                                                    Colors.red,
-                                                              ),
-                                                        )
-                                                        : IconButton(
-                                                          icon: Icon(
-                                                            Icons.delete,
-                                                          ),
-                                                          color: Colors.white,
-                                                          style: ButtonStyle(
-                                                            iconColor:
-                                                                MaterialStateProperty.all<
-                                                                  Color
-                                                                >(Colors.red),
-                                                          ),
-                                                          onPressed: () async {
-                                                            final confirm = await showDialog<
-                                                              bool
-                                                            >(
-                                                              context: context,
-                                                              builder:
-                                                                  (
-                                                                    context,
-                                                                  ) => AlertDialog(
-                                                                    title: Text(
-                                                                      'Delete Milestone',
-                                                                    ),
-                                                                    content: Text(
-                                                                      'Are you sure you want to delete this milestone?',
-                                                                    ),
-                                                                    actions: [
-                                                                      TextButton(
-                                                                        onPressed:
-                                                                            () => Navigator.of(
-                                                                              context,
-                                                                            ).pop(
-                                                                              false,
-                                                                            ),
-                                                                        child: Text(
-                                                                          'Cancel',
-                                                                        ),
-                                                                      ),
-                                                                      ElevatedButton(
-                                                                        style: ElevatedButton.styleFrom(
-                                                                          backgroundColor:
-                                                                              Colors.red,
-                                                                          foregroundColor:
-                                                                              Colors.white,
-                                                                        ),
-                                                                        onPressed:
-                                                                            () => Navigator.of(
-                                                                              context,
-                                                                            ).pop(
-                                                                              true,
-                                                                            ),
-                                                                        child: Text(
-                                                                          'Delete',
-                                                                        ),
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                            );
-                                                            if (confirm ==
-                                                                true) {
-                                                              setState(() {
-                                                                _deletingMilestoneIds
-                                                                    .add(
-                                                                      milestone['id'],
-                                                                    );
-                                                                _pendingDeleteMilestoneId =
-                                                                    milestone['id'];
-                                                              });
-                                                              final bloc =
-                                                                  context
-                                                                      .read<
-                                                                        ProjectsBloc
-                                                                      >();
-                                                              late final StreamSubscription
-                                                              subscription;
-                                                              subscription = bloc.stream.listen((
-                                                                state,
-                                                              ) {
-                                                                if (state
-                                                                    is ProjectActionSuccess) {
-                                                                  bloc.add(
-                                                                    FetchProjectsEvent(
-                                                                      widget
-                                                                          .organisationId,
-                                                                      projectId:
-                                                                          widget
-                                                                              .project
-                                                                              .id,
-                                                                    ),
-                                                                  );
-                                                                  subscription
-                                                                      .cancel();
-                                                                  if (mounted) {
-                                                                    setState(() {
-                                                                      _deletingMilestoneIds
-                                                                          .remove(
-                                                                            milestone['id'],
-                                                                          );
-                                                                      _pendingDeleteMilestoneId =
-                                                                          null;
-                                                                    });
-                                                                  }
-                                                                } else if (state
-                                                                    is ProjectsError) {
-                                                                  subscription
-                                                                      .cancel();
-                                                                  if (mounted) {
-                                                                    setState(() {
-                                                                      _deletingMilestoneIds
-                                                                          .remove(
-                                                                            milestone['id'],
-                                                                          );
-                                                                      _pendingDeleteMilestoneId =
-                                                                          null;
-                                                                    });
-                                                                    ScaffoldMessenger.of(
-                                                                      context,
-                                                                    ).showSnackBar(
-                                                                      SnackBar(
-                                                                        content: Text(
-                                                                          state
-                                                                              .message,
-                                                                        ),
-                                                                        backgroundColor:
-                                                                            Colors.red,
-                                                                      ),
-                                                                    );
-                                                                  }
-                                                                }
-                                                              });
-                                                              bloc.add(
-                                                                DeleteMilestoneEvent(
-                                                                  organisationId:
-                                                                      widget
-                                                                          .organisationId,
-                                                                  projectId:
-                                                                      widget
-                                                                          .project
-                                                                          .id,
-                                                                  milestoneId:
-                                                                      milestone['id'],
-                                                                ),
-                                                              );
-                                                            }
-                                                          },
-                                                        ))
-                                                    : null,
                                           ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  itemCount: milestones.length,
-                                  shrinkWrap: true,
+                                        );
+                                      }
+                                    },
+                                  ),
                                 )
                               else if (state is ProjectsError)
-                                Text('Error: ${state.message}')
+                                Text('Error: {state.message}')
                               else
                                 SizedBox.shrink(),
                             ],

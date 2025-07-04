@@ -30,6 +30,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     on<AddTaskEvent>(_onAddTask);
     on<DeleteTaskEvent>(_onDeleteTask);
     on<UpdateTaskEvent>(_onUpdateTask);
+    on<CompleteMilestoneEvent>(_onCompleteMilestone);
     on<_EmitProjectsLoaded>(
       (event, emit) => emit(ProjectsLoaded(event.projects)),
     );
@@ -289,6 +290,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             'createdBy': uid,
             'createdByEmail': auth.currentUser?.email ?? '',
             'sharedId': event.sharedId,
+            'isCompleted': false,
           });
       emit(ProjectActionSuccess('Milestone added successfully'));
       add(FetchProjectsEvent(orgId));
@@ -625,6 +627,30 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           });
       emit(ProjectActionSuccess('Task updated successfully'));
       add(FetchProjectsEvent(event.organisationId));
+    } catch (e) {
+      emit(ProjectsError(e.toString()));
+    }
+  }
+
+  Future<void> _onCompleteMilestone(
+    CompleteMilestoneEvent event,
+    Emitter<ProjectsState> emit,
+  ) async {
+    emit(ProjectsLoading());
+    try {
+      final orgId = event.organisationId;
+      final projectId = event.projectId;
+      final milestoneId = event.milestoneId;
+      await firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('projects')
+          .doc(projectId)
+          .collection('milestones')
+          .doc(milestoneId)
+          .update({'isCompleted': true});
+      emit(ProjectActionSuccess('Milestone marked as completed'));
+      add(FetchProjectsEvent(orgId, projectId: projectId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
