@@ -4,7 +4,11 @@
   "image": "ghcr.io/thephaseless/devcontainers/flutter:latest",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {},
-    "ghcr.io/devcontainers/features/sshd": {}
+    "ghcr.io/devcontainers/features/desktop-lite": {
+      "password": "vscode",
+      "webPort": "6080",
+      "vncPort": "5901"
+    }
   }
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
