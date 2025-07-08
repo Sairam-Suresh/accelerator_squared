@@ -27,6 +27,18 @@ class _OrgMilestonesState extends State<OrgMilestones> {
   String? _pendingDeleteMilestoneId;
 
   @override
+  void initState() {
+    super.initState();
+    // Fetch organisation projects and milestones on view initialization
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProjectsBloc>().add(
+        FetchProjectsEvent(widget.organisationId),
+      );
+      context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(15),
