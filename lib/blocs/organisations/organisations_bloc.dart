@@ -966,6 +966,78 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         emit(OrganisationsError(e.toString()));
       }
     });
+
+    on<SubmitMilestoneReviewRequestEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+        String requestId = const Uuid().v4();
+        DocumentReference requestRef = firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('milestoneReviewRequests')
+            .doc(requestId);
+
+        await requestRef.set({
+          'id': requestId,
+          'milestoneId': event.milestoneId,
+          'milestoneName': event.milestoneName,
+          'projectId': event.projectId,
+          'projectName': event.projectName,
+          'isOrgWide': event.isOrgWide,
+          'dueDate': event.dueDate,
+          'sentForReviewAt': FieldValue.serverTimestamp(),
+        });
+
+        // Update the milestone's pendingReview attribute in the project
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(event.projectId)
+            .collection('milestones')
+            .doc(event.milestoneId)
+            .update({'pendingReview': true});
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<UnsendMilestoneReviewRequestEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        // Find and delete the milestone review request for this milestone
+        final query =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('milestoneReviewRequests')
+                .where('milestoneId', isEqualTo: event.milestoneId)
+                .where('projectId', isEqualTo: event.projectId)
+                .get();
+        for (final doc in query.docs) {
+          await doc.reference.delete();
+        }
+        // Set pendingReview to false on the milestone
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(event.projectId)
+            .collection('milestones')
+            .doc(event.milestoneId)
+            .update({'pendingReview': false});
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
   }
 
   Future<void> _loadOrganisationDataById(
@@ -1081,6 +1153,20 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
               );
             }).toList();
 
+        List<MilestoneReviewRequest> milestoneReviewRequests = [];
+        QuerySnapshot milestoneReviewRequestsSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(orgId)
+                .collection('milestoneReviewRequests')
+                .get();
+        for (var requestDoc in milestoneReviewRequestsSnapshot.docs) {
+          final requestData = requestDoc.data() as Map<String, dynamic>;
+          milestoneReviewRequests.add(
+            MilestoneReviewRequest.fromJson(requestData),
+          );
+        }
+
         organisations.add(
           Organisation(
             id: orgId,
@@ -1092,6 +1178,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             memberCount: membersCountSnapshot.docs.length,
             userRole: userRole,
             joinCode: data['joinCode'] ?? '',
+            milestoneReviewRequests: milestoneReviewRequests,
           ),
         );
       }

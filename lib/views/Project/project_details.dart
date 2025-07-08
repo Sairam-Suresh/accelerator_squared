@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/views/Project/comments/comments_dialog.dart';
 import 'package:accelerator_squared/views/Project/milestone_sheet.dart';
@@ -225,10 +223,27 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                   milestones = [];
                 }
 
+                // After fetching milestones, add logic to separate pending review milestones
+                List<Map<String, dynamic>> pendingReviewMilestones =
+                    milestones
+                        .where((m) => m['pendingReview'] == true)
+                        .toList();
                 List<Map<String, dynamic>> completedMilestones =
-                    milestones.where((m) => m['isCompleted'] == true).toList();
+                    milestones
+                        .where(
+                          (m) =>
+                              m['isCompleted'] == true &&
+                              m['pendingReview'] != true,
+                        )
+                        .toList();
                 List<Map<String, dynamic>> incompleteMilestones =
-                    milestones.where((m) => m['isCompleted'] != true).toList();
+                    milestones
+                        .where(
+                          (m) =>
+                              m['isCompleted'] != true &&
+                              m['pendingReview'] != true,
+                        )
+                        .toList();
 
                 return Column(
                   children: [
@@ -579,10 +594,32 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       MediaQuery.of(context).size.height - 130,
                                   child: ListView.separated(
                                     separatorBuilder: (context, index) {
-                                      // Add a divider between uncompleted and completed milestones
-                                      if (showingCompletedMilestones &&
-                                          index ==
-                                              incompleteMilestones.length - 1 &&
+                                      // Add a divider between pending, incomplete, and completed milestones
+                                      if (index ==
+                                              pendingReviewMilestones.length -
+                                                  1 &&
+                                          incompleteMilestones.isNotEmpty) {
+                                        return Column(
+                                          children: [
+                                            Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                vertical: 8,
+                                              ),
+                                              child: Text(
+                                                'Incomplete milestones',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.orange,
+                                                  fontSize: 18,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      } else if (index ==
+                                              pendingReviewMilestones.length +
+                                                  incompleteMilestones.length -
+                                                  1 &&
                                           completedMilestones.isNotEmpty) {
                                         return Column(
                                           children: [
@@ -605,15 +642,158 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       return SizedBox(height: 10);
                                     },
                                     itemCount:
-                                        showingCompletedMilestones
-                                            ? incompleteMilestones.length +
-                                                completedMilestones.length
-                                            : incompleteMilestones.length,
+                                        pendingReviewMilestones.length +
+                                        incompleteMilestones.length +
+                                        (showingCompletedMilestones
+                                            ? completedMilestones.length
+                                            : 0),
                                     itemBuilder: (context, index) {
-                                      if (index < incompleteMilestones.length) {
+                                      if (index <
+                                          pendingReviewMilestones.length) {
                                         final milestone =
-                                            incompleteMilestones[index];
-
+                                            pendingReviewMilestones[index];
+                                        // Pending review milestone card
+                                        return Card(
+                                          // color: Colors.orange.shade50,
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            onTap: () {
+                                              aweSideSheet(
+                                                footer: SizedBox(height: 10),
+                                                sheetWidth:
+                                                    MediaQuery.of(
+                                                      context,
+                                                    ).size.width /
+                                                    3,
+                                                context: context,
+                                                sheetPosition:
+                                                    SheetPosition.right,
+                                                body: Padding(
+                                                  padding: EdgeInsets.fromLTRB(
+                                                    20,
+                                                    10,
+                                                    20,
+                                                    10,
+                                                  ),
+                                                  child: MilestoneSheet(
+                                                    isTeacher: widget.isTeacher,
+                                                    milestone: milestone,
+                                                    projectTitle: projectName,
+                                                    organisationId:
+                                                        widget.organisationId,
+                                                    projectId:
+                                                        widget.project.id,
+                                                    allowEdit:
+                                                        milestone['sharedId'] ==
+                                                        null,
+                                                  ),
+                                                ),
+                                                header: SizedBox(height: 20),
+                                                showHeaderDivider: false,
+                                              );
+                                            },
+                                            child: Padding(
+                                              padding: EdgeInsets.all(10),
+                                              child: ListTile(
+                                                leading: Container(
+                                                  padding: EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        Colors.orange.shade100,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.flag,
+                                                    color: Colors.amber,
+                                                    size: 24,
+                                                  ),
+                                                ),
+                                                title: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        milestone['name'] ?? '',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        // color: Colors.orange
+                                                        //     .withOpacity(0.1),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: Colors.orange
+                                                              .withOpacity(0.3),
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        'Pending review',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.orange,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                subtitle: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      milestone['description'] ??
+                                                          '',
+                                                      maxLines: 3,
+                                                    ),
+                                                    if (milestone['dueDate'] !=
+                                                        null)
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              top: 2.0,
+                                                            ),
+                                                        child: Text(
+                                                          _formatDueDate(
+                                                            milestone['dueDate'],
+                                                          ),
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color:
+                                                                Colors
+                                                                    .grey[600],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      } else if (index <
+                                          pendingReviewMilestones.length +
+                                              incompleteMilestones.length) {
+                                        final milestone =
+                                            incompleteMilestones[index -
+                                                pendingReviewMilestones.length];
                                         // Safety check for milestone data
                                         if (milestone == null ||
                                             milestone['id'] == null) {
@@ -935,7 +1115,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       } else {
                                         // Completed milestones
                                         final completedIndex =
-                                            index - incompleteMilestones.length;
+                                            index -
+                                            pendingReviewMilestones.length -
+                                            incompleteMilestones.length;
                                         final milestone =
                                             completedMilestones[completedIndex];
                                         return Card(

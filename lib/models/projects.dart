@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Project extends Equatable {
   final String id;
@@ -97,5 +98,71 @@ class ProjectRequest extends Equatable {
     requesterEmail,
     requestedAt,
     memberEmails,
+  ];
+}
+
+class MilestoneReviewRequest extends Equatable {
+  final String id;
+  final String milestoneId;
+  final String milestoneName;
+  final String projectId;
+  final String projectName;
+  final bool isOrgWide;
+  final DateTime dueDate;
+  final DateTime sentForReviewAt;
+
+  const MilestoneReviewRequest({
+    required this.id,
+    required this.milestoneId,
+    required this.milestoneName,
+    required this.projectId,
+    required this.projectName,
+    required this.isOrgWide,
+    required this.dueDate,
+    required this.sentForReviewAt,
+  });
+
+  factory MilestoneReviewRequest.fromJson(Map<String, dynamic> json) {
+    return MilestoneReviewRequest(
+      id: json['id'] as String,
+      milestoneId: json['milestoneId'] as String,
+      milestoneName: json['milestoneName'] as String,
+      projectId: json['projectId'] as String,
+      projectName: json['projectName'] as String,
+      isOrgWide: json['isOrgWide'] as bool,
+      dueDate:
+          json['dueDate'] is String
+              ? DateTime.parse(json['dueDate'])
+              : (json['dueDate'] as Timestamp).toDate(),
+      sentForReviewAt:
+          json['sentForReviewAt'] is String
+              ? DateTime.parse(json['sentForReviewAt'])
+              : (json['sentForReviewAt'] as Timestamp).toDate(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'milestoneId': milestoneId,
+      'milestoneName': milestoneName,
+      'projectId': projectId,
+      'projectName': projectName,
+      'isOrgWide': isOrgWide,
+      'dueDate': dueDate.toIso8601String(),
+      'sentForReviewAt': sentForReviewAt.toIso8601String(),
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+    id,
+    milestoneId,
+    milestoneName,
+    projectId,
+    projectName,
+    isOrgWide,
+    dueDate,
+    sentForReviewAt,
   ];
 }

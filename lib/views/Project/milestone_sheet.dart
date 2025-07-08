@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
+import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'dart:async';
 
 class MilestoneSheet extends StatefulWidget {
@@ -99,7 +100,6 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   @override
   Widget build(BuildContext context) {
     final milestone = widget.milestone;
-    final projectTitle = widget.projectTitle;
     // Format due date
     String formattedDueDate = 'Unknown';
     final dueDateRaw = milestone['dueDate'];
@@ -711,49 +711,252 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 ],
               ),
             ),
-            SizedBox(height: 24),
+
+            widget.isTeacher ? SizedBox(height: 24) : SizedBox.shrink(),
 
             // Action button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-                onPressed: () {
-                  final bloc = context.read<ProjectsBloc>();
-                  bloc.add(
-                    CompleteMilestoneEvent(
-                      organisationId: widget.organisationId,
-                      projectId: widget.projectId,
-                      milestoneId: widget.milestone['id'],
-                      isCompleted: !isCompleted,
+            widget.isTeacher
+                ? SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
                     ),
-                  );
-                  Navigator.of(context).pop();
-                },
-                icon:
-                    widget.isTeacher
-                        ? Icon(isCompleted ? Icons.undo : Icons.check, size: 20)
-                        : Icon(Icons.send_rounded, size: 20),
-                label: Text(
-                  widget.isTeacher
-                      ? (isCompleted
-                          ? "Mark as incomplete"
-                          : "Mark as completed")
-                      : "Send for review",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
+                    onPressed: () {
+                      final bloc = context.read<ProjectsBloc>();
+                      bloc.add(
+                        CompleteMilestoneEvent(
+                          organisationId: widget.organisationId,
+                          projectId: widget.projectId,
+                          milestoneId: widget.milestone['id'],
+                          isCompleted: !isCompleted,
+                        ),
+                      );
+                      Navigator.of(context).pop();
+                    },
+                    icon:
+                        widget.isTeacher
+                            ? Icon(
+                              isCompleted ? Icons.undo : Icons.check,
+                              size: 20,
+                            )
+                            : Icon(Icons.send_rounded, size: 20),
+                    label: Text(
+                      isCompleted ? "Mark as incomplete" : "Mark as completed",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                )
+                : SizedBox.shrink(),
 
             SizedBox(height: 20),
+
+            if (!isCompleted &&
+                (widget.milestone['pendingReview'] != true &&
+                    !widget.isTeacher)) ...[
+              SizedBox(height: 12),
+              BlocProvider<OrganisationsBloc>(
+                create: (context) => OrganisationsBloc(),
+                child: Builder(
+                  builder: (context) {
+                    bool _isSending = false;
+                    return StatefulBuilder(
+                      builder: (context, setState) {
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              foregroundColor:
+                                  Theme.of(context).colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed:
+                                _isSending
+                                    ? null
+                                    : () async {
+                                      setState(() => _isSending = true);
+                                      final orgBloc =
+                                          context.read<OrganisationsBloc>();
+                                      orgBloc.add(
+                                        SubmitMilestoneReviewRequestEvent(
+                                          organisationId: widget.organisationId,
+                                          projectId: widget.projectId,
+                                          milestoneId: widget.milestone['id'],
+                                          milestoneName:
+                                              widget.milestone['name'] ?? '',
+                                          projectName: widget.projectTitle,
+                                          isOrgWide:
+                                              widget.milestone['sharedId'] !=
+                                              null,
+                                          dueDate:
+                                              (widget.milestone['dueDate']
+                                                      is DateTime)
+                                                  ? widget.milestone['dueDate']
+                                                  : (widget.milestone['dueDate']
+                                                          is Timestamp
+                                                      ? widget
+                                                          .milestone['dueDate']
+                                                          .toDate()
+                                                      : DateTime.now()),
+                                        ),
+                                      );
+                                      orgBloc.stream
+                                          .firstWhere(
+                                            (state) =>
+                                                state is OrganisationsLoaded ||
+                                                state is OrganisationsError,
+                                          )
+                                          .then((state) {
+                                            setState(() => _isSending = false);
+                                            if (state is OrganisationsLoaded) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Milestone sent for review!',
+                                                  ),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                              Navigator.of(context).pop();
+                                            } else if (state
+                                                is OrganisationsError) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(state.message),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          });
+                                    },
+                            icon:
+                                _isSending
+                                    ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                    : Icon(Icons.send_rounded),
+                            label: Text('Send for review'),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            if (!isCompleted &&
+                widget.milestone['pendingReview'] == true &&
+                !widget.isTeacher) ...[
+              SizedBox(height: 12),
+              BlocProvider<OrganisationsBloc>(
+                create: (context) => OrganisationsBloc(),
+                child: Builder(
+                  builder: (context) {
+                    bool _isUnsend = false;
+                    return StatefulBuilder(
+                      builder: (context, setState) {
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed:
+                                _isUnsend
+                                    ? null
+                                    : () async {
+                                      setState(() => _isUnsend = true);
+                                      final orgBloc =
+                                          context.read<OrganisationsBloc>();
+                                      orgBloc.add(
+                                        UnsendMilestoneReviewRequestEvent(
+                                          organisationId: widget.organisationId,
+                                          projectId: widget.projectId,
+                                          milestoneId: widget.milestone['id'],
+                                        ),
+                                      );
+                                      orgBloc.stream
+                                          .firstWhere(
+                                            (state) =>
+                                                state is OrganisationsLoaded ||
+                                                state is OrganisationsError,
+                                          )
+                                          .then((state) {
+                                            setState(() => _isUnsend = false);
+                                            if (state is OrganisationsLoaded) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Milestone review request unsent.',
+                                                  ),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                              Navigator.of(context).pop();
+                                            } else if (state
+                                                is OrganisationsError) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(state.message),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          });
+                                    },
+                            icon:
+                                _isUnsend
+                                    ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                    : Icon(Icons.undo),
+                            label: Text('Unsend for review'),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
 
             // Only show delete button if milestone is not organization-wide (no sharedId) and user is teacher
             widget.isTeacher &&
@@ -1470,7 +1673,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       );
                                     }
                                   } catch (e) {
-                                    subscription?.cancel();
+                                    subscription.cancel();
                                     if (mounted) {
                                       setState(() {
                                         isSavingTask = false;

@@ -8,7 +8,7 @@ import 'package:accelerator_squared/views/organisations/org_members.dart';
 import 'package:accelerator_squared/views/organisations/org_milestones.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
 import 'package:accelerator_squared/views/organisations/org_stats.dart';
-import 'package:accelerator_squared/views/Project/teacher_ui/project_requests.dart';
+import 'package:accelerator_squared/views/organisations/org_requests.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -422,7 +422,7 @@ class _ProjectPageState extends State<ProjectPage>
                           ),
                           NavigationRailDestination(
                             icon: Icon(Icons.check_box_outlined),
-                            label: Text("Project Requests"),
+                            label: Text("Requests"),
                           ),
                           NavigationRailDestination(
                             icon: Icon(Icons.flag),
