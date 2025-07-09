@@ -161,3 +161,60 @@ class UnsendMilestoneReviewRequestEvent extends OrganisationsEvent {
     required this.milestoneId,
   });
 }
+
+class SubmitTaskReviewRequestEvent extends OrganisationsEvent {
+  final String organisationId;
+  final String projectId;
+  final String milestoneId;
+  final String milestoneName;
+  final String taskId;
+  final String taskName;
+  final String projectName;
+  final DateTime dueDate;
+
+  SubmitTaskReviewRequestEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.milestoneId,
+    required this.milestoneName,
+    required this.taskId,
+    required this.taskName,
+    required this.projectName,
+    required this.dueDate,
+  });
+}
+
+class UnsendTaskReviewRequestEvent extends OrganisationsEvent {
+  final String organisationId;
+  final String projectId;
+  final String taskId;
+  UnsendTaskReviewRequestEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.taskId,
+  });
+}
+
+class AcceptTaskReviewRequestEvent extends OrganisationsEvent {
+  final String organisationId;
+  final String projectId;
+  final String taskId;
+  AcceptTaskReviewRequestEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.taskId,
+  });
+}
+
+class DeclineTaskReviewRequestEvent extends OrganisationsEvent {
+  final String organisationId;
+  final String projectId;
+  final String taskId;
+  final String? feedback;
+  DeclineTaskReviewRequestEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.taskId,
+    this.feedback,
+  });
+}

@@ -156,6 +156,7 @@ class UpdateTaskEvent extends ProjectsEvent {
   final String name;
   final String content;
   final DateTime deadline;
+  final bool? isCompleted;
   UpdateTaskEvent({
     required this.organisationId,
     required this.projectId,
@@ -163,6 +164,7 @@ class UpdateTaskEvent extends ProjectsEvent {
     required this.name,
     required this.content,
     required this.deadline,
+    this.isCompleted,
   });
 }
 

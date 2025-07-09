@@ -1038,6 +1038,140 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         emit(OrganisationsError(e.toString()));
       }
     });
+
+    on<SubmitTaskReviewRequestEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        String uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) {
+          emit(OrganisationsError("User not authenticated"));
+          return;
+        }
+        String requestId = const Uuid().v4();
+        DocumentReference requestRef = firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('taskReviewRequests')
+            .doc(requestId);
+
+        await requestRef.set({
+          'id': requestId,
+          'taskId': event.taskId,
+          'taskName': event.taskName,
+          'milestoneId': event.milestoneId,
+          'milestoneName': event.milestoneName,
+          'projectId': event.projectId,
+          'projectName': event.projectName,
+          'dueDate': event.dueDate,
+          'sentForReviewAt': FieldValue.serverTimestamp(),
+        });
+
+        // Update the task's pendingReview attribute in the project
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(event.projectId)
+            .collection('tasks')
+            .doc(event.taskId)
+            .update({'pendingReview': true});
+
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<UnsendTaskReviewRequestEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        // Find and delete the task review request for this task
+        final query =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('taskReviewRequests')
+                .where('taskId', isEqualTo: event.taskId)
+                .where('projectId', isEqualTo: event.projectId)
+                .get();
+        for (final doc in query.docs) {
+          await doc.reference.delete();
+        }
+        // Set pendingReview to false on the task
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(event.projectId)
+            .collection('tasks')
+            .doc(event.taskId)
+            .update({'pendingReview': false});
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<AcceptTaskReviewRequestEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        // Remove the task review request
+        final query =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('taskReviewRequests')
+                .where('taskId', isEqualTo: event.taskId)
+                .where('projectId', isEqualTo: event.projectId)
+                .get();
+        for (final doc in query.docs) {
+          await doc.reference.delete();
+        }
+        // Mark the task as completed
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(event.projectId)
+            .collection('tasks')
+            .doc(event.taskId)
+            .update({'isCompleted': true, 'pendingReview': false});
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
+
+    on<DeclineTaskReviewRequestEvent>((event, emit) async {
+      emit(OrganisationsLoading());
+      try {
+        // Remove the task review request
+        final query =
+            await firestore
+                .collection('organisations')
+                .doc(event.organisationId)
+                .collection('taskReviewRequests')
+                .where('taskId', isEqualTo: event.taskId)
+                .where('projectId', isEqualTo: event.projectId)
+                .get();
+        for (final doc in query.docs) {
+          await doc.reference.delete();
+        }
+        // Set pendingReview to false on the task
+        await firestore
+            .collection('organisations')
+            .doc(event.organisationId)
+            .collection('projects')
+            .doc(event.projectId)
+            .collection('tasks')
+            .doc(event.taskId)
+            .update({'pendingReview': false});
+        // Optionally, store feedback somewhere if needed
+        add(FetchOrganisationsEvent());
+      } catch (e) {
+        emit(OrganisationsError(e.toString()));
+      }
+    });
   }
 
   Future<void> _loadOrganisationDataById(
@@ -1167,6 +1301,18 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           );
         }
 
+        List<TaskReviewRequest> taskReviewRequests = [];
+        QuerySnapshot taskReviewRequestsSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(orgId)
+                .collection('taskReviewRequests')
+                .get();
+        for (var requestDoc in taskReviewRequestsSnapshot.docs) {
+          final requestData = requestDoc.data() as Map<String, dynamic>;
+          taskReviewRequests.add(TaskReviewRequest.fromJson(requestData));
+        }
+
         organisations.add(
           Organisation(
             id: orgId,
@@ -1179,6 +1325,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             userRole: userRole,
             joinCode: data['joinCode'] ?? '',
             milestoneReviewRequests: milestoneReviewRequests,
+            taskReviewRequests: taskReviewRequests,
           ),
         );
       }

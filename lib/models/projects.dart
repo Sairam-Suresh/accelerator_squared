@@ -166,3 +166,74 @@ class MilestoneReviewRequest extends Equatable {
     sentForReviewAt,
   ];
 }
+
+class TaskReviewRequest extends Equatable {
+  final String id;
+  final String taskId;
+  final String taskName;
+  final String milestoneId;
+  final String milestoneName;
+  final String projectId;
+  final String projectName;
+  final DateTime dueDate;
+  final DateTime sentForReviewAt;
+
+  const TaskReviewRequest({
+    required this.id,
+    required this.taskId,
+    required this.taskName,
+    required this.milestoneId,
+    required this.milestoneName,
+    required this.projectId,
+    required this.projectName,
+    required this.dueDate,
+    required this.sentForReviewAt,
+  });
+
+  factory TaskReviewRequest.fromJson(Map<String, dynamic> json) {
+    return TaskReviewRequest(
+      id: json['id'] as String,
+      taskId: json['taskId'] as String,
+      taskName: json['taskName'] as String,
+      milestoneId: json['milestoneId'] as String,
+      milestoneName: json['milestoneName'] as String,
+      projectId: json['projectId'] as String,
+      projectName: json['projectName'] as String,
+      dueDate:
+          json['dueDate'] is String
+              ? DateTime.parse(json['dueDate'])
+              : (json['dueDate'] as Timestamp).toDate(),
+      sentForReviewAt:
+          json['sentForReviewAt'] is String
+              ? DateTime.parse(json['sentForReviewAt'])
+              : (json['sentForReviewAt'] as Timestamp).toDate(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'taskId': taskId,
+      'taskName': taskName,
+      'milestoneId': milestoneId,
+      'milestoneName': milestoneName,
+      'projectId': projectId,
+      'projectName': projectName,
+      'dueDate': dueDate.toIso8601String(),
+      'sentForReviewAt': sentForReviewAt.toIso8601String(),
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+    id,
+    taskId,
+    taskName,
+    milestoneId,
+    milestoneName,
+    projectId,
+    projectName,
+    dueDate,
+    sentForReviewAt,
+  ];
+}

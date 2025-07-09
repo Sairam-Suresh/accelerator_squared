@@ -8,6 +8,7 @@ class Organisation {
   final List<Project> projects;
   final List<ProjectRequest> projectRequests;
   final List<MilestoneReviewRequest> milestoneReviewRequests;
+  final List<TaskReviewRequest> taskReviewRequests;
   final int memberCount;
   final String userRole; // 'teacher', 'student_teacher', or 'member'
   final String joinCode; // 6-character join code
@@ -20,6 +21,7 @@ class Organisation {
     required this.projects,
     required this.projectRequests,
     required this.milestoneReviewRequests,
+    required this.taskReviewRequests,
     required this.memberCount,
     required this.userRole,
     required this.joinCode,

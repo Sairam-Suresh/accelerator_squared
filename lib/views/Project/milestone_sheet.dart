@@ -37,6 +37,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   bool _isSaving = false;
   bool _isUpdatingDate = false;
   bool _tasksLoading = true;
+  bool _isSendingTaskReview = false;
+  bool _isUnsendTaskReview = false;
+  bool _showCompletedTasks = false;
 
   TextEditingController nameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
@@ -119,6 +122,21 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
       }
     }
     final bool isCompleted = widget.milestone['isCompleted'] == true;
+    // Compute completed/incomplete tasks
+    final completedTasks =
+        _tasks.where((t) => t['isCompleted'] == true).toList();
+    final incompleteTasks =
+        _tasks.where((t) => t['isCompleted'] != true).toList();
+    final allTasksCompleted = incompleteTasks.isEmpty && _tasks.isNotEmpty;
+    // Automatically show completed tasks if there are no incomplete tasks
+    if (!_tasksLoading &&
+        incompleteTasks.isEmpty &&
+        completedTasks.isNotEmpty &&
+        !_showCompletedTasks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _showCompletedTasks = true);
+      });
+    }
     return BlocListener<ProjectsBloc, ProjectsState>(
       listener: (context, state) {
         if (state is ProjectActionSuccess &&
@@ -712,8 +730,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
               ),
             ),
 
-            widget.isTeacher ? SizedBox(height: 24) : SizedBox.shrink(),
-
+            SizedBox(height: 12),
             // Action button
             widget.isTeacher
                 ? SizedBox(
@@ -758,114 +775,139 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 )
                 : SizedBox.shrink(),
 
-            SizedBox(height: 20),
-
             if (!isCompleted &&
                 (widget.milestone['pendingReview'] != true &&
                     !widget.isTeacher)) ...[
-              SizedBox(height: 12),
-              BlocProvider<OrganisationsBloc>(
-                create: (context) => OrganisationsBloc(),
-                child: Builder(
-                  builder: (context) {
-                    bool _isSending = false;
-                    return StatefulBuilder(
-                      builder: (context, setState) {
-                        return SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.primary,
-                              foregroundColor:
-                                  Theme.of(context).colorScheme.onPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+              if (!isCompleted &&
+                  (widget.milestone['pendingReview'] != true &&
+                      !widget.isTeacher)) ...[
+                BlocProvider<OrganisationsBloc>(
+                  create: (context) => OrganisationsBloc(),
+                  child: Builder(
+                    builder: (context) {
+                      bool _isSending = false;
+                      return StatefulBuilder(
+                        builder: (context, setState) {
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.onPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
                               ),
-                            ),
-                            onPressed:
-                                _isSending
-                                    ? null
-                                    : () async {
-                                      setState(() => _isSending = true);
-                                      final orgBloc =
-                                          context.read<OrganisationsBloc>();
-                                      orgBloc.add(
-                                        SubmitMilestoneReviewRequestEvent(
-                                          organisationId: widget.organisationId,
-                                          projectId: widget.projectId,
-                                          milestoneId: widget.milestone['id'],
-                                          milestoneName:
-                                              widget.milestone['name'] ?? '',
-                                          projectName: widget.projectTitle,
-                                          isOrgWide:
-                                              widget.milestone['sharedId'] !=
-                                              null,
-                                          dueDate:
-                                              (widget.milestone['dueDate']
-                                                      is DateTime)
-                                                  ? widget.milestone['dueDate']
-                                                  : (widget.milestone['dueDate']
-                                                          is Timestamp
-                                                      ? widget
-                                                          .milestone['dueDate']
-                                                          .toDate()
-                                                      : DateTime.now()),
-                                        ),
-                                      );
-                                      orgBloc.stream
-                                          .firstWhere(
-                                            (state) =>
-                                                state is OrganisationsLoaded ||
-                                                state is OrganisationsError,
-                                          )
-                                          .then((state) {
-                                            setState(() => _isSending = false);
-                                            if (state is OrganisationsLoaded) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Milestone sent for review!',
+                              onPressed:
+                                  !_tasksLoading &&
+                                          (_tasks.isEmpty ||
+                                              allTasksCompleted) &&
+                                          !_isSending
+                                      ? () async {
+                                        setState(() => _isSending = true);
+                                        final orgBloc =
+                                            context.read<OrganisationsBloc>();
+                                        orgBloc.add(
+                                          SubmitMilestoneReviewRequestEvent(
+                                            organisationId:
+                                                widget.organisationId,
+                                            projectId: widget.projectId,
+                                            milestoneId: widget.milestone['id'],
+                                            milestoneName:
+                                                widget.milestone['name'] ?? '',
+                                            projectName: widget.projectTitle,
+                                            isOrgWide:
+                                                widget.milestone['sharedId'] !=
+                                                null,
+                                            dueDate:
+                                                (widget.milestone['dueDate']
+                                                        is DateTime)
+                                                    ? widget
+                                                        .milestone['dueDate']
+                                                    : (widget.milestone['dueDate']
+                                                            is Timestamp
+                                                        ? widget
+                                                            .milestone['dueDate']
+                                                            .toDate()
+                                                        : DateTime.now()),
+                                          ),
+                                        );
+                                        orgBloc.stream
+                                            .firstWhere(
+                                              (state) =>
+                                                  state
+                                                      is OrganisationsLoaded ||
+                                                  state is OrganisationsError,
+                                            )
+                                            .then((state) {
+                                              setState(
+                                                () => _isSending = false,
+                                              );
+                                              if (state
+                                                  is OrganisationsLoaded) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Milestone sent for review!',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.green,
                                                   ),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } else if (state
-                                                is OrganisationsError) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(state.message),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          });
-                                    },
-                            icon:
-                                _isSending
-                                    ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                    : Icon(Icons.send_rounded),
-                            label: Text('Send for review'),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                                                );
+                                                Navigator.of(context).pop();
+                                              } else if (state
+                                                  is OrganisationsError) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      state.message,
+                                                    ),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            });
+                                      }
+                                      : null,
+                              icon:
+                                  _isSending
+                                      ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                      : Icon(Icons.send_rounded),
+                              label: Text('Send for review'),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
+                if (!_tasksLoading && !allTasksCompleted && _tasks.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      'All tasks must be completed before sending the milestone for review.',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
             ],
 
             if (!isCompleted &&
@@ -957,6 +999,8 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 ),
               ),
             ],
+
+            widget.isTeacher ? SizedBox(height: 12) : SizedBox.shrink(),
 
             // Only show delete button if milestone is not organization-wide (no sharedId) and user is teacher
             widget.isTeacher &&
@@ -1143,8 +1187,20 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 ),
               ],
             ),
-
-            SizedBox(height: 16),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Checkbox(
+                  value: _showCompletedTasks,
+                  onChanged: (val) {
+                    setState(() {
+                      _showCompletedTasks = val ?? false;
+                    });
+                  },
+                ),
+                Text('Show completed tasks'),
+              ],
+            ),
 
             if (_tasksLoading)
               Center(
@@ -1167,9 +1223,12 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   ),
                 ),
               )
-            else
+            else ...[
+              // Incomplete tasks first
               ListView.separated(
                 itemBuilder: (context, index) {
+                  final isTaskPendingReview =
+                      incompleteTasks[index]['pendingReview'] == true;
                   return Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
@@ -1181,29 +1240,63 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color:
-                              Theme.of(context).colorScheme.secondaryContainer,
+                              isTaskPendingReview
+                                  ? Colors.orange.shade100
+                                  : Theme.of(
+                                    context,
+                                  ).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           Icons.task_rounded,
                           color:
-                              Theme.of(
-                                context,
-                              ).colorScheme.onSecondaryContainer,
+                              isTaskPendingReview
+                                  ? Colors.amber
+                                  : Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondaryContainer,
                           size: 20,
                         ),
                       ),
-                      title: Text(
-                        _tasks[index]['name'] ?? '',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              incompleteTasks[index]['name'] ?? '',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          if (isTaskPendingReview)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.orange.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                'Pending review',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       subtitle: Padding(
                         padding: EdgeInsets.only(top: 8),
                         child: Text(
-                          _tasks[index]['content'] ?? '',
+                          incompleteTasks[index]['content'] ?? '',
                           maxLines: 2,
                           style: TextStyle(
                             color:
@@ -1234,7 +1327,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                         DeleteTaskEvent(
                                           organisationId: widget.organisationId,
                                           projectId: widget.projectId,
-                                          taskId: _tasks[index]['id'],
+                                          taskId: incompleteTasks[index]['id'],
                                         ),
                                       );
                                     },
@@ -1261,7 +1354,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                           body: Padding(
                             padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
                             child: _buildTaskDetailSheet(
-                              index,
+                              _tasks.indexOf(incompleteTasks[index]),
                               widget.projectTitle,
                               widget.milestone['name'] ?? '',
                               _tasks,
@@ -1275,9 +1368,116 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   );
                 },
                 separatorBuilder: (context, index) => SizedBox(height: 8),
-                itemCount: _tasks.length,
+                itemCount: incompleteTasks.length,
                 shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
               ),
+              if (_showCompletedTasks && completedTasks.isNotEmpty) ...[
+                SizedBox(height: 16),
+                Text(
+                  'Completed tasks',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                ListView.separated(
+                  itemBuilder: (context, index) {
+                    return Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.all(16),
+                        leading: Icon(Icons.check_circle, color: Colors.green),
+                        title: Text(
+                          completedTasks[index]['name'] ?? '',
+                          style: TextStyle(
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        subtitle: Text(
+                          completedTasks[index]['content'] ?? '',
+                          maxLines: 2,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          tooltip: 'Delete completed task',
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: Text('Delete Task'),
+                                    content: Text(
+                                      'Are you sure you want to delete this completed task? This action cannot be undone.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                        child: Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        onPressed:
+                                            () =>
+                                                Navigator.of(context).pop(true),
+                                        child: Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                            );
+                            if (confirm == true) {
+                              context.read<ProjectsBloc>().add(
+                                DeleteTaskEvent(
+                                  organisationId: widget.organisationId,
+                                  projectId: widget.projectId,
+                                  taskId: completedTasks[index]['id'],
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        onTap: () {
+                          aweSideSheet(
+                            footer: SizedBox(height: 10),
+                            sheetPosition: SheetPosition.right,
+                            sheetWidth:
+                                MediaQuery.of(context).size.width / 3 - 40,
+                            context: context,
+                            body: Padding(
+                              padding: EdgeInsets.fromLTRB(20, 10, 20, 10),
+                              child: _buildTaskDetailSheet(
+                                _tasks.indexOf(completedTasks[index]),
+                                widget.projectTitle,
+                                widget.milestone['name'] ?? '',
+                                _tasks,
+                              ),
+                            ),
+                            header: SizedBox(height: 20),
+                            onCancel: () => Navigator.of(context).pop(),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  separatorBuilder: (context, index) => SizedBox(height: 8),
+                  itemCount: completedTasks.length,
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                ),
+              ],
+            ],
+
+            // Action button for milestone review (student)
           ],
         ),
       ),
@@ -1351,393 +1551,604 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
     }
     bool isEditingTask = false;
     bool isSavingTask = false;
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return BlocListener<ProjectsBloc, ProjectsState>(
-          listener: (context, state) {
-            if (state is ProjectsLoaded) {
-              final updatedTasks =
-                  state.projects
-                      .expand(
-                        (p) =>
-                            p.id == widget.projectId
-                                ? p.data['tasks'] ?? []
-                                : [],
-                      )
-                      .toList();
-              if (updatedTasks.isNotEmpty && index < updatedTasks.length) {
-                final updatedTask = updatedTasks[index];
-                if (taskNameController.text != (updatedTask['name'] ?? '')) {
-                  taskNameController.text = updatedTask['name'] ?? '';
-                }
-                if (taskDescriptionController.text !=
-                    (updatedTask['content'] ?? '')) {
-                  taskDescriptionController.text = updatedTask['content'] ?? '';
-                }
-              }
+    final isTaskCompleted = task['isCompleted'] == true;
+    final isTaskPendingReview = task['pendingReview'] == true;
+    return BlocListener<ProjectsBloc, ProjectsState>(
+      listener: (context, state) {
+        if (state is ProjectsLoaded) {
+          final updatedTasks =
+              state.projects
+                  .expand(
+                    (p) =>
+                        p.id == widget.projectId ? p.data['tasks'] ?? [] : [],
+                  )
+                  .toList();
+          if (updatedTasks.isNotEmpty && index < updatedTasks.length) {
+            final updatedTask = updatedTasks[index];
+            if (taskNameController.text != (updatedTask['name'] ?? '')) {
+              taskNameController.text = updatedTask['name'] ?? '';
             }
-          },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Task header
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.task_rounded,
-                        color: Theme.of(context).colorScheme.onSecondary,
-                        size: 24,
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        isEditingTask
-                            ? SizedBox(
-                              width: MediaQuery.of(context).size.width / 5,
-                              child: TextField(
-                                controller: taskNameController,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Task name',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                ),
-                              ),
-                            )
-                            : Text(
-                              task['name'] ?? '',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                        SizedBox(height: 4),
-                        Text("Task"),
-                      ],
-                    ),
-                    Spacer(),
-                    if (!isEditingTask)
-                      IconButton(
-                        icon: Icon(Icons.edit, size: 20),
-                        tooltip: 'Edit task',
-                        onPressed: () {
-                          setState(() {
-                            isEditingTask = true;
-                          });
-                        },
-                      ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 24),
-              // Task details
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline,
-                    width: 1,
+            if (taskDescriptionController.text !=
+                (updatedTask['content'] ?? '')) {
+              taskDescriptionController.text = updatedTask['content'] ?? '';
+            }
+          }
+        }
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Task header
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondary,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  color: Theme.of(context).colorScheme.surface,
+                  child: Icon(
+                    Icons.task_rounded,
+                    color: Theme.of(context).colorScheme.onSecondary,
+                    size: 24,
+                  ),
                 ),
-                child: Column(
+                SizedBox(width: 16),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today_rounded, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Due on: ',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        if (isEditingTask)
-                          TextButton(
-                            onPressed: () async {
-                              final DateTime initialDate =
-                                  taskDueDate ?? DateTime.now();
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: initialDate,
-                                firstDate: DateTime(2000),
-                                lastDate: DateTime(2100),
-                              );
-                              if (picked != null) {
-                                setState(() {
-                                  taskDueDate = picked;
-                                });
-                              }
-                            },
-                            child: Text(
-                              '${taskDueDate!.day.toString().padLeft(2, '0')}/${taskDueDate!.month.toString().padLeft(2, '0')}/${taskDueDate!.year.toString().substring(2)}',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          )
-                        else
-                          Text(
-                            formattedDueDate,
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Project',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      projectName,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Milestone',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      milestoneName,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Description',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 6),
                     isEditingTask
-                        ? TextField(
-                          controller: taskDescriptionController,
-                          minLines: 3,
-                          maxLines: 6,
-                          decoration: InputDecoration(
-                            hintText: 'Task description',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        ? SizedBox(
+                          width: MediaQuery.of(context).size.width / 5,
+                          child: TextField(
+                            controller: taskNameController,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Task name',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                         )
                         : Text(
-                          task['content'] ?? '',
+                          task['name'] ?? '',
                           style: TextStyle(
-                            fontSize: 16,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                            height: 1.5,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
+                    SizedBox(height: 4),
+                    Text("Task"),
                   ],
                 ),
+                Spacer(),
+                if (!isEditingTask)
+                  IconButton(
+                    icon: Icon(Icons.edit, size: 20),
+                    tooltip: 'Edit task',
+                    onPressed: () {
+                      setState(() {
+                        isEditingTask = true;
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(height: 24),
+          // Task details
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline,
+                width: 1,
               ),
-              SizedBox(height: 24),
-              if (isEditingTask)
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                    Icon(Icons.calendar_today_rounded, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      'Due on: ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    if (isEditingTask)
+                      TextButton(
+                        onPressed: () async {
+                          final DateTime initialDate =
+                              taskDueDate ?? DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: initialDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              taskDueDate = picked;
+                            });
+                          }
+                        },
+                        child: Text(
+                          '${taskDueDate!.day.toString().padLeft(2, '0')}/${taskDueDate!.month.toString().padLeft(2, '0')}/${taskDueDate!.year.toString().substring(2)}',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        onPressed:
-                            isSavingTask
-                                ? null
-                                : () async {
-                                  final name = taskNameController.text.trim();
-                                  final content =
-                                      taskDescriptionController.text.trim();
-                                  if (name.isEmpty || content.isEmpty) {
+                      )
+                    else
+                      Text(
+                        formattedDueDate,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                  ],
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Project',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  projectName,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Milestone',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  milestoneName,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Description',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 6),
+                isEditingTask
+                    ? TextField(
+                      controller: taskDescriptionController,
+                      minLines: 3,
+                      maxLines: 6,
+                      decoration: InputDecoration(
+                        hintText: 'Task description',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    )
+                    : Text(
+                      task['content'] ?? '',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+              ],
+            ),
+          ),
+          SizedBox(height: 24),
+          if (isEditingTask)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed:
+                        isSavingTask
+                            ? null
+                            : () async {
+                              final name = taskNameController.text.trim();
+                              final content =
+                                  taskDescriptionController.text.trim();
+                              if (name.isEmpty || content.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Name and description cannot be empty',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+                              setState(() {
+                                isSavingTask = true;
+                              });
+                              final bloc = context.read<ProjectsBloc>();
+                              StreamSubscription? subscription;
+                              subscription = bloc.stream.listen((state) {
+                                if (state is ProjectActionSuccess &&
+                                    state.message ==
+                                        'Task updated successfully') {
+                                  subscription?.cancel();
+                                  if (mounted) {
+                                    setState(() {
+                                      isEditingTask = false;
+                                      isSavingTask = false;
+                                    });
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          'Name and description cannot be empty',
+                                          'Task updated successfully',
                                         ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } else if (state is ProjectsError) {
+                                  subscription?.cancel();
+                                  if (mounted) {
+                                    setState(() {
+                                      isSavingTask = false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(state.message),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
-                                    return;
                                   }
+                                }
+                              });
+                              try {
+                                if (mounted) {
+                                  bloc.add(
+                                    UpdateTaskEvent(
+                                      organisationId: widget.organisationId,
+                                      projectId: widget.projectId,
+                                      taskId: task['id'],
+                                      name: name,
+                                      content: content,
+                                      deadline: taskDueDate ?? DateTime.now(),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                subscription.cancel();
+                                if (mounted) {
                                   setState(() {
-                                    isSavingTask = true;
+                                    isSavingTask = false;
                                   });
-                                  final bloc = context.read<ProjectsBloc>();
-                                  StreamSubscription? subscription;
-                                  subscription = bloc.stream.listen((state) {
-                                    if (state is ProjectActionSuccess &&
-                                        state.message ==
-                                            'Task updated successfully') {
-                                      subscription?.cancel();
-                                      if (mounted) {
-                                        setState(() {
-                                          isEditingTask = false;
-                                          isSavingTask = false;
-                                        });
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Task updated successfully',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
-                                      }
-                                    } else if (state is ProjectsError) {
-                                      subscription?.cancel();
-                                      if (mounted) {
-                                        setState(() {
-                                          isSavingTask = false;
-                                        });
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(state.message),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  });
-                                  try {
-                                    if (mounted) {
-                                      bloc.add(
-                                        UpdateTaskEvent(
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                    icon:
+                        isSavingTask
+                            ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : Icon(Icons.save, size: 20),
+                    label: Text(
+                      'Save',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: TextButton(
+                    onPressed:
+                        isSavingTask
+                            ? null
+                            : () {
+                              setState(() {
+                                isEditingTask = false;
+                              });
+                            },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          if (!isTaskCompleted && !widget.isTeacher) ...[
+            SizedBox(height: 12),
+            BlocProvider<OrganisationsBloc>(
+              create: (context) => OrganisationsBloc(),
+              child: Builder(
+                builder: (context) {
+                  if (!isTaskPendingReview) {
+                    bool _isSending = false;
+                    return StatefulBuilder(
+                      builder: (context, setState) {
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              foregroundColor:
+                                  Theme.of(context).colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed:
+                                _isSending
+                                    ? null
+                                    : () async {
+                                      setState(() => _isSending = true);
+                                      final orgBloc =
+                                          context.read<OrganisationsBloc>();
+                                      orgBloc.add(
+                                        SubmitTaskReviewRequestEvent(
+                                          organisationId: widget.organisationId,
+                                          projectId: widget.projectId,
+                                          milestoneId: widget.milestone['id'],
+                                          milestoneName:
+                                              widget.milestone['name'] ?? '',
+                                          taskId: task['id'],
+                                          taskName: task['name'] ?? '',
+                                          projectName: widget.projectTitle,
+                                          dueDate:
+                                              (task['deadline'] is DateTime)
+                                                  ? task['deadline']
+                                                  : (task['deadline']
+                                                          is Timestamp
+                                                      ? task['deadline']
+                                                          .toDate()
+                                                      : DateTime.now()),
+                                        ),
+                                      );
+                                      orgBloc.stream
+                                          .firstWhere(
+                                            (state) =>
+                                                state is OrganisationsLoaded ||
+                                                state is OrganisationsError,
+                                          )
+                                          .then((state) {
+                                            setState(() => _isSending = false);
+                                            if (state is OrganisationsLoaded) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Task sent for review!',
+                                                  ),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                              Navigator.of(context).pop();
+                                            } else if (state
+                                                is OrganisationsError) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(state.message),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          });
+                                    },
+                            icon:
+                                _isSending
+                                    ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                    : Icon(Icons.send_rounded),
+                            label: Text('Send for review'),
+                          ),
+                        );
+                      },
+                    );
+                  } else {
+                    bool _isUnsend = false;
+                    return StatefulBuilder(
+                      builder: (context, setState) {
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed:
+                                _isUnsend
+                                    ? null
+                                    : () async {
+                                      setState(() => _isUnsend = true);
+                                      final orgBloc =
+                                          context.read<OrganisationsBloc>();
+                                      orgBloc.add(
+                                        UnsendTaskReviewRequestEvent(
                                           organisationId: widget.organisationId,
                                           projectId: widget.projectId,
                                           taskId: task['id'],
-                                          name: name,
-                                          content: content,
-                                          deadline:
-                                              taskDueDate ?? DateTime.now(),
                                         ),
                                       );
-                                    }
-                                  } catch (e) {
-                                    subscription.cancel();
-                                    if (mounted) {
-                                      setState(() {
-                                        isSavingTask = false;
-                                      });
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Error: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                        icon:
-                            isSavingTask
-                                ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                                : Icon(Icons.save, size: 20),
-                        label: Text(
-                          'Save',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                                      orgBloc.stream
+                                          .firstWhere(
+                                            (state) =>
+                                                state is OrganisationsLoaded ||
+                                                state is OrganisationsError,
+                                          )
+                                          .then((state) {
+                                            setState(() => _isUnsend = false);
+                                            if (state is OrganisationsLoaded) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Task review request unsent.',
+                                                  ),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                              Navigator.of(context).pop();
+                                            } else if (state
+                                                is OrganisationsError) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(state.message),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          });
+                                    },
+                            icon:
+                                _isUnsend
+                                    ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                    : Icon(Icons.undo),
+                            label: Text('Unsend for review'),
                           ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: TextButton(
-                        onPressed:
-                            isSavingTask
-                                ? null
-                                : () {
-                                  setState(() {
-                                    isEditingTask = false;
-                                  });
-                                },
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                        );
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+          if (widget.isTeacher) ...[
+            SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
                 ),
-              SizedBox(height: 16),
+                onPressed: () {
+                  final bloc = context.read<ProjectsBloc>();
+                  bloc.add(
+                    UpdateTaskEvent(
+                      organisationId: widget.organisationId,
+                      projectId: widget.projectId,
+                      taskId: task['id'],
+                      name: task['name'] ?? '',
+                      content: task['content'] ?? '',
+                      deadline:
+                          task['deadline'] is DateTime
+                              ? task['deadline']
+                              : (task['deadline'] is Timestamp
+                                  ? task['deadline'].toDate()
+                                  : DateTime.now()),
+                      isCompleted: !isTaskCompleted,
+                    ),
+                  );
+                  Navigator.of(context).pop();
+                },
+                icon: Icon(
+                  isTaskCompleted ? Icons.undo : Icons.check,
+                  size: 20,
+                ),
+                label: Text(
+                  isTaskCompleted ? "Mark as incomplete" : "Mark as completed",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            if (isTaskCompleted) ...[
+              SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -1750,84 +2161,55 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                     elevation: 2,
                   ),
-                  onPressed: () {
-                    // Show confirmation dialog
-                    showDialog(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
                       context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('Delete Task'),
-                          content: Text(
-                            'Are you sure you want to delete this task? This action cannot be undone.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: Text('Cancel'),
+                      builder:
+                          (context) => AlertDialog(
+                            title: Text('Delete Task'),
+                            content: Text(
+                              'Are you sure you want to delete this completed task? This action cannot be undone.',
                             ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                // Delete the task
-                                context.read<ProjectsBloc>().add(
-                                  DeleteTaskEvent(
-                                    organisationId: widget.organisationId,
-                                    projectId: widget.projectId,
-                                    taskId: task['id'],
-                                  ),
-                                );
-                                // Close the task detail sheet
-                                Navigator.of(context).pop();
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor:
-                                    Theme.of(context).colorScheme.error,
+                            actions: [
+                              TextButton(
+                                onPressed:
+                                    () => Navigator.of(context).pop(false),
+                                child: Text('Cancel'),
                               ),
-                              child: Text('Delete'),
-                            ),
-                          ],
-                        );
-                      },
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed:
+                                    () => Navigator.of(context).pop(true),
+                                child: Text('Delete'),
+                              ),
+                            ],
+                          ),
                     );
+                    if (confirm == true) {
+                      context.read<ProjectsBloc>().add(
+                        DeleteTaskEvent(
+                          organisationId: widget.organisationId,
+                          projectId: widget.projectId,
+                          taskId: task['id'],
+                        ),
+                      );
+                      Navigator.of(context).pop();
+                    }
                   },
-                  label: Text(
-                    'Delete Task',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
                   icon: Icon(Icons.delete, size: 20),
-                ),
-              ),
-              SizedBox(height: 20),
-              // Complete button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  onPressed: () {
-                    var navigator = Navigator.of(context);
-                    navigator.pop();
-                  },
-                  icon: Icon(Icons.check_rounded, size: 20),
                   label: Text(
-                    'Mark as Completed',
+                    "Delete completed task",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
             ],
-          ),
-        );
-      },
+          ],
+        ],
+      ),
     );
   }
 }

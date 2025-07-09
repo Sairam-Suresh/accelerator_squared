@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 
-class DeclineMilestoneDialog extends StatefulWidget {
-  DeclineMilestoneDialog({super.key, required this.feedback});
+class DeclineRequestDialog extends StatefulWidget {
+  DeclineRequestDialog({
+    super.key,
+    required this.feedback,
+    required this.isMilestone,
+  });
 
   String feedback = '';
+  final bool isMilestone;
 
   @override
-  State<DeclineMilestoneDialog> createState() => _DeclineMilestoneDialogState();
+  State<DeclineRequestDialog> createState() => _DeclineMilestoneDialogState();
 }
 
-class _DeclineMilestoneDialogState extends State<DeclineMilestoneDialog> {
+class _DeclineMilestoneDialogState extends State<DeclineRequestDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Decline Milestone Review'),
+      title: Text(
+        widget.isMilestone ? 'Decline Milestone Review' : 'Decline Task Review',
+      ),
       content: TextField(
         minLines: 3,
         maxLines: 10,
@@ -27,12 +34,18 @@ class _DeclineMilestoneDialogState extends State<DeclineMilestoneDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel'),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+          ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
           onPressed: () => Navigator.of(context).pop(widget.feedback),
-          child: Text('Decline'),
+          child: Text(
+            'Decline',
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+          ),
         ),
       ],
     );

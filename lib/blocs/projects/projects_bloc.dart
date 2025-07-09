@@ -612,6 +612,15 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
   ) async {
     emit(ProjectsLoading());
     try {
+      final updateData = {
+        'name': event.name,
+        'content': event.content,
+        'deadline': event.deadline,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      if (event.isCompleted != null) {
+        updateData['isCompleted'] = event.isCompleted as bool;
+      }
       await firestore
           .collection('organisations')
           .doc(event.organisationId)
@@ -619,12 +628,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .doc(event.projectId)
           .collection('tasks')
           .doc(event.taskId)
-          .update({
-            'name': event.name,
-            'content': event.content,
-            'deadline': event.deadline,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          .update(updateData);
       emit(ProjectActionSuccess('Task updated successfully'));
       add(FetchProjectsEvent(event.organisationId));
     } catch (e) {
