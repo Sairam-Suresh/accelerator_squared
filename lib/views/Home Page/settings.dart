@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -14,6 +16,45 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  String? lastDeployDate;
+  bool isLoadingDeployDate = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLastDeployDate();
+  }
+
+  Future<void> _fetchLastDeployDate() async {
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('app_info')
+              .doc('deployment')
+              .get();
+
+      if (doc.exists && doc.data()?['last_deploy_date'] != null) {
+        final timestamp = doc.data()!['last_deploy_date'] as Timestamp;
+        setState(() {
+          lastDeployDate = DateFormat(
+            'MMM dd, yyyy, HH:mm',
+          ).format(timestamp.toDate());
+          isLoadingDeployDate = false;
+        });
+      } else {
+        setState(() {
+          lastDeployDate = 'Not available';
+          isLoadingDeployDate = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        lastDeployDate = 'Error loading date';
+        isLoadingDeployDate = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var userState = context.read<UserBloc>().state as UserLoggedIn;
@@ -243,6 +284,91 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     const SizedBox(height: 12),
                     _buildThemeModeSelector(themeProvider),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 32),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          "General",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      "Last updated on:",
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.update,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child:
+                                isLoadingDeployDate
+                                    ? SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    )
+                                    : Text(
+                                      lastDeployDate ?? 'Not available',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium?.copyWith(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

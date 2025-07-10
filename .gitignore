@@ -55,3 +55,7 @@ macos/Runner.xcodeproj/project.pbxproj
 
 #Firebase
 .firebase/
+serviceAccountKey.json
+update_deploy_date.js
+
+node_modules

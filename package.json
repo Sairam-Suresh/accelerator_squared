@@ -1,0 +1,13 @@
+{
+  "name": "accelerator-squared-deploy",
+  "version": "1.0.0",
+  "description": "Deployment utilities for Accelerator Squared",
+  "main": "update_deploy_date.js",
+  "scripts": {
+    "update-deploy-date": "node update_deploy_date.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "@google-cloud/firestore": "^7.0.0"
+  }
+} 
