@@ -20,12 +20,6 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
     : _organisationId = organisationId,
       _initialState = initialState,
       super(OrganisationInitial()) {
-    if (_initialState != null) {
-      add(FetchOrganisationEvent(initialData: _initialState));
-    } else {
-      add(FetchOrganisationEvent());
-    }
-
     on<FetchOrganisationEvent>((event, emit) async {
       emit(OrganisationLoading());
 
@@ -888,5 +882,11 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
         emit(OrganisationError(e.toString()));
       }
     });
+
+    if (_initialState != null) {
+      add(FetchOrganisationEvent(initialData: _initialState));
+    } else {
+      add(FetchOrganisationEvent());
+    }
   }
 }

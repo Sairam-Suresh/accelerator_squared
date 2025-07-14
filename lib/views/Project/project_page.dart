@@ -29,23 +29,12 @@ class _ProjectPageState extends State<ProjectPage>
   @override
   void initState() {
     super.initState();
+
     // Initialize TabController with correct length based on user role
   }
 
   void _refreshData() {
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (organisationState is OrganisationLoaded) {
-      organisationStateLoaded = organisationState as OrganisationLoaded;
-    } else {
-      // Handle the case where the organisation state is not loaded
-      // This could be an error state or initial state
-      return;
-    }
   }
 
   @override
@@ -59,6 +48,19 @@ class _ProjectPageState extends State<ProjectPage>
               context.read<ProjectsBloc>().add(
                 FetchProjectsEvent(organisationStateLoaded.id),
               );
+            }
+          },
+        ),
+        BlocListener<OrganisationBloc, OrganisationState>(
+          listener: (context, state) {
+            if (state is OrganisationLoaded) {
+              organisationState = state;
+              organisationStateLoaded = state;
+              setState(() {});
+            } else {
+              // Handle the case where the organisation state is not loaded
+              // This could be an error state or initial state
+              return;
             }
           },
         ),

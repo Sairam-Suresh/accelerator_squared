@@ -1,5 +1,5 @@
 import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
-import 'package:accelerator_squared/views/organisations/declineMilestoneDialog.dart';
+import 'package:accelerator_squared/views/organisations/decline_milestone_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
