@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:flutter/material.dart';
@@ -1069,10 +1070,8 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                           isCreating = true;
                                         });
                                         if (widget.isTeacher) {
-                                          context.read<OrganisationsBloc>().add(
+                                          context.read<OrganisationBloc>().add(
                                             CreateProjectEvent(
-                                              organisationId:
-                                                  widget.organisationId,
                                               title: projectNameController.text,
                                               description:
                                                   descriptionController.text,
@@ -1082,10 +1081,8 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                             ),
                                           );
                                         } else {
-                                          context.read<OrganisationsBloc>().add(
+                                          context.read<OrganisationBloc>().add(
                                             SubmitProjectRequestEvent(
-                                              organisationId:
-                                                  widget.organisationId,
                                               title: projectNameController.text,
                                               description:
                                                   descriptionController.text,

@@ -327,11 +327,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       ),
                                     );
                                   }
-                                  return Container(
-                                    child: Text(
-                                      projectDescription,
-                                      style: TextStyle(fontSize: 17.5),
-                                    ),
+                                  return Text(
+                                    projectDescription,
+                                    style: TextStyle(fontSize: 17.5),
                                   );
                                 },
                               ),

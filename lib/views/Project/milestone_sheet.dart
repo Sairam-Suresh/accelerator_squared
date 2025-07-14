@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/views/Project/tasks/create_task_dialog.dart';
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
@@ -810,11 +811,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       ? () async {
                                         setState(() => _isSending = true);
                                         final orgBloc =
-                                            context.read<OrganisationsBloc>();
+                                            context.read<OrganisationBloc>();
                                         orgBloc.add(
                                           SubmitMilestoneReviewRequestEvent(
-                                            organisationId:
-                                                widget.organisationId,
                                             projectId: widget.projectId,
                                             milestoneId: widget.milestone['id'],
                                             milestoneName:
@@ -840,15 +839,15 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                             .firstWhere(
                                               (state) =>
                                                   state
-                                                      is OrganisationsLoaded ||
-                                                  state is OrganisationsError,
+                                                      is OrganisationLoaded ||
+                                                  state is OrganisationError,
                                             )
                                             .then((state) {
                                               setState(
                                                 () => _isSending = false,
                                               );
                                               if (state
-                                                  is OrganisationsLoaded) {
+                                                  is OrganisationLoaded) {
                                                 ScaffoldMessenger.of(
                                                   context,
                                                 ).showSnackBar(
@@ -861,8 +860,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                                   ),
                                                 );
                                                 Navigator.of(context).pop();
+
                                               } else if (state
-                                                  is OrganisationsError) {
+                                                  is OrganisationError) {
                                                 ScaffoldMessenger.of(
                                                   context,
                                                 ).showSnackBar(
@@ -938,10 +938,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                     : () async {
                                       setState(() => _isUnsend = true);
                                       final orgBloc =
-                                          context.read<OrganisationsBloc>();
+                                          context.read<OrganisationBloc>();
                                       orgBloc.add(
                                         UnsendMilestoneReviewRequestEvent(
-                                          organisationId: widget.organisationId,
                                           projectId: widget.projectId,
                                           milestoneId: widget.milestone['id'],
                                         ),
@@ -949,12 +948,12 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       orgBloc.stream
                                           .firstWhere(
                                             (state) =>
-                                                state is OrganisationsLoaded ||
-                                                state is OrganisationsError,
+                                                state is OrganisationLoaded ||
+                                                state is OrganisationError,
                                           )
                                           .then((state) {
                                             setState(() => _isUnsend = false);
-                                            if (state is OrganisationsLoaded) {
+                                            if (state is OrganisationLoaded) {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
@@ -967,7 +966,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                               );
                                               Navigator.of(context).pop();
                                             } else if (state
-                                                is OrganisationsError) {
+                                                is OrganisationError) {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
@@ -1950,10 +1949,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                     : () async {
                                       setState(() => _isSending = true);
                                       final orgBloc =
-                                          context.read<OrganisationsBloc>();
+                                          context.read<OrganisationBloc>();
                                       orgBloc.add(
                                         SubmitTaskReviewRequestEvent(
-                                          organisationId: widget.organisationId,
                                           projectId: widget.projectId,
                                           milestoneId: widget.milestone['id'],
                                           milestoneName:
@@ -1974,12 +1972,12 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       orgBloc.stream
                                           .firstWhere(
                                             (state) =>
-                                                state is OrganisationsLoaded ||
-                                                state is OrganisationsError,
+                                                state is OrganisationLoaded ||
+                                                state is OrganisationError,
                                           )
                                           .then((state) {
                                             setState(() => _isSending = false);
-                                            if (state is OrganisationsLoaded) {
+                                            if (state is OrganisationLoaded) {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
@@ -1992,7 +1990,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                               );
                                               Navigator.of(context).pop();
                                             } else if (state
-                                                is OrganisationsError) {
+                                                is OrganisationError) {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
@@ -2041,10 +2039,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                     : () async {
                                       setState(() => _isUnsend = true);
                                       final orgBloc =
-                                          context.read<OrganisationsBloc>();
+                                          context.read<OrganisationBloc>();
                                       orgBloc.add(
                                         UnsendTaskReviewRequestEvent(
-                                          organisationId: widget.organisationId,
                                           projectId: widget.projectId,
                                           taskId: task['id'],
                                         ),
@@ -2052,12 +2049,12 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       orgBloc.stream
                                           .firstWhere(
                                             (state) =>
-                                                state is OrganisationsLoaded ||
-                                                state is OrganisationsError,
+                                                state is OrganisationLoaded ||
+                                                state is OrganisationError,
                                           )
                                           .then((state) {
                                             setState(() => _isUnsend = false);
-                                            if (state is OrganisationsLoaded) {
+                                            if (state is OrganisationLoaded) {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
@@ -2070,7 +2067,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                               );
                                               Navigator.of(context).pop();
                                             } else if (state
-                                                is OrganisationsError) {
+                                                is OrganisationError) {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(

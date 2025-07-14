@@ -76,11 +76,9 @@ class RejectProjectRequestEvent extends OrganisationEvent {
 }
 
 class RemoveMemberEvent extends OrganisationEvent {
-  final String organisationId;
   final String memberId;
 
   const RemoveMemberEvent({
-    required this.organisationId,
     required this.memberId,
   });
 }
@@ -116,18 +114,15 @@ class UpdateOrganisationEvent extends OrganisationEvent {
 }
 
 class UnsendMilestoneReviewRequestEvent extends OrganisationEvent {
-  final String organisationId;
   final String projectId;
   final String milestoneId;
   const UnsendMilestoneReviewRequestEvent({
-    required this.organisationId,
     required this.projectId,
     required this.milestoneId,
   });
 }
 
 class SubmitTaskReviewRequestEvent extends OrganisationEvent {
-  final String organisationId;
   final String projectId;
   final String milestoneId;
   final String milestoneName;
@@ -137,7 +132,6 @@ class SubmitTaskReviewRequestEvent extends OrganisationEvent {
   final DateTime dueDate;
 
   const SubmitTaskReviewRequestEvent({
-    required this.organisationId,
     required this.projectId,
     required this.milestoneId,
     required this.milestoneName,
@@ -149,11 +143,9 @@ class SubmitTaskReviewRequestEvent extends OrganisationEvent {
 }
 
 class UnsendTaskReviewRequestEvent extends OrganisationEvent {
-  final String organisationId;
   final String projectId;
   final String taskId;
   const UnsendTaskReviewRequestEvent({
-    required this.organisationId,
     required this.projectId,
     required this.taskId,
   });

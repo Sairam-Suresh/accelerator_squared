@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/models/organisation.dart';
 import 'package:accelerator_squared/views/Home%20Page/invites.dart';
 import 'package:accelerator_squared/views/Home%20Page/settings.dart';
@@ -368,16 +369,13 @@ class _HomePageState extends State<HomePage> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder:
-                              (context) => ProjectPage(
-                                organisationId: organisations[index].id,
-                                orgName: organisations[index].name,
-                                orgDescription:
-                                    organisations[index].description,
-                                projects: organisations[index].projects,
-                                projectRequests:
-                                    organisations[index].projectRequests,
-                                userRole: organisations[index].userRole,
-                                joinCode: organisations[index].joinCode,
+                              (context) => BlocProvider(
+                                create:
+                                    (context) => OrganisationBloc(
+                                      organisationId: organisations[index].id,
+                                      initialState: organisations[index],
+                                    ),
+                                child: ProjectPage(),
                               ),
                         ),
                       );

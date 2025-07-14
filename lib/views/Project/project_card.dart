@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,9 +50,8 @@ class _ProjectCardState extends State<ProjectCard> {
                 isDeleting = true;
               });
               Navigator.of(context).pop();
-              context.read<OrganisationsBloc>().add(
+              context.read<OrganisationBloc>().add(
                 DeleteProjectEvent(
-                  organisationId: widget.organisationId,
                   projectId: widget.project.id,
                 ),
               );

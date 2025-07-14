@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/views/organisations/declineMilestoneDialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -386,10 +387,8 @@ class _RequestDialogState extends State<ProjectRequests> {
                                               );
                                           if (result != null) {
                                             // Unsend milestone review
-                                            context.read<OrganisationsBloc>().add(
+                                            context.read<OrganisationBloc>().add(
                                               UnsendMilestoneReviewRequestEvent(
-                                                organisationId:
-                                                    widget.organisationId,
                                                 projectId: req.projectId,
                                                 milestoneId: req.milestoneId,
                                               ),
@@ -416,11 +415,9 @@ class _RequestDialogState extends State<ProjectRequests> {
                                         onPressed: () {
                                           // Accept: mark milestone as completed and unsend milestone review
                                           final bloc =
-                                              context.read<OrganisationsBloc>();
+                                              context.read<OrganisationBloc>();
                                           bloc.add(
                                             UnsendMilestoneReviewRequestEvent(
-                                              organisationId:
-                                                  widget.organisationId,
                                               projectId: req.projectId,
                                               milestoneId: req.milestoneId,
                                             ),
@@ -440,7 +437,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                             Duration(milliseconds: 500),
                                             () {
                                               bloc.add(
-                                                FetchOrganisationsEvent(),
+                                                FetchOrganisationEvent(),
                                               );
                                             },
                                           );
@@ -565,7 +562,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                               );
                                           if (result != null) {
                                             context
-                                                .read<OrganisationsBloc>()
+                                                .read<OrganisationBloc>()
                                                 .add(
                                                   DeclineTaskReviewRequestEvent(
                                                     organisationId:
@@ -596,7 +593,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                       ElevatedButton(
                                         onPressed: () {
                                           final bloc =
-                                              context.read<OrganisationsBloc>();
+                                              context.read<OrganisationBloc>();
                                           bloc.add(
                                             AcceptTaskReviewRequestEvent(
                                               organisationId:
@@ -610,7 +607,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                             Duration(milliseconds: 500),
                                             () {
                                               bloc.add(
-                                                FetchOrganisationsEvent(),
+                                                FetchOrganisationEvent(),
                                               );
                                             },
                                           );
@@ -658,9 +655,8 @@ class _RequestDialogState extends State<ProjectRequests> {
       isApproving = true;
       currentRequestId = request.id;
     });
-    context.read<OrganisationsBloc>().add(
+    context.read<OrganisationBloc>().add(
       ApproveProjectRequestEvent(
-        organisationId: widget.organisationId,
         requestId: request.id,
       ),
     );
@@ -698,9 +694,8 @@ class _RequestDialogState extends State<ProjectRequests> {
                             currentRequestId = request.id;
                           });
                           Navigator.of(context).pop();
-                          context.read<OrganisationsBloc>().add(
+                          context.read<OrganisationBloc>().add(
                             RejectProjectRequestEvent(
-                              organisationId: widget.organisationId,
                               requestId: request.id,
                             ),
                           );
