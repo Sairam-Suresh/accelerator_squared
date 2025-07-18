@@ -105,11 +105,7 @@ const ColorScheme darkColorScheme = ColorScheme(
 );
 
 // Theme mode enum
-enum AppThemeMode {
-  system,
-  light,
-  dark,
-}
+enum AppThemeMode { system, light, dark }
 
 // App theme data class
 class AppTheme {
@@ -121,7 +117,7 @@ class AppTheme {
     fontFamily: _fontFamily,
     colorScheme: lightColorScheme,
     brightness: Brightness.light,
-    
+
     // App bar theme
     appBarTheme: AppBarTheme(
       backgroundColor: lightColorScheme.surface,
@@ -139,26 +135,22 @@ class AppTheme {
         size: 24,
       ),
     ),
-    
+
     // Card theme
     cardTheme: CardThemeData(
       elevation: 2,
       shadowColor: lightColorScheme.shadow.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: lightColorScheme.surface,
       surfaceTintColor: lightColorScheme.surfaceTint,
     ),
-    
+
     // Elevated button theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 2,
         shadowColor: lightColorScheme.shadow.withValues(alpha: 0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         textStyle: TextStyle(
           fontSize: 16,
@@ -167,13 +159,11 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     // Text button theme
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         textStyle: TextStyle(
           fontSize: 14,
@@ -182,7 +172,7 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     // Input decoration theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -215,7 +205,7 @@ class AppTheme {
         fontFamily: _fontFamily,
       ),
     ),
-    
+
     // Navigation rail theme
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: lightColorScheme.surface,
@@ -241,24 +231,20 @@ class AppTheme {
       ),
       indicatorColor: lightColorScheme.primaryContainer,
     ),
-    
+
     // Floating action button theme
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: lightColorScheme.primary,
       foregroundColor: lightColorScheme.onPrimary,
       elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
-    
+
     // Dialog theme
     dialogTheme: DialogThemeData(
       backgroundColor: lightColorScheme.surface,
       surfaceTintColor: lightColorScheme.surfaceTint,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       titleTextStyle: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w700,
@@ -271,7 +257,7 @@ class AppTheme {
         fontFamily: _fontFamily,
       ),
     ),
-    
+
     // Bottom sheet theme
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: lightColorScheme.surface,
@@ -280,7 +266,7 @@ class AppTheme {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
     ),
-    
+
     // Tab bar theme
     tabBarTheme: TabBarThemeData(
       labelColor: lightColorScheme.primary,
@@ -297,14 +283,14 @@ class AppTheme {
         fontFamily: _fontFamily,
       ),
     ),
-    
+
     // Divider theme
     dividerTheme: DividerThemeData(
       color: lightColorScheme.outlineVariant,
       thickness: 1,
       space: 1,
     ),
-    
+
     // Icon theme
     iconTheme: IconThemeData(
       color: lightColorScheme.onSurfaceVariant,
@@ -318,7 +304,7 @@ class AppTheme {
     fontFamily: _fontFamily,
     colorScheme: darkColorScheme,
     brightness: Brightness.dark,
-    
+
     // App bar theme
     appBarTheme: AppBarTheme(
       backgroundColor: darkColorScheme.surface,
@@ -336,26 +322,22 @@ class AppTheme {
         size: 24,
       ),
     ),
-    
+
     // Card theme
     cardTheme: CardThemeData(
       elevation: 2,
       shadowColor: darkColorScheme.shadow.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: darkColorScheme.surfaceContainer,
       surfaceTintColor: darkColorScheme.surfaceTint,
     ),
-    
+
     // Elevated button theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 2,
         shadowColor: darkColorScheme.shadow.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         textStyle: TextStyle(
           fontSize: 16,
@@ -364,13 +346,11 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     // Text button theme
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         textStyle: TextStyle(
           fontSize: 14,
@@ -379,7 +359,7 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     // Input decoration theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -412,7 +392,7 @@ class AppTheme {
         fontFamily: _fontFamily,
       ),
     ),
-    
+
     // Navigation rail theme
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: darkColorScheme.surface,
@@ -438,24 +418,20 @@ class AppTheme {
       ),
       indicatorColor: darkColorScheme.primaryContainer,
     ),
-    
+
     // Floating action button theme
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: darkColorScheme.primary,
       foregroundColor: darkColorScheme.onPrimary,
       elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
-    
+
     // Dialog theme
     dialogTheme: DialogThemeData(
       backgroundColor: darkColorScheme.surface,
       surfaceTintColor: darkColorScheme.surfaceTint,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       titleTextStyle: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w700,
@@ -468,7 +444,7 @@ class AppTheme {
         fontFamily: _fontFamily,
       ),
     ),
-    
+
     // Bottom sheet theme
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: darkColorScheme.surface,
@@ -477,7 +453,7 @@ class AppTheme {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
     ),
-    
+
     // Tab bar theme
     tabBarTheme: TabBarThemeData(
       labelColor: darkColorScheme.primary,
@@ -494,39 +470,49 @@ class AppTheme {
         fontFamily: _fontFamily,
       ),
     ),
-    
+
     // Divider theme
     dividerTheme: DividerThemeData(
       color: darkColorScheme.outlineVariant,
       thickness: 1,
       space: 1,
     ),
-    
+
     // Icon theme
-    iconTheme: IconThemeData(
-      color: darkColorScheme.onSurfaceVariant,
-      size: 24,
-    ),
+    iconTheme: IconThemeData(color: darkColorScheme.onSurfaceVariant, size: 24),
   );
 }
 
 class ThemeProvider extends ChangeNotifier {
   AppThemeMode _themeMode = AppThemeMode.system;
-  
+
   AppThemeMode get themeMode => _themeMode;
-  
+
   void setThemeMode(AppThemeMode mode) {
     _themeMode = mode;
     notifyListeners();
   }
-  
+
   bool get isDarkMode {
     if (_themeMode == AppThemeMode.system) {
-      return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+          Brightness.dark;
     }
     return _themeMode == AppThemeMode.dark;
   }
 
   ThemeData get theme => isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme;
-  ColorScheme get colorScheme => isDarkMode ? darkColorScheme : lightColorScheme;
+  ColorScheme get colorScheme =>
+      isDarkMode ? darkColorScheme : lightColorScheme;
+}
+
+class InvitesPageProvider extends ChangeNotifier {
+  bool _showInvitesPage = false;
+
+  bool get showInvitesPage => _showInvitesPage;
+
+  void setShowInvitesPage(bool value) {
+    _showInvitesPage = value;
+    notifyListeners();
+  }
 }

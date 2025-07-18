@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:accelerator_squared/theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,13 +32,30 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final invitesPageProvider = Provider.of<InvitesPageProvider>(context);
+    final showInvitesPage = invitesPageProvider.showInvitesPage;
+    // If invites page is hidden and _selectedIndex is now out of range, set to settings page
+    final maxIndex = showInvitesPage ? 2 : 1;
+    if (_selectedIndex > maxIndex) {
+      setState(() {
+        _selectedIndex = maxIndex; // Always go to settings page
+      });
+    }
+    // If toggled ON, do not change the index (user remains on settings)
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final invitesPageProvider = Provider.of<InvitesPageProvider>(context);
+    final showInvitesPage = invitesPageProvider.showInvitesPage;
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: AddOrganisationButton(),
       appBar: AppBar(
         title: Text(
-          _getPageTitle(),
+          _getPageTitle(showInvitesPage),
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
@@ -75,11 +94,12 @@ class _HomePageState extends State<HomePage> {
                     selectedIcon: Icon(Icons.business),
                     label: Text("Organisations"),
                   ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.mail_outline),
-                    selectedIcon: Icon(Icons.mail),
-                    label: Text("Invites"),
-                  ),
+                  if (showInvitesPage)
+                    NavigationRailDestination(
+                      icon: Icon(Icons.mail_outline),
+                      selectedIcon: Icon(Icons.mail),
+                      label: Text("Invites"),
+                    ),
                   NavigationRailDestination(
                     icon: Icon(Icons.settings_outlined),
                     selectedIcon: Icon(Icons.settings),
@@ -92,7 +112,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Container(
                 color: Theme.of(context).colorScheme.surfaceDim,
-                child: _buildContent(),
+                child: _buildContent(showInvitesPage),
               ),
             ),
           ],
@@ -101,30 +121,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String _getPageTitle() {
-    switch (_selectedIndex) {
-      case 0:
-        return "Organisations";
-      case 1:
-        return "Invites";
-      case 2:
-        return "Settings";
-      default:
-        return "Organisations";
-    }
+  String _getPageTitle(bool showInvitesPage) {
+    if (_selectedIndex == 0) return "Organisations";
+    if (showInvitesPage && _selectedIndex == 1) return "Invites";
+    return "Settings";
   }
 
-  Widget _buildContent() {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildOrganisationsContent();
-      case 1:
-        return OrgInvitesPage();
-      case 2:
-        return SettingsPage();
-      default:
-        return _buildOrganisationsContent();
-    }
+  Widget _buildContent(bool showInvitesPage) {
+    if (_selectedIndex == 0) return _buildOrganisationsContent();
+    if (showInvitesPage && _selectedIndex == 1) return OrgInvitesPage();
+    return SettingsPage();
   }
 
   Widget _buildOrganisationsContent() {

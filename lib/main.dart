@@ -53,8 +53,11 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     if (!_firebaseInitialized) {
-      return ChangeNotifierProvider(
-        create: (_) => ThemeProvider(),
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => InvitesPageProvider()),
+        ],
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
             return MaterialApp(
@@ -76,8 +79,11 @@ class _MyAppState extends State<MyApp> {
         ),
         BlocProvider<ProjectsBloc>(create: (context) => ProjectsBloc()),
       ],
-      child: ChangeNotifierProvider(
-        create: (_) => ThemeProvider(),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => InvitesPageProvider()),
+        ],
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
             return MaterialApp(

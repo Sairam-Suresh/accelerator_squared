@@ -1552,7 +1552,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
     bool isEditingTask = false;
     bool isSavingTask = false;
     final isTaskCompleted = task['isCompleted'] == true;
-    final isTaskPendingReview = task['pendingReview'] == true;
+    // final isTaskPendingReview = task['pendingReview'] == true; // REMOVE this line
     return BlocListener<ProjectsBloc, ProjectsState>(
       listener: (context, state) {
         if (state is ProjectsLoaded) {
@@ -1921,185 +1921,49 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 ),
               ],
             ),
-          if (!isTaskCompleted && !widget.isTeacher) ...[
+          // --- REPLACE student review request buttons with mark as completed/incomplete for students ---
+          if (!widget.isTeacher) ...[
             SizedBox(height: 12),
-            BlocProvider<OrganisationsBloc>(
-              create: (context) => OrganisationsBloc(),
-              child: Builder(
-                builder: (context) {
-                  if (!isTaskPendingReview) {
-                    bool _isSending = false;
-                    return StatefulBuilder(
-                      builder: (context, setState) {
-                        return SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.primary,
-                              foregroundColor:
-                                  Theme.of(context).colorScheme.onPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed:
-                                _isSending
-                                    ? null
-                                    : () async {
-                                      setState(() => _isSending = true);
-                                      final orgBloc =
-                                          context.read<OrganisationsBloc>();
-                                      orgBloc.add(
-                                        SubmitTaskReviewRequestEvent(
-                                          organisationId: widget.organisationId,
-                                          projectId: widget.projectId,
-                                          milestoneId: widget.milestone['id'],
-                                          milestoneName:
-                                              widget.milestone['name'] ?? '',
-                                          taskId: task['id'],
-                                          taskName: task['name'] ?? '',
-                                          projectName: widget.projectTitle,
-                                          dueDate:
-                                              (task['deadline'] is DateTime)
-                                                  ? task['deadline']
-                                                  : (task['deadline']
-                                                          is Timestamp
-                                                      ? task['deadline']
-                                                          .toDate()
-                                                      : DateTime.now()),
-                                        ),
-                                      );
-                                      orgBloc.stream
-                                          .firstWhere(
-                                            (state) =>
-                                                state is OrganisationsLoaded ||
-                                                state is OrganisationsError,
-                                          )
-                                          .then((state) {
-                                            setState(() => _isSending = false);
-                                            if (state is OrganisationsLoaded) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Task sent for review!',
-                                                  ),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } else if (state
-                                                is OrganisationsError) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(state.message),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          });
-                                    },
-                            icon:
-                                _isSending
-                                    ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                    : Icon(Icons.send_rounded),
-                            label: Text('Send for review'),
-                          ),
-                        );
-                      },
-                    );
-                  } else {
-                    bool _isUnsend = false;
-                    return StatefulBuilder(
-                      builder: (context, setState) {
-                        return SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed:
-                                _isUnsend
-                                    ? null
-                                    : () async {
-                                      setState(() => _isUnsend = true);
-                                      final orgBloc =
-                                          context.read<OrganisationsBloc>();
-                                      orgBloc.add(
-                                        UnsendTaskReviewRequestEvent(
-                                          organisationId: widget.organisationId,
-                                          projectId: widget.projectId,
-                                          taskId: task['id'],
-                                        ),
-                                      );
-                                      orgBloc.stream
-                                          .firstWhere(
-                                            (state) =>
-                                                state is OrganisationsLoaded ||
-                                                state is OrganisationsError,
-                                          )
-                                          .then((state) {
-                                            setState(() => _isUnsend = false);
-                                            if (state is OrganisationsLoaded) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Task review request unsent.',
-                                                  ),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } else if (state
-                                                is OrganisationsError) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(state.message),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          });
-                                    },
-                            icon:
-                                _isUnsend
-                                    ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                    : Icon(Icons.undo),
-                            label: Text('Unsend for review'),
-                          ),
-                        );
-                      },
-                    );
-                  }
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                onPressed: () {
+                  final bloc = context.read<ProjectsBloc>();
+                  bloc.add(
+                    UpdateTaskEvent(
+                      organisationId: widget.organisationId,
+                      projectId: widget.projectId,
+                      taskId: task['id'],
+                      name: task['name'] ?? '',
+                      content: task['content'] ?? '',
+                      deadline:
+                          task['deadline'] is DateTime
+                              ? task['deadline']
+                              : (task['deadline'] is Timestamp
+                                  ? task['deadline'].toDate()
+                                  : DateTime.now()),
+                      isCompleted: !isTaskCompleted,
+                    ),
+                  );
+                  Navigator.of(context).pop();
                 },
+                icon: Icon(
+                  isTaskCompleted ? Icons.undo : Icons.check,
+                  size: 20,
+                ),
+                label: Text(
+                  isTaskCompleted ? "Mark as incomplete" : "Mark as completed",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],
