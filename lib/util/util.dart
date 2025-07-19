@@ -10,12 +10,12 @@ String generateJoinCode() {
   return List.generate(6, (_) => chars[random.nextInt(chars.length)]).join();
 }
 
-Future<Organisation> loadOrganisationDataById(
+Future<Organisation?> loadOrganisationDataById(
   FirebaseFirestore firestore,
   String orgId,
   String uid,
   String userEmail,
-  List<Organisation> organisations,
+  // List<Organisation> organisations,
 ) async {
   try {
     DocumentSnapshot orgDoc = await firestore
@@ -24,7 +24,7 @@ Future<Organisation> loadOrganisationDataById(
         .get()
         .timeout(const Duration(seconds: 5));
 
-    if (!orgDoc.exists) throw Exception('Organisation not found');
+    if (!orgDoc.exists) return null;
 
     QuerySnapshot membersSnapshot = await firestore
         .collection('organisations')
@@ -164,9 +164,8 @@ Future<Organisation> loadOrganisationDataById(
       );
     }
   } catch (e) {
-    throw e;
     // Silently handle individual organisation loading errors to prevent one bad org from breaking the entire list
   }
 
-  throw Exception('Failed to load organisation data');
+  throw "";
 }

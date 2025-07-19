@@ -64,23 +64,16 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
                 .cast<String>()
                 .toSet();
 
-        List<Future<Organisation>> organisationFutures = [];
-
         for (String orgId in orgIds) {
-          organisationFutures.add(
-            loadOrganisationDataById(
-              firestore,
-              orgId,
-              uid,
-              userEmail,
-              organisations,
-            ),
+          var data = await loadOrganisationDataById(
+            firestore,
+            orgId,
+            uid,
+            userEmail,
           );
+          if (data == null) continue;
+          organisations.add(data);
         }
-
-        organisations = await Future.wait(
-          organisationFutures,
-        ).timeout(const Duration(seconds: 15));
 
         emit(OrganisationsLoaded(organisations));
       } catch (e) {

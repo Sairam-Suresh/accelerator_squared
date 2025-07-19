@@ -73,13 +73,12 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
 
         emit(
           OrganisationLoaded.fromOrganisationObject(
-            await loadOrganisationDataById(
+            (await loadOrganisationDataById(
               firestore,
               organisationId,
               uid,
               userEmail,
-              organisations,
-            ),
+            ))!,
           ),
         );
       } catch (e) {
