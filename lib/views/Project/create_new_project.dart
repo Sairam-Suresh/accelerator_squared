@@ -77,9 +77,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
   Widget build(BuildContext context) {
     var userState = context.read<UserBloc>().state as UserLoggedIn;
 
-    return BlocListener<OrganisationsBloc, OrganisationsState>(
+    return BlocListener<OrganisationBloc, OrganisationState>(
       listener: (context, state) {
-        if (state is OrganisationsLoaded && isCreating) {
+        if (state is OrganisationLoaded && isCreating) {
           setState(() {
             isCreating = false;
           });
@@ -94,7 +94,7 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
               backgroundColor: Colors.green,
             ),
           );
-        } else if (state is OrganisationsError && isCreating) {
+        } else if (state is OrganisationError && isCreating) {
           setState(() {
             isCreating = false;
           });

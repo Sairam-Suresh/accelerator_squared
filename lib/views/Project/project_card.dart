@@ -2,7 +2,6 @@ import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 
 class ProjectCard extends StatefulWidget {
   final Project project;
@@ -25,7 +24,7 @@ class ProjectCard extends StatefulWidget {
 class _ProjectCardState extends State<ProjectCard> {
   bool isDeleting = false;
 
-  void _showDeleteConfirmation(BuildContext context) {
+  void _showDeleteConfirmation(OrganisationBloc organisationBloc) {
     showDialog(
       context: context,
       builder:
@@ -55,7 +54,7 @@ class _ProjectCardState extends State<ProjectCard> {
                             isDeleting = true;
                           });
                           Navigator.of(context).pop();
-                          context.read<OrganisationBloc>().add(
+                          organisationBloc.add(
                             DeleteProjectEvent(projectId: widget.project.id),
                           );
                         },
@@ -166,7 +165,9 @@ class _ProjectCardState extends State<ProjectCard> {
                         tooltip: 'More options',
                         onSelected: (value) {
                           if (value == 'delete') {
-                            _showDeleteConfirmation(context);
+                            _showDeleteConfirmation(
+                              context.read<OrganisationBloc>(),
+                            );
                           }
                         },
                         itemBuilder:

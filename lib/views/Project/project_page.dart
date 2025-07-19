@@ -22,12 +22,12 @@ class ProjectsPage extends StatefulWidget {
 class _ProjectsPageState extends State<ProjectsPage>
     with TickerProviderStateMixin {
   int _selectedIndex = 0;
+  late OrganisationLoaded organisationStateLoaded;
 
   @override
   Widget build(BuildContext context) {
     OrganisationBloc organisationBloc = context.watch<OrganisationBloc>();
     OrganisationState organisationState = organisationBloc.state;
-    late OrganisationLoaded organisationStateLoaded;
 
     if (organisationState is OrganisationLoaded) {
       organisationStateLoaded = organisationState;
