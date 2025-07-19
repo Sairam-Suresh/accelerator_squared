@@ -15,7 +15,6 @@ Future<Organisation> loadOrganisationDataById(
   String orgId,
   String uid,
   String userEmail,
-  List<Organisation> organisations,
 ) async {
   try {
     DocumentSnapshot orgDoc = await firestore

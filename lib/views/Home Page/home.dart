@@ -375,7 +375,7 @@ class _HomePageState extends State<HomePage> {
                                       organisationId: organisations[index].id,
                                       initialState: organisations[index],
                                     ),
-                                child: ProjectPage(),
+                                child: ProjectsPage(),
                               ),
                         ),
                       );
