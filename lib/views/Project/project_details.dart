@@ -7,7 +7,6 @@ import 'package:accelerator_squared/views/Project/project_members.dart'
     show ProjectMembersDialog;
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
@@ -35,13 +34,13 @@ class _ProjectDetailsState extends State<ProjectDetails> {
   String? _pendingDeleteMilestoneId;
   bool showingCompletedMilestones = false;
 
-  var filenameList = [
-    "hello.py",
-    "scoobert.png",
-    "skibidi.txt",
-    "rizz.exe",
-    "bomb.pdf",
-  ];
+  // var filenameList = [
+  //   "hello.py",
+  //   "scoobert.png",
+  //   "skibidi.txt",
+  //   "rizz.exe",
+  //   "bomb.pdf",
+  // ];
 
   @override
   void initState() {
@@ -82,6 +81,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                         data: {},
                         milestones: [],
                         comments: [],
+                        files: [],
                       ),
                 );
                 projectName = project.data['title'] ?? projectName;
@@ -210,6 +210,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                           data: {},
                           milestones: [],
                           comments: [],
+                          files: [],
                         ),
                   );
                   projectName = project.data['title'] ?? projectName;
@@ -360,8 +361,38 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                               SizedBox(height: 12),
                               // File list area scales to available space
                               Expanded(
-                                child:
-                                    filenameList.isNotEmpty
+                                child: BlocBuilder<ProjectsBloc, ProjectsState>(
+                                  key: ValueKey('files_${widget.project.id}'),
+                                  builder: (context, state) {
+                                    ProjectWithDetails? project;
+                                    if (state is ProjectsLoaded) {
+                                      try {
+                                        project = state.projects.firstWhere(
+                                          (p) => p.id == widget.project.id,
+                                        );
+                                      } catch (e) {
+                                        project = null;
+                                      }
+                                    } else if (state is ProjectActionSuccess) {
+                                      context.read<ProjectsBloc>().add(
+                                        FetchProjectsEvent(
+                                          widget.organisationId,
+                                          projectId: widget.project.id,
+                                        ),
+                                      );
+                                    }
+                                    List<String> filenameList = [];
+                                    List<String> filenameIds = [];
+
+                                    project?.files.forEach((link) {
+                                      if (link['link'] != null &&
+                                          link['link'].isNotEmpty) {
+                                        filenameList.add(link['link']);
+                                        filenameIds.add(link['id'] ?? '');
+                                      }
+                                    });
+
+                                    return filenameList.isNotEmpty
                                         ? ListView.builder(
                                           itemBuilder: (context, index) {
                                             return Card(
@@ -390,9 +421,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                         ),
                                                   ),
                                                   child: Icon(
-                                                    _getFileIcon(
-                                                      filenameList[index],
-                                                    ),
+                                                    Icons.link_rounded,
                                                     color:
                                                         Theme.of(context)
                                                             .colorScheme
@@ -407,27 +436,56 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                     fontSize: 16,
                                                   ),
                                                 ),
-                                                subtitle: Text(
-                                                  "12KB",
-                                                  style: TextStyle(
-                                                    color:
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurfaceVariant,
-                                                  ),
-                                                ),
-                                                trailing: IconButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      filenameList.remove(
-                                                        filenameList[index],
-                                                      );
-                                                    });
-                                                  },
-                                                  icon: Icon(
-                                                    Icons.delete_rounded,
-                                                    color: Colors.red,
-                                                  ),
+                                                // subtitle: Text(
+                                                //   "12KB",
+                                                //   style: TextStyle(
+                                                //     color:
+                                                //         Theme.of(context)
+                                                //             .colorScheme
+                                                //             .onSurfaceVariant,
+                                                //   ),
+                                                // ),
+                                                trailing: Row(
+                                                  spacing: 5,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    IconButton(
+                                                      onPressed: () {
+                                                        // TODO: Implement open link in new tab
+                                                      },
+                                                      icon: Icon(
+                                                        Icons
+                                                            .open_in_new_rounded,
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      onPressed: () {
+                                                        context.read<ProjectsBloc>().add(
+                                                          DeleteFileLinkEvent(
+                                                            organisationId:
+                                                                widget
+                                                                    .organisationId,
+                                                            projectId:
+                                                                widget
+                                                                    .project
+                                                                    .id,
+                                                            fileId:
+                                                                filenameIds[index],
+                                                          ),
+                                                        );
+                                                        setState(() {
+                                                          filenameList.remove(
+                                                            filenameList[index],
+                                                          );
+                                                        });
+                                                      },
+                                                      icon: Icon(
+                                                        Icons.delete_rounded,
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             );
@@ -473,7 +531,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ),
                                             ],
                                           ),
-                                        ),
+                                        );
+                                  },
+                                ),
                               ),
                               SizedBox(height: 12),
                               Row(
@@ -500,23 +560,80 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       ),
                                       onPressed: () async {
                                         // Add file upload functionality
-                                        FilePickerResult? result =
-                                            await FilePicker.platform.pickFiles(
-                                              allowMultiple: true,
-                                            );
-                                        if (result != null) {
-                                          List<String?> fileBytes =
-                                              result.files
-                                                  .map(
-                                                    (file) =>
-                                                        file.bytes.toString(),
-                                                  )
-                                                  .toList();
-                                          List<String?> filenames =
-                                              result.files
-                                                  .map((file) => file.name)
-                                                  .toList();
-                                          print(filenames);
+                                        // FilePickerResult? result =
+                                        //     await FilePicker.platform.pickFiles(
+                                        //       allowMultiple: true,
+                                        //     );
+                                        // if (result != null) {
+                                        //   List<String?> fileBytes =
+                                        //       result.files
+                                        //           .map(
+                                        //             (file) =>
+                                        //                 file.bytes.toString(),
+                                        //           )
+                                        //           .toList();
+                                        //   List<String?> filenames =
+                                        //       result.files
+                                        //           .map((file) => file.name)
+                                        //           .toList();
+                                        //   print(filenames);
+                                        // }
+
+                                        var link = "";
+                                        // TODO: Make this look nice
+
+                                        await showDialog(
+                                          context: context,
+                                          builder:
+                                              (context) => Dialog(
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: TextField(
+                                                        onChanged: (value) {
+                                                          link = value;
+                                                        },
+                                                        decoration:
+                                                            InputDecoration(
+                                                              labelText: "Link",
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      onPressed: () {
+                                                        if (link.isEmpty) {
+                                                          ScaffoldMessenger.of(
+                                                            context,
+                                                          ).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text(
+                                                                "Please enter a link",
+                                                              ),
+                                                            ),
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        Navigator.pop(context);
+                                                      },
+                                                      icon: Icon(
+                                                        Icons.check_rounded,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                        );
+
+                                        if (link.isNotEmpty && mounted) {
+                                          context.read<ProjectsBloc>().add(
+                                            CreateFileLinkEvent(
+                                              organisationId:
+                                                  widget.organisationId,
+                                              projectId: widget.project.id,
+                                              link: link,
+                                            ),
+                                          );
                                         }
                                       },
                                       icon: Icon(
@@ -1268,6 +1385,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
       case 'zip':
       case 'rar':
         return Icons.archive_rounded;
+      case 'LINK':
+        return Icons.link_rounded;
       default:
         return Icons.insert_drive_file_rounded;
     }

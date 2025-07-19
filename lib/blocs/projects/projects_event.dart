@@ -180,3 +180,27 @@ class CompleteMilestoneEvent extends ProjectsEvent {
     required this.isCompleted,
   });
 }
+
+class CreateFileLinkEvent extends ProjectsEvent {
+  final String organisationId;
+  final String projectId;
+
+  final String link;
+  CreateFileLinkEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.link,
+  });
+}
+
+class DeleteFileLinkEvent extends ProjectsEvent {
+  final String organisationId;
+  final String projectId;
+
+  final String fileId;
+  DeleteFileLinkEvent({
+    required this.organisationId,
+    required this.projectId,
+    required this.fileId,
+  });
+}
