@@ -617,6 +617,10 @@ class _OrganisationSettingsDialogState
                                                                           .organisationId,
                                                                 ),
                                                               );
+                                                          Navigator.of(
+                                                            context,
+                                                          ).pop();
+                                                          // Leave organization page
                                                         },
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
@@ -801,6 +805,9 @@ class _OrganisationSettingsDialogState
                                                                             .organisationId,
                                                                   ),
                                                                 );
+                                                            Navigator.of(
+                                                              context,
+                                                            ).pop();
                                                           },
                                                   style:
                                                       ElevatedButton.styleFrom(
