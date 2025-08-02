@@ -98,10 +98,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                 showDialog(
                   context: context,
                   builder: (context) {
-                    return CommentsDialog(
-                      commentsContents: const [],
-                      commentsList: const [],
-                    );
+                    return CommentsDialog(projectId: widget.project.id);
                   },
                 );
               },
@@ -508,7 +505,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ),
                                               SizedBox(height: 16),
                                               Text(
-                                                "No files uploaded yet",
+                                                "No files linked yet",
                                                 style: TextStyle(
                                                   fontSize: 18,
                                                   color:
@@ -520,7 +517,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ),
                                               SizedBox(height: 8),
                                               Text(
-                                                "Upload files to get started",
+                                                "Add links to get started",
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   color:

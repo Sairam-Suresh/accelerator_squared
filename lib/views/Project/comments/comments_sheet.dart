@@ -1,173 +1,109 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class CommentsSheet extends StatefulWidget {
+class CommentsSheet extends StatelessWidget {
+  final String projectId;
+  final String commentId;
   const CommentsSheet({
     super.key,
-    required this.sampleCommentsList,
-    required this.sampleMilestoneDescriptions,
-    required this.index,
+    required this.projectId,
+    required this.commentId,
   });
 
-  final List sampleCommentsList;
-  final List sampleMilestoneDescriptions;
-  final int index;
+  Future<Map<String, dynamic>?> _fetchComment() async {
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('projects')
+            .doc(projectId)
+            .collection('comments')
+            .doc(commentId)
+            .get();
+    return doc.data();
+  }
 
-  @override
-  State<CommentsSheet> createState() => _CommentsSheetState();
-}
+  Future<List<Map<String, dynamic>>> _fetchFiles(List<String> fileIds) async {
+    if (fileIds.isEmpty) return [];
+    final filesSnap =
+        await FirebaseFirestore.instance
+            .collection('projects')
+            .doc(projectId)
+            .collection('files')
+            .where(FieldPath.documentId, whereIn: fileIds)
+            .get();
+    return filesSnap.docs
+        .map((doc) => {'id': doc.id, 'name': doc['name'] ?? doc.id})
+        .toList();
+  }
 
-class _CommentsSheetState extends State<CommentsSheet> {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header section
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.comment_rounded,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  size: 24,
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.sampleCommentsList[widget.index],
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Comment",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 24),
-        
-        // Content section
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            color: Theme.of(context).colorScheme.surface,
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _fetchComment(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Container(
+            height: 300,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final comment = snapshot.data!;
+        final mentionedFiles = List<String>.from(
+          comment['mentionedFiles'] ?? [],
+        );
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Assigned by info
-              Row(
-                children: [
-                  Icon(
-                    Icons.person_rounded,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    "Assigned by: ",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  Text(
-                    "X",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              
-              // Comment content
               Text(
-                "Comment",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                comment['title'] ?? '',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 12),
+              Text(comment['body'] ?? '', style: TextStyle(fontSize: 18)),
+              SizedBox(height: 24),
               Text(
-                widget.sampleMilestoneDescriptions[0],
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
+                'Mentioned Files:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _fetchFiles(mentionedFiles),
+                builder: (context, fileSnap) {
+                  if (!fileSnap.hasData)
+                    return SizedBox(
+                      height: 40,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  if (fileSnap.data!.isEmpty) return Text('None');
+                  return Wrap(
+                    spacing: 8,
+                    children:
+                        fileSnap.data!
+                            .map((file) => Chip(label: Text(file['name'])))
+                            .toList(),
+                  );
+                },
+              ),
+              SizedBox(height: 24),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Text(
+                  comment['timestamp'] != null
+                      ? (comment['timestamp'] as Timestamp).toDate().toString()
+                      : '',
+                  style: TextStyle(color: Colors.grey),
                 ),
               ),
             ],
           ),
-        ),
-        SizedBox(height: 24),
-        
-        // Action button
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-            ),
-            onPressed: () {
-              var navigator = Navigator.of(context);
-              navigator.pop();
-            },
-            icon: Icon(Icons.check_rounded, size: 20),
-            label: Text(
-              "Mark as Completed",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
