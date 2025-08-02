@@ -616,6 +616,10 @@ class _OrganisationSettingsDialogState
                                                                           .organisationId,
                                                                 ),
                                                               );
+                                                          Navigator.of(
+                                                            context,
+                                                          ).pop();
+                                                          // Close deleted project page
                                                         },
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
