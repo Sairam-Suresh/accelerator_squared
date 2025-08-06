@@ -3,167 +3,376 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CommentsDialog extends StatefulWidget {
   final String projectId;
-  const CommentsDialog({super.key, required this.projectId});
+  final String organisationId;
+  const CommentsDialog({
+    super.key,
+    required this.projectId,
+    required this.organisationId,
+  });
 
   @override
   State<CommentsDialog> createState() => _CommentsDialogState();
 }
 
 class _CommentsDialogState extends State<CommentsDialog> {
-  Future<List<Map<String, dynamic>>> _fetchFiles() async {
-    final snapshot =
-        await FirebaseFirestore.instance
-            .collection('projects')
-            .doc(widget.projectId)
-            .collection('files')
-            .get();
-    return snapshot.docs
-        .map((doc) => {'id': doc.id, 'name': doc['name'] ?? doc.id})
-        .toList();
-  }
-
   Future<void> _showAddCommentDialog() async {
+    // Ensure we have the latest project data with files
+    context.read<ProjectsBloc>().add(
+      FetchProjectsEvent(widget.organisationId, projectId: widget.projectId),
+    );
+
     final titleController = TextEditingController();
     final bodyController = TextEditingController();
     List<String> selectedFileIds = [];
-    final files = await _fetchFiles();
 
     await showDialog<bool>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder:
-              (context, setState) => AlertDialog(
+        bool isLoading = false;
+        return BlocBuilder<ProjectsBloc, ProjectsState>(
+          key: ValueKey('comments_dialog_${widget.projectId}'),
+          builder: (context, state) {
+            // --- Always get the latest files from the BLoC state ---
+            List<Map<String, dynamic>> files = [];
+            if (state is ProjectsLoading) {
+              return AlertDialog(
                 title: Text('New Comment'),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: titleController,
-                        decoration: InputDecoration(labelText: 'Title'),
-                      ),
-                      SizedBox(height: 8),
-                      TextField(
-                        controller: bodyController,
-                        decoration: InputDecoration(labelText: 'Body'),
-                        maxLines: 3,
-                      ),
-                      SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Mention files:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      files.isEmpty
-                          ? Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              'No files available to mention.',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
-                          : Wrap(
-                            spacing: 8,
-                            children:
-                                files.map((file) {
-                                  final isSelected = selectedFileIds.contains(
-                                    file['id'],
-                                  );
-                                  return FilterChip(
-                                    label: Text(file['name']),
-                                    selected: isSelected,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        if (selected) {
-                                          selectedFileIds.add(file['id']);
-                                        } else {
-                                          selectedFileIds.remove(file['id']);
-                                        }
-                                      });
-                                    },
-                                  );
-                                }).toList(),
-                          ),
-                      if (selectedFileIds.isNotEmpty) ...[
-                        SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Selected files:',
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                        Wrap(
-                          spacing: 8,
-                          children:
-                              files
-                                  .where(
-                                    (file) =>
-                                        selectedFileIds.contains(file['id']),
-                                  )
-                                  .map(
-                                    (file) => Chip(
-                                      label: Text(file['name']),
-                                      onDeleted: () {
-                                        setState(() {
-                                          selectedFileIds.remove(file['id']);
-                                        });
-                                      },
-                                    ),
-                                  )
-                                  .toList(),
-                        ),
+                content: SizedBox(
+                  width: MediaQuery.of(context).size.width / 2.5,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading project files...'),
                       ],
-                    ],
+                    ),
                   ),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (titleController.text.trim().isNotEmpty &&
-                          bodyController.text.trim().isNotEmpty) {
-                        await FirebaseFirestore.instance
-                            .collection('projects')
-                            .doc(widget.projectId)
-                            .collection('comments')
-                            .add({
-                              'title': titleController.text.trim(),
-                              'body': bodyController.text.trim(),
-                              'timestamp': FieldValue.serverTimestamp(),
-                              'mentionedFiles': selectedFileIds,
-                            });
-                        Navigator.pop(
-                          context,
-                          true,
-                        ); // Only pops the add comment dialog
-                      }
-                    },
-                    child: Text(
-                      'Add',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+                    child: Text('Cancel'),
                   ),
                 ],
-              ),
+              );
+            } else if (state is ProjectsLoaded) {
+              print(
+                '[CommentsDialog] Projects loaded: ${state.projects.length}',
+              );
+              final project = state.projects.firstWhere(
+                (p) => p.id == widget.projectId,
+                orElse:
+                    () => ProjectWithDetails(
+                      id: widget.projectId,
+                      data: {},
+                      milestones: [],
+                      comments: [],
+                      files: [],
+                    ),
+              );
+              print(
+                '[CommentsDialog] Project files count: ${project.files.length}',
+              );
+              if (project.files.isNotEmpty) {
+                print(
+                  '[CommentsDialog] First file data: ${project.files.first}',
+                );
+              }
+              // Defensive: ensure files is a List<Map>
+              files =
+                  project.files
+                      .where((file) => file['id'] != null)
+                      .map<Map<String, dynamic>>(
+                        (file) => {
+                          'id': file['id'],
+                          'name': file['link'] ?? file['id'] ?? 'Unknown file',
+                          'link': file['link'] ?? '',
+                        },
+                      )
+                      .toList();
+              print('[CommentsDialog] Filtered files count: ${files.length}');
+              if (files.isNotEmpty) {
+                print('[CommentsDialog] First filtered file: ${files.first}');
+              }
+            } else if (state is ProjectsError) {
+              return AlertDialog(
+                title: Text('New Comment'),
+                content: SizedBox(
+                  width: MediaQuery.of(context).size.width / 2.5,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error, color: Colors.red, size: 48),
+                        SizedBox(height: 16),
+                        Text('Error loading project files'),
+                        SizedBox(height: 8),
+                        Text(
+                          state.message,
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      context.read<ProjectsBloc>().add(
+                        FetchProjectsEvent(
+                          widget.organisationId,
+                          projectId: widget.projectId,
+                        ),
+                      );
+                    },
+                    child: Text('Retry'),
+                  ),
+                ],
+              );
+            } else {
+              // Fallback for other states
+              return AlertDialog(
+                title: Text('New Comment'),
+                content: SizedBox(
+                  width: MediaQuery.of(context).size.width / 2.5,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading...'),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel'),
+                  ),
+                ],
+              );
+            }
+            // --------------------------------------------------------
+
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: Text('New Comment'),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width / 2.5,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: titleController,
+                            decoration: InputDecoration(labelText: 'Title'),
+                          ),
+                          SizedBox(height: 8),
+                          TextField(
+                            controller: bodyController,
+                            decoration: InputDecoration(labelText: 'Body'),
+                            maxLines: 3,
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Mention files:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.refresh),
+                                onPressed: () {
+                                  context.read<ProjectsBloc>().add(
+                                    FetchProjectsEvent(
+                                      widget.organisationId,
+                                      projectId: widget.projectId,
+                                    ),
+                                  );
+                                },
+                                tooltip: 'Refresh files',
+                              ),
+                            ],
+                          ),
+                          files.isEmpty
+                              ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8.0,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'No files available to mention.',
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Add files to the project first.',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              : Wrap(
+                                spacing: 8,
+                                children:
+                                    files.map((file) {
+                                      final isSelected = selectedFileIds
+                                          .contains(file['id']);
+                                      return FilterChip(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 15,
+                                        ),
+                                        label: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.file_copy),
+                                            SizedBox(width: 8),
+                                            Text(file['name']),
+                                          ],
+                                        ),
+                                        selected: isSelected,
+                                        onSelected: (selected) {
+                                          setState(() {
+                                            if (selected) {
+                                              selectedFileIds.add(file['id']);
+                                            } else {
+                                              selectedFileIds.remove(
+                                                file['id'],
+                                              );
+                                            }
+                                          });
+                                        },
+                                      );
+                                    }).toList(),
+                              ),
+                          if (selectedFileIds.isNotEmpty) ...[
+                            SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Selected files:',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            Wrap(
+                              spacing: 8,
+                              children:
+                                  files
+                                      .where(
+                                        (file) => selectedFileIds.contains(
+                                          file['id'],
+                                        ),
+                                      )
+                                      .map(
+                                        (file) => Chip(
+                                          label: Text(file['name']),
+                                          onDeleted: () {
+                                            setState(() {
+                                              selectedFileIds.remove(
+                                                file['id'],
+                                              );
+                                            });
+                                          },
+                                        ),
+                                      )
+                                      .toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () async {
+                                if (titleController.text.trim().isNotEmpty &&
+                                    bodyController.text.trim().isNotEmpty) {
+                                  setState(() => isLoading = true);
+                                  final user =
+                                      FirebaseAuth.instance.currentUser;
+                                  await FirebaseFirestore.instance
+                                      .collection('organisations')
+                                      .doc(widget.organisationId)
+                                      .collection('projects')
+                                      .doc(widget.projectId)
+                                      .collection('comments')
+                                      .add({
+                                        'title': titleController.text.trim(),
+                                        'body': bodyController.text.trim(),
+                                        'timestamp':
+                                            FieldValue.serverTimestamp(),
+                                        'mentionedFiles': selectedFileIds,
+                                        'authorEmail': user?.email ?? 'Unknown',
+                                      });
+                                  setState(() => isLoading = false);
+                                  Navigator.pop(context, true);
+                                }
+                              },
+                      child:
+                          isLoading
+                              ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                              : Text(
+                                'Add',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         );
       },
     );
@@ -171,6 +380,13 @@ class _CommentsDialogState extends State<CommentsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure we have the latest project data with files when dialog opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProjectsBloc>().add(
+        FetchProjectsEvent(widget.organisationId, projectId: widget.projectId),
+      );
+    });
+
     return AlertDialog(
       title: Text(
         "Project comments",
@@ -206,6 +422,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
               child: StreamBuilder<QuerySnapshot>(
                 stream:
                     FirebaseFirestore.instance
+                        .collection('organisations')
+                        .doc(widget.organisationId)
                         .collection('projects')
                         .doc(widget.projectId)
                         .collection('comments')
@@ -225,17 +443,12 @@ class _CommentsDialogState extends State<CommentsDialog> {
                     itemBuilder: (context, index) {
                       final data = docs[index].data() as Map<String, dynamic>;
                       return Card(
-                        // borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(10),
                           child: ListTile(
                             leading: Container(
                               padding: EdgeInsets.fromLTRB(0, 10, 10, 10),
-                              child: Icon(
-                                Icons.comment,
-                                // color: Colors.amber,
-                                size: 24,
-                              ),
+                              child: Icon(Icons.comment, size: 24),
                             ),
                             title: Text(
                               data['title'] ?? '',
@@ -257,6 +470,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                     MediaQuery.of(context).size.width / 3,
                                 header: SizedBox(height: 16),
                                 body: CommentsSheet(
+                                  organisationId: widget.organisationId,
                                   projectId: widget.projectId,
                                   commentId: docs[index].id,
                                 ),
@@ -302,6 +516,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                 );
                                 if (confirm == true) {
                                   await FirebaseFirestore.instance
+                                      .collection('organisations')
+                                      .doc(widget.organisationId)
                                       .collection('projects')
                                       .doc(widget.projectId)
                                       .collection('comments')

@@ -98,7 +98,13 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                 showDialog(
                   context: context,
                   builder: (context) {
-                    return CommentsDialog(projectId: widget.project.id);
+                    return BlocProvider.value(
+                      value: context.read<ProjectsBloc>(),
+                      child: CommentsDialog(
+                        projectId: widget.project.id,
+                        organisationId: widget.organisationId,
+                      ),
+                    );
                   },
                 );
               },
@@ -378,6 +384,15 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                         ),
                                       );
                                     }
+
+                                    // --- Add this loading indicator ---
+                                    if (state is ProjectsLoading) {
+                                      return Center(
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    }
+                                    // --- End loading indicator ---
+
                                     List<String> filenameList = [];
                                     List<String> filenameIds = [];
 
@@ -488,7 +503,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                             );
                                           },
                                           itemCount: filenameList.length,
-                                          // No shrinkWrap, no physics: let ListView fill the Expanded
                                         )
                                         : Center(
                                           child: Column(
@@ -633,12 +647,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                           );
                                         }
                                       },
-                                      icon: Icon(
-                                        Icons.upload_rounded,
-                                        size: 20,
-                                      ),
+                                      icon: Icon(Icons.add_rounded, size: 20),
                                       label: Text(
-                                        "Upload Files",
+                                        "Add files via link",
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,

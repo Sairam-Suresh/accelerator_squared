@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 
 class CommentsSheet extends StatelessWidget {
+  final String organisationId;
   final String projectId;
   final String commentId;
   const CommentsSheet({
     super.key,
+    required this.organisationId,
     required this.projectId,
     required this.commentId,
   });
@@ -13,26 +17,14 @@ class CommentsSheet extends StatelessWidget {
   Future<Map<String, dynamic>?> _fetchComment() async {
     final doc =
         await FirebaseFirestore.instance
+            .collection('organisations')
+            .doc(organisationId)
             .collection('projects')
             .doc(projectId)
             .collection('comments')
             .doc(commentId)
             .get();
     return doc.data();
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchFiles(List<String> fileIds) async {
-    if (fileIds.isEmpty) return [];
-    final filesSnap =
-        await FirebaseFirestore.instance
-            .collection('projects')
-            .doc(projectId)
-            .collection('files')
-            .where(FieldPath.documentId, whereIn: fileIds)
-            .get();
-    return filesSnap.docs
-        .map((doc) => {'id': doc.id, 'name': doc['name'] ?? doc.id})
-        .toList();
   }
 
   @override
@@ -50,6 +42,33 @@ class CommentsSheet extends StatelessWidget {
         final mentionedFiles = List<String>.from(
           comment['mentionedFiles'] ?? [],
         );
+
+        final projectFiles =
+            (() {
+              final state = context.read<ProjectsBloc>().state;
+              if (state is ProjectsLoaded) {
+                final project = state.projects.firstWhere(
+                  (p) => p.id == projectId,
+                  orElse:
+                      () => ProjectWithDetails(
+                        id: projectId,
+                        data: {},
+                        milestones: [],
+                        comments: [],
+                        files: [],
+                      ),
+                );
+                return project.files;
+              }
+              return [];
+            })();
+
+        final mentionedFileNames =
+            projectFiles
+                .where((file) => mentionedFiles.contains(file['id']))
+                .map((file) => file['link'] ?? file['name'] ?? file['id'])
+                .toList();
+
         return Padding(
           padding: EdgeInsets.only(
             left: 24,
@@ -61,35 +80,74 @@ class CommentsSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                comment['title'] ?? '',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.comment,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          comment['title'] ?? '',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          comment['authorEmail'] ?? 'Unknown author',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               SizedBox(height: 12),
-              Text(comment['body'] ?? '', style: TextStyle(fontSize: 18)),
+              Container(
+                constraints: BoxConstraints(maxHeight: 200),
+                child: SingleChildScrollView(
+                  child: Text(
+                    comment['body'] ?? '',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
               SizedBox(height: 24),
               Text(
                 'Mentioned Files:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              FutureBuilder<List<Map<String, dynamic>>>(
-                future: _fetchFiles(mentionedFiles),
-                builder: (context, fileSnap) {
-                  if (!fileSnap.hasData)
-                    return SizedBox(
-                      height: 40,
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  if (fileSnap.data!.isEmpty) return Text('None');
-                  return Wrap(
+              mentionedFileNames.isEmpty
+                  ? Text('None')
+                  : Wrap(
                     spacing: 8,
                     children:
-                        fileSnap.data!
-                            .map((file) => Chip(label: Text(file['name'])))
+                        mentionedFileNames
+                            .map((name) => Chip(label: Text(name)))
                             .toList(),
-                  );
-                },
-              ),
+                  ),
               SizedBox(height: 24),
               Align(
                 alignment: Alignment.bottomRight,
