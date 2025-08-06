@@ -10,10 +10,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 class CommentsDialog extends StatefulWidget {
   final String projectId;
   final String organisationId;
+  final String userRole;
   const CommentsDialog({
     super.key,
     required this.projectId,
     required this.organisationId,
+    required this.userRole,
   });
 
   @override
@@ -45,14 +47,17 @@ class _CommentsDialogState extends State<CommentsDialog> {
                 title: Text('New Comment'),
                 content: SizedBox(
                   width: MediaQuery.of(context).size.width / 2.5,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Loading project files...'),
-                      ],
+                  child: SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Loading project files...'),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -399,25 +404,29 @@ class _CommentsDialogState extends State<CommentsDialog> {
           children: [
             Row(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.secondary,
-                      foregroundColor:
-                          Theme.of(context).colorScheme.onSecondary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                if (widget.userRole == 'teacher')
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.secondary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onSecondary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 16),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                      onPressed: _showAddCommentDialog,
+                      icon: Icon(Icons.add),
+                      label: Text("Create comment"),
                     ),
-                    onPressed: _showAddCommentDialog,
-                    icon: Icon(Icons.add),
-                    label: Text("Create comment"),
                   ),
-                ),
               ],
             ),
-            SizedBox(height: 20),
+            widget.userRole == 'teacher'
+                ? SizedBox(height: 20)
+                : SizedBox.shrink(),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream:
@@ -443,88 +452,99 @@ class _CommentsDialogState extends State<CommentsDialog> {
                     itemBuilder: (context, index) {
                       final data = docs[index].data() as Map<String, dynamic>;
                       return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: ListTile(
-                            leading: Container(
-                              padding: EdgeInsets.fromLTRB(0, 10, 10, 10),
-                              child: Icon(Icons.comment, size: 24),
-                            ),
-                            title: Text(
-                              data['title'] ?? '',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () {
+                            aweSideSheet(
+                              context: context,
+                              sheetPosition: SheetPosition.right,
+                              sheetWidth: MediaQuery.of(context).size.width / 3,
+                              header: SizedBox(height: 16),
+                              body: CommentsSheet(
+                                organisationId: widget.organisationId,
+                                projectId: widget.projectId,
+                                commentId: docs[index].id,
                               ),
-                            ),
-                            subtitle: Text(
-                              data['body'] ?? '',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onTap: () {
-                              aweSideSheet(
-                                context: context,
-                                sheetPosition: SheetPosition.right,
-                                sheetWidth:
-                                    MediaQuery.of(context).size.width / 3,
-                                header: SizedBox(height: 16),
-                                body: CommentsSheet(
-                                  organisationId: widget.organisationId,
-                                  projectId: widget.projectId,
-                                  commentId: docs[index].id,
+                              footer: SizedBox(height: 16),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: ListTile(
+                              leading: Container(
+                                padding: EdgeInsets.fromLTRB(0, 10, 10, 10),
+                                child: Icon(Icons.comment, size: 24),
+                              ),
+                              title: Text(
+                                data['title'] ?? '',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                footer: SizedBox(height: 16),
-                              );
-                            },
-                            trailing: IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              tooltip: 'Delete Comment',
-                              onPressed: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder:
-                                      (context) => AlertDialog(
-                                        title: Text('Delete Comment'),
-                                        content: Text(
-                                          'Are you sure you want to delete this comment?',
+                              ),
+                              subtitle: Text(
+                                data['body'] ?? '',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+
+                              trailing:
+                                  widget.userRole == 'teacher'
+                                      ? IconButton(
+                                        icon: Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
                                         ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed:
-                                                () => Navigator.pop(
-                                                  context,
-                                                  false,
+                                        tooltip: 'Delete Comment',
+                                        onPressed: () async {
+                                          final confirm = await showDialog<
+                                            bool
+                                          >(
+                                            context: context,
+                                            builder:
+                                                (context) => AlertDialog(
+                                                  title: Text('Delete Comment'),
+                                                  content: Text(
+                                                    'Are you sure you want to delete this comment?',
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            false,
+                                                          ),
+                                                      child: Text('Cancel'),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            true,
+                                                          ),
+                                                      child: Text(
+                                                        'Delete',
+                                                        style: TextStyle(
+                                                          color: Colors.red,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                            child: Text('Cancel'),
-                                          ),
-                                          TextButton(
-                                            onPressed:
-                                                () => Navigator.pop(
-                                                  context,
-                                                  true,
-                                                ),
-                                            child: Text(
-                                              'Delete',
-                                              style: TextStyle(
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                );
-                                if (confirm == true) {
-                                  await FirebaseFirestore.instance
-                                      .collection('organisations')
-                                      .doc(widget.organisationId)
-                                      .collection('projects')
-                                      .doc(widget.projectId)
-                                      .collection('comments')
-                                      .doc(docs[index].id)
-                                      .delete();
-                                }
-                              },
+                                          );
+                                          if (confirm == true) {
+                                            await FirebaseFirestore.instance
+                                                .collection('organisations')
+                                                .doc(widget.organisationId)
+                                                .collection('projects')
+                                                .doc(widget.projectId)
+                                                .collection('comments')
+                                                .doc(docs[index].id)
+                                                .delete();
+                                          }
+                                        },
+                                      )
+                                      : null,
                             ),
                           ),
                         ),

@@ -13,6 +13,7 @@ import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProjectDetails extends StatefulWidget {
   final String organisationId;
@@ -103,6 +104,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                       child: CommentsDialog(
                         projectId: widget.project.id,
                         organisationId: widget.organisationId,
+                        userRole: widget.isTeacher ? 'teacher' : 'member',
                       ),
                     );
                   },
@@ -416,88 +418,72 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 borderRadius:
                                                     BorderRadius.circular(12),
                                               ),
-                                              child: ListTile(
-                                                contentPadding: EdgeInsets.all(
-                                                  16,
-                                                ),
-                                                leading: Container(
-                                                  padding: EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .secondaryContainer,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.link_rounded,
-                                                    color:
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .onSecondaryContainer,
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                                title: Text(
-                                                  filenameList[index],
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                                // subtitle: Text(
-                                                //   "12KB",
-                                                //   style: TextStyle(
-                                                //     color:
-                                                //         Theme.of(context)
-                                                //             .colorScheme
-                                                //             .onSurfaceVariant,
-                                                //   ),
-                                                // ),
-                                                trailing: Row(
-                                                  spacing: 5,
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    IconButton(
-                                                      onPressed: () {
-                                                        // TODO: Implement open link in new tab
-                                                      },
-                                                      icon: Icon(
-                                                        Icons
-                                                            .open_in_new_rounded,
-                                                      ),
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                onTap: () async {
+                                                  await launchUrl(
+                                                    Uri.parse(
+                                                      'https://${filenameList[index]}',
                                                     ),
-                                                    IconButton(
-                                                      onPressed: () {
-                                                        context.read<ProjectsBloc>().add(
-                                                          DeleteFileLinkEvent(
-                                                            organisationId:
-                                                                widget
-                                                                    .organisationId,
-                                                            projectId:
-                                                                widget
-                                                                    .project
-                                                                    .id,
-                                                            fileId:
-                                                                filenameIds[index],
+                                                  );
+                                                },
+                                                child: ListTile(
+                                                  contentPadding:
+                                                      EdgeInsets.all(16),
+                                                  leading: Container(
+                                                    padding: EdgeInsets.all(12),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          Theme.of(context)
+                                                              .colorScheme
+                                                              .secondaryContainer,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
                                                           ),
-                                                        );
-                                                        setState(() {
-                                                          filenameList.remove(
-                                                            filenameList[index],
-                                                          );
-                                                        });
-                                                      },
-                                                      icon: Icon(
-                                                        Icons.delete_rounded,
-                                                        color: Colors.red,
-                                                      ),
                                                     ),
-                                                  ],
+                                                    child: Icon(
+                                                      Icons.link_rounded,
+                                                      color:
+                                                          Theme.of(context)
+                                                              .colorScheme
+                                                              .onSecondaryContainer,
+                                                      size: 24,
+                                                    ),
+                                                  ),
+                                                  title: Text(
+                                                    filenameList[index],
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  trailing: IconButton(
+                                                    onPressed: () {
+                                                      context.read<ProjectsBloc>().add(
+                                                        DeleteFileLinkEvent(
+                                                          organisationId:
+                                                              widget
+                                                                  .organisationId,
+                                                          projectId:
+                                                              widget.project.id,
+                                                          fileId:
+                                                              filenameIds[index],
+                                                        ),
+                                                      );
+                                                      setState(() {
+                                                        filenameList.remove(
+                                                          filenameList[index],
+                                                        );
+                                                      });
+                                                    },
+                                                    icon: Icon(
+                                                      Icons.delete_rounded,
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             );
@@ -591,47 +577,83 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                         // }
 
                                         var link = "";
-                                        // TODO: Make this look nice
 
                                         await showDialog(
                                           context: context,
                                           builder:
                                               (context) => Dialog(
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: TextField(
-                                                        onChanged: (value) {
-                                                          link = value;
-                                                        },
-                                                        decoration:
-                                                            InputDecoration(
-                                                              labelText: "Link",
-                                                            ),
+                                                child: Container(
+                                                  padding: EdgeInsets.all(20),
+                                                  width:
+                                                      MediaQuery.of(
+                                                        context,
+                                                      ).size.width /
+                                                      2,
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        "Add link to project",
+                                                        style: TextStyle(
+                                                          fontSize: 24,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .onSurface,
+                                                        ),
                                                       ),
-                                                    ),
-                                                    IconButton(
-                                                      onPressed: () {
-                                                        if (link.isEmpty) {
-                                                          ScaffoldMessenger.of(
-                                                            context,
-                                                          ).showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                "Please enter a link",
-                                                              ),
+                                                      SizedBox(height: 16),
+                                                      Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: TextField(
+                                                              onChanged: (
+                                                                value,
+                                                              ) {
+                                                                link = value;
+                                                              },
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                    labelText:
+                                                                        "Link",
+                                                                  ),
                                                             ),
-                                                          );
-                                                          return;
-                                                        }
+                                                          ),
+                                                          IconButton(
+                                                            onPressed: () {
+                                                              if (link
+                                                                  .isEmpty) {
+                                                                ScaffoldMessenger.of(
+                                                                  context,
+                                                                ).showSnackBar(
+                                                                  SnackBar(
+                                                                    content: Text(
+                                                                      "Please enter a link",
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                                return;
+                                                              }
 
-                                                        Navigator.pop(context);
-                                                      },
-                                                      icon: Icon(
-                                                        Icons.check_rounded,
+                                                              Navigator.pop(
+                                                                context,
+                                                              );
+                                                            },
+                                                            icon: Icon(
+                                                              Icons
+                                                                  .check_rounded,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                         );

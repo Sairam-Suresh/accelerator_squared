@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
+import 'package:intl/intl.dart';
 
 class CommentsSheet extends StatelessWidget {
   final String organisationId;
@@ -121,6 +122,18 @@ class CommentsSheet extends StatelessWidget {
                         ),
                       ],
                     ),
+                    Spacer(),
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Text(
+                        comment['timestamp'] != null
+                            ? DateFormat('dd/MM/yy HH:mm').format(
+                              (comment['timestamp'] as Timestamp).toDate(),
+                            )
+                            : '',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -140,6 +153,9 @@ class CommentsSheet extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               mentionedFileNames.isEmpty
+                  ? SizedBox.shrink()
+                  : SizedBox(height: 8),
+              mentionedFileNames.isEmpty
                   ? Text('None')
                   : Wrap(
                     spacing: 8,
@@ -148,16 +164,6 @@ class CommentsSheet extends StatelessWidget {
                             .map((name) => Chip(label: Text(name)))
                             .toList(),
                   ),
-              SizedBox(height: 24),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Text(
-                  comment['timestamp'] != null
-                      ? (comment['timestamp'] as Timestamp).toDate().toString()
-                      : '',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
             ],
           ),
         );
