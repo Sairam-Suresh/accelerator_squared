@@ -1,10 +1,11 @@
 import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
-import 'package:accelerator_squared/views/organisations/decline_milestone_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProjectRequests extends StatefulWidget {
   const ProjectRequests({
@@ -88,7 +89,6 @@ class _RequestDialogState extends State<ProjectRequests> {
               (o) => o.id == widget.organisationId,
             );
             final milestoneReviewRequests = org.milestoneReviewRequests;
-            final taskReviewRequests = org.taskReviewRequests;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -373,19 +373,14 @@ class _RequestDialogState extends State<ProjectRequests> {
                                     children: [
                                       TextButton(
                                         onPressed: () async {
-                                          // Decline: show dialog for feedback, then unsend
-                                          String feedback = '';
+                                          // Decline: show create new comment dialog for feedback, then unsend
                                           final result =
-                                              await showDialog<String>(
-                                                context: context,
-                                                builder: (context) {
-                                                  return DeclineRequestDialog(
-                                                    isMilestone: true,
-                                                    feedback: feedback,
-                                                  );
-                                                },
+                                              await _showCreateCommentDialog(
+                                                context,
+                                                req.projectId,
+                                                req.milestoneId,
                                               );
-                                          if (result != null) {
+                                          if (result == true) {
                                             // Unsend milestone review
                                             context.read<OrganisationBloc>().add(
                                               UnsendMilestoneReviewRequestEvent(
@@ -393,12 +388,30 @@ class _RequestDialogState extends State<ProjectRequests> {
                                                 milestoneId: req.milestoneId,
                                               ),
                                             );
+                                            // Also refresh the projects data to update milestone status
+                                            context.read<ProjectsBloc>().add(
+                                              FetchProjectsEvent(
+                                                widget.organisationId,
+                                                projectId: req.projectId,
+                                              ),
+                                            );
+                                            // Refresh orgs after a short delay to ensure updates propagate
+                                            Future.delayed(
+                                              Duration(milliseconds: 500),
+                                              () {
+                                                context
+                                                    .read<OrganisationBloc>()
+                                                    .add(
+                                                      FetchOrganisationEvent(),
+                                                    );
+                                              },
+                                            );
                                             ScaffoldMessenger.of(
                                               context,
                                             ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  'Feedback sent: $result',
+                                                  'Milestone declined and comment created.',
                                                 ),
                                                 backgroundColor: Colors.orange,
                                               ),
@@ -467,176 +480,6 @@ class _RequestDialogState extends State<ProjectRequests> {
                         },
                       ),
                     ),
-                SizedBox(height: 16),
-                Text(
-                  'Pending Task Reviews (${taskReviewRequests.length})',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 16),
-                taskReviewRequests.isEmpty
-                    ? Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Center(child: Text('No task review requests')),
-                    )
-                    : Expanded(
-                      child: ListView.builder(
-                        itemCount: taskReviewRequests.length,
-                        itemBuilder: (context, index) {
-                          final req = taskReviewRequests[index];
-                          return Card(
-                            elevation: 2,
-                            margin: EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              req.taskName,
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              'Milestone: ${req.milestoneName}',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              'Project: ${req.projectName}',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              'Due: ${_formatDate(req.dueDate)}',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade500,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              'Sent for review: ${_formatDate(req.sentForReviewAt)}',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 16),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      TextButton(
-                                        onPressed: () async {
-                                          // Decline: show dialog for feedback, then unsend
-                                          String feedback = '';
-                                          final result =
-                                              await showDialog<String>(
-                                                context: context,
-                                                builder: (context) {
-                                                  return DeclineRequestDialog(
-                                                    isMilestone: false,
-                                                    feedback: feedback,
-                                                  );
-                                                },
-                                              );
-                                          if (result != null) {
-                                            context
-                                                .read<OrganisationBloc>()
-                                                .add(
-                                                  DeclineTaskReviewRequestEvent(
-                                                    organisationId:
-                                                        widget.organisationId,
-                                                    projectId: req.projectId,
-                                                    taskId: req.taskId,
-                                                    feedback: result,
-                                                  ),
-                                                );
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Feedback sent: $result',
-                                                ),
-                                                backgroundColor: Colors.orange,
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.red,
-                                        ),
-                                        child: Text('Decline'),
-                                      ),
-                                      SizedBox(width: 8),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          final bloc =
-                                              context.read<OrganisationBloc>();
-                                          bloc.add(
-                                            AcceptTaskReviewRequestEvent(
-                                              organisationId:
-                                                  widget.organisationId,
-                                              projectId: req.projectId,
-                                              taskId: req.taskId,
-                                            ),
-                                          );
-                                          // Refresh orgs after a short delay to ensure updates propagate
-                                          Future.delayed(
-                                            Duration(milliseconds: 500),
-                                            () {
-                                              bloc.add(
-                                                FetchOrganisationEvent(),
-                                              );
-                                            },
-                                          );
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Task review accepted and task marked as completed.',
-                                              ),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.green,
-                                          foregroundColor: Colors.white,
-                                        ),
-                                        child: Text('Accept'),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
               ],
             );
           }
@@ -656,9 +499,7 @@ class _RequestDialogState extends State<ProjectRequests> {
       currentRequestId = request.id;
     });
     context.read<OrganisationBloc>().add(
-      ApproveProjectRequestEvent(
-        requestId: request.id,
-      ),
+      ApproveProjectRequestEvent(requestId: request.id),
     );
   }
 
@@ -695,9 +536,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                           });
                           Navigator.of(context).pop();
                           context.read<OrganisationBloc>().add(
-                            RejectProjectRequestEvent(
-                              requestId: request.id,
-                            ),
+                            RejectProjectRequestEvent(requestId: request.id),
                           );
                         },
                 style: ElevatedButton.styleFrom(
@@ -725,6 +564,303 @@ class _RequestDialogState extends State<ProjectRequests> {
               ),
             ],
           ),
+    );
+  }
+
+  Future<bool?> _showCreateCommentDialog(
+    BuildContext context,
+    String projectId,
+    String milestoneId,
+  ) async {
+    // Ensure we have the latest project data with files
+    context.read<ProjectsBloc>().add(
+      FetchProjectsEvent(widget.organisationId, projectId: projectId),
+    );
+
+    final titleController = TextEditingController();
+    final bodyController = TextEditingController();
+    List<String> selectedFileIds = [];
+    String? selectedMilestoneId = milestoneId; // Pre-select the milestone
+    List<Map<String, dynamic>> milestones = [];
+
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        bool isLoading = false;
+        return BlocBuilder<ProjectsBloc, ProjectsState>(
+          key: ValueKey('create_comment_dialog_$projectId'),
+          builder: (context, state) {
+            // Get the latest files and milestones from the BLoC state
+            List<Map<String, dynamic>> files = [];
+            if (state is ProjectsLoaded) {
+              final project = state.projects.firstWhere(
+                (p) => p.id == projectId,
+                orElse: () => throw Exception('Project not found'),
+              );
+
+              // Get milestones for this project
+              milestones = project.milestones;
+
+              // Get files for this project
+              files = project.files;
+            } else if (state is ProjectsLoading) {
+              return AlertDialog(
+                title: Text('Create Comment'),
+                content: SizedBox(
+                  width: MediaQuery.of(context).size.width / 2.5,
+                  child: SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Loading project data...'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel'),
+                  ),
+                ],
+              );
+            } else {
+              // Fallback for other states
+              return AlertDialog(
+                title: Text('Create Comment'),
+                content: SizedBox(
+                  width: MediaQuery.of(context).size.width / 2.5,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading...'),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel'),
+                  ),
+                ],
+              );
+            }
+
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: Text('Create Comment for Declined Milestone'),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width / 2.5,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: titleController,
+                            decoration: InputDecoration(labelText: 'Title'),
+                          ),
+                          SizedBox(height: 8),
+                          TextField(
+                            controller: bodyController,
+                            decoration: InputDecoration(labelText: 'Body'),
+                            maxLines: 3,
+                          ),
+                          SizedBox(height: 8),
+                          // Milestone assignment dropdown (pre-selected)
+                          if (milestones.isNotEmpty) ...[
+                            DropdownButtonFormField<String>(
+                              value: selectedMilestoneId,
+                              decoration: InputDecoration(
+                                labelText: 'Assign to Milestone',
+                                border: OutlineInputBorder(),
+                              ),
+                              hint: Text('Select a milestone'),
+                              items: [
+                                ...milestones.map((milestone) {
+                                  return DropdownMenuItem<String>(
+                                    value: milestone['id'],
+                                    child: Text(
+                                      milestone['name'] ?? 'Unnamed Milestone',
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedMilestoneId = value;
+                                });
+                              },
+                            ),
+                            SizedBox(height: 8),
+                          ],
+                          // File attachment section
+                          if (files.isNotEmpty) ...[
+                            Text(
+                              'Attach Files:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Container(
+                              constraints: BoxConstraints(maxHeight: 200),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: files.length,
+                                itemBuilder: (context, index) {
+                                  final file = files[index];
+                                  final isSelected = selectedFileIds.contains(
+                                    file['id'],
+                                  );
+                                  return CheckboxListTile(
+                                    title: Text(file['link'] ?? 'Unknown File'),
+                                    value: isSelected,
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          selectedFileIds.add(file['id']);
+                                        } else {
+                                          selectedFileIds.remove(file['id']);
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            // Show selected files
+                            if (selectedFileIds.isNotEmpty) ...[
+                              Text(
+                                'Selected Files:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                children:
+                                    selectedFileIds.map((fileId) {
+                                      final file = files.firstWhere(
+                                        (f) => f['id'] == fileId,
+                                        orElse: () => {'link': 'Unknown File'},
+                                      );
+                                      return Chip(
+                                        label: Text(
+                                          file['link'] ?? 'Unknown File',
+                                        ),
+                                        onDeleted: () {
+                                          setState(() {
+                                            selectedFileIds.remove(fileId);
+                                          });
+                                        },
+                                      );
+                                    }).toList(),
+                              ),
+                              SizedBox(height: 8),
+                            ],
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () async {
+                                if (titleController.text.trim().isNotEmpty &&
+                                    bodyController.text.trim().isNotEmpty) {
+                                  setState(() => isLoading = true);
+                                  final user =
+                                      FirebaseAuth.instance.currentUser;
+
+                                  // Create comment data
+                                  Map<String, dynamic> commentData = {
+                                    'title': titleController.text.trim(),
+                                    'body': bodyController.text.trim(),
+                                    'timestamp': FieldValue.serverTimestamp(),
+                                    'mentionedFiles': selectedFileIds,
+                                    'authorEmail': user?.email ?? 'Unknown',
+                                  };
+
+                                  // Add milestone assignment (should always be present)
+                                  if (selectedMilestoneId != null) {
+                                    commentData['assignedMilestoneId'] =
+                                        selectedMilestoneId;
+                                    // Get milestone name for display
+                                    final milestone = milestones.firstWhere(
+                                      (m) => m['id'] == selectedMilestoneId,
+                                      orElse:
+                                          () => {'name': 'Unknown Milestone'},
+                                    );
+                                    commentData['assignedMilestoneName'] =
+                                        milestone['name'];
+                                  }
+
+                                  await FirebaseFirestore.instance
+                                      .collection('organisations')
+                                      .doc(widget.organisationId)
+                                      .collection('projects')
+                                      .doc(projectId)
+                                      .collection('comments')
+                                      .add(commentData);
+
+                                  setState(() => isLoading = false);
+                                  Navigator.pop(context, true);
+                                }
+                              },
+                      child:
+                          isLoading
+                              ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                              : Text(
+                                'Create Comment',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

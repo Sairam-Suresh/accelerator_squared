@@ -838,41 +838,42 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                         orgBloc.stream
                                             .firstWhere(
                                               (state) =>
-                                                  state
-                                                      is OrganisationLoaded ||
+                                                  state is OrganisationLoaded ||
                                                   state is OrganisationError,
                                             )
                                             .then((state) {
-                                              setState(
-                                                () => _isSending = false,
-                                              );
-                                              if (state
-                                                  is OrganisationLoaded) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Milestone sent for review!',
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
+                                              if (mounted) {
+                                                setState(
+                                                  () => _isSending = false,
                                                 );
-                                                Navigator.of(context).pop();
-
-                                              } else if (state
-                                                  is OrganisationError) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      state.message,
+                                                if (state
+                                                    is OrganisationLoaded) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Milestone sent for review!',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.green,
                                                     ),
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                );
+                                                  );
+                                                  Navigator.of(context).pop();
+                                                } else if (state
+                                                    is OrganisationError) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        state.message,
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                    ),
+                                                  );
+                                                }
                                               }
                                             });
                                       }
@@ -914,8 +915,10 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 widget.milestone['pendingReview'] == true &&
                 !widget.isTeacher) ...[
               SizedBox(height: 12),
-              BlocProvider<OrganisationsBloc>(
-                create: (context) => OrganisationsBloc(),
+              BlocProvider<OrganisationBloc>(
+                create:
+                    (context) =>
+                        OrganisationBloc(organisationId: widget.organisationId),
                 child: Builder(
                   builder: (context) {
                     bool _isUnsend = false;
@@ -952,29 +955,34 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                                 state is OrganisationError,
                                           )
                                           .then((state) {
-                                            setState(() => _isUnsend = false);
-                                            if (state is OrganisationLoaded) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Milestone review request unsent.',
+                                            if (mounted) {
+                                              setState(() => _isUnsend = false);
+                                              if (state is OrganisationLoaded) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Milestone review request unsent.',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.green,
                                                   ),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } else if (state
-                                                is OrganisationError) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(state.message),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
+                                                );
+                                                Navigator.of(context).pop();
+                                              } else if (state
+                                                  is OrganisationError) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      state.message,
+                                                    ),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
                                             }
                                           });
                                     },
@@ -1944,64 +1952,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                               ),
                             ),
                             onPressed:
-                                _isSending
-                                    ? null
-                                    : () async {
-                                      setState(() => _isSending = true);
-                                      final orgBloc =
-                                          context.read<OrganisationBloc>();
-                                      orgBloc.add(
-                                        SubmitTaskReviewRequestEvent(
-                                          projectId: widget.projectId,
-                                          milestoneId: widget.milestone['id'],
-                                          milestoneName:
-                                              widget.milestone['name'] ?? '',
-                                          taskId: task['id'],
-                                          taskName: task['name'] ?? '',
-                                          projectName: widget.projectTitle,
-                                          dueDate:
-                                              (task['deadline'] is DateTime)
-                                                  ? task['deadline']
-                                                  : (task['deadline']
-                                                          is Timestamp
-                                                      ? task['deadline']
-                                                          .toDate()
-                                                      : DateTime.now()),
-                                        ),
-                                      );
-                                      orgBloc.stream
-                                          .firstWhere(
-                                            (state) =>
-                                                state is OrganisationLoaded ||
-                                                state is OrganisationError,
-                                          )
-                                          .then((state) {
-                                            setState(() => _isSending = false);
-                                            if (state is OrganisationLoaded) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Task sent for review!',
-                                                  ),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } else if (state
-                                                is OrganisationError) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(state.message),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          });
-                                    },
+                                null, // Task review functionality removed
                             icon:
                                 _isSending
                                     ? SizedBox(
@@ -2013,7 +1964,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       ),
                                     )
                                     : Icon(Icons.send_rounded),
-                            label: Text('Send for review'),
+                            label: Text('Task review disabled'),
                           ),
                         );
                       },
@@ -2034,51 +1985,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                               ),
                             ),
                             onPressed:
-                                _isUnsend
-                                    ? null
-                                    : () async {
-                                      setState(() => _isUnsend = true);
-                                      final orgBloc =
-                                          context.read<OrganisationBloc>();
-                                      orgBloc.add(
-                                        UnsendTaskReviewRequestEvent(
-                                          projectId: widget.projectId,
-                                          taskId: task['id'],
-                                        ),
-                                      );
-                                      orgBloc.stream
-                                          .firstWhere(
-                                            (state) =>
-                                                state is OrganisationLoaded ||
-                                                state is OrganisationError,
-                                          )
-                                          .then((state) {
-                                            setState(() => _isUnsend = false);
-                                            if (state is OrganisationLoaded) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Task review request unsent.',
-                                                  ),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } else if (state
-                                                is OrganisationError) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(state.message),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          });
-                                    },
+                                null, // Task review functionality removed
                             icon:
                                 _isUnsend
                                     ? SizedBox(
@@ -2090,7 +1997,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       ),
                                     )
                                     : Icon(Icons.undo),
-                            label: Text('Unsend for review'),
+                            label: Text('Task review disabled'),
                           ),
                         );
                       },

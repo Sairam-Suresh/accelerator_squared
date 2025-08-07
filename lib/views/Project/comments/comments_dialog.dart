@@ -11,11 +11,16 @@ class CommentsDialog extends StatefulWidget {
   final String projectId;
   final String organisationId;
   final String userRole;
+  final String?
+  preselectedMilestoneId; // New parameter for pre-selecting milestone
+  final String? customTitle; // Optional custom title for the dialog
   const CommentsDialog({
     super.key,
     required this.projectId,
     required this.organisationId,
     required this.userRole,
+    this.preselectedMilestoneId,
+    this.customTitle,
   });
 
   @override
@@ -32,6 +37,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
     final titleController = TextEditingController();
     final bodyController = TextEditingController();
     List<String> selectedFileIds = [];
+    String? selectedMilestoneId = widget.preselectedMilestoneId;
+    List<Map<String, dynamic>> milestones = [];
 
     await showDialog<bool>(
       context: context,
@@ -69,83 +76,16 @@ class _CommentsDialogState extends State<CommentsDialog> {
                 ],
               );
             } else if (state is ProjectsLoaded) {
-              print(
-                '[CommentsDialog] Projects loaded: ${state.projects.length}',
-              );
               final project = state.projects.firstWhere(
                 (p) => p.id == widget.projectId,
-                orElse:
-                    () => ProjectWithDetails(
-                      id: widget.projectId,
-                      data: {},
-                      milestones: [],
-                      comments: [],
-                      files: [],
-                    ),
+                orElse: () => throw Exception('Project not found'),
               );
-              print(
-                '[CommentsDialog] Project files count: ${project.files.length}',
-              );
-              if (project.files.isNotEmpty) {
-                print(
-                  '[CommentsDialog] First file data: ${project.files.first}',
-                );
-              }
-              // Defensive: ensure files is a List<Map>
-              files =
-                  project.files
-                      .where((file) => file['id'] != null)
-                      .map<Map<String, dynamic>>(
-                        (file) => {
-                          'id': file['id'],
-                          'name': file['link'] ?? file['id'] ?? 'Unknown file',
-                          'link': file['link'] ?? '',
-                        },
-                      )
-                      .toList();
-              print('[CommentsDialog] Filtered files count: ${files.length}');
-              if (files.isNotEmpty) {
-                print('[CommentsDialog] First filtered file: ${files.first}');
-              }
-            } else if (state is ProjectsError) {
-              return AlertDialog(
-                title: Text('New Comment'),
-                content: SizedBox(
-                  width: MediaQuery.of(context).size.width / 2.5,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error, color: Colors.red, size: 48),
-                        SizedBox(height: 16),
-                        Text('Error loading project files'),
-                        SizedBox(height: 8),
-                        Text(
-                          state.message,
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      context.read<ProjectsBloc>().add(
-                        FetchProjectsEvent(
-                          widget.organisationId,
-                          projectId: widget.projectId,
-                        ),
-                      );
-                    },
-                    child: Text('Retry'),
-                  ),
-                ],
-              );
+
+              // Get milestones for this project
+              milestones = project.milestones;
+
+              // Get files for this project
+              files = project.files;
             } else {
               // Fallback for other states
               return AlertDialog(
@@ -194,120 +134,93 @@ class _CommentsDialogState extends State<CommentsDialog> {
                             maxLines: 3,
                           ),
                           SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Mention files:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                          // Milestone assignment dropdown
+                          if (milestones.isNotEmpty) ...[
+                            DropdownButtonFormField<String>(
+                              value: selectedMilestoneId,
+                              decoration: InputDecoration(
+                                labelText: 'Assign to Milestone (Optional)',
+                                border: OutlineInputBorder(),
                               ),
-                              IconButton(
-                                icon: Icon(Icons.refresh),
-                                onPressed: () {
-                                  context.read<ProjectsBloc>().add(
-                                    FetchProjectsEvent(
-                                      widget.organisationId,
-                                      projectId: widget.projectId,
+                              hint: Text('Select a milestone'),
+                              items: [
+                                DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text('No milestone'),
+                                ),
+                                ...milestones.map((milestone) {
+                                  return DropdownMenuItem<String>(
+                                    value: milestone['id'],
+                                    child: Text(
+                                      milestone['name'] ?? 'Unnamed Milestone',
                                     ),
                                   );
-                                },
-                                tooltip: 'Refresh files',
-                              ),
-                            ],
-                          ),
-                          files.isEmpty
-                              ? Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8.0,
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      'No files available to mention.',
-                                      style: TextStyle(color: Colors.grey),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Add files to the project first.',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              : Wrap(
-                                spacing: 8,
-                                children:
-                                    files.map((file) {
-                                      final isSelected = selectedFileIds
-                                          .contains(file['id']);
-                                      return FilterChip(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 15,
-                                        ),
-                                        label: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.file_copy),
-                                            SizedBox(width: 8),
-                                            Text(file['name']),
-                                          ],
-                                        ),
-                                        selected: isSelected,
-                                        onSelected: (selected) {
-                                          setState(() {
-                                            if (selected) {
-                                              selectedFileIds.add(file['id']);
-                                            } else {
-                                              selectedFileIds.remove(
-                                                file['id'],
-                                              );
-                                            }
-                                          });
-                                        },
-                                      );
-                                    }).toList(),
-                              ),
-                          if (selectedFileIds.isNotEmpty) ...[
+                                }).toList(),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedMilestoneId = value;
+                                });
+                              },
+                            ),
                             SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Selected files:',
-                                style: TextStyle(fontWeight: FontWeight.w500),
+                          ],
+                          if (files.isNotEmpty) ...[
+                            Text(
+                              'Attach Files:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
                               ),
                             ),
+                            SizedBox(height: 8),
+                            Container(
+                              constraints: BoxConstraints(maxHeight: 200),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: files.length,
+                                itemBuilder: (context, index) {
+                                  final file = files[index];
+                                  final isSelected = selectedFileIds.contains(
+                                    file['id'],
+                                  );
+                                  return CheckboxListTile(
+                                    title: Text(file['link'] ?? 'Unknown File'),
+                                    value: isSelected,
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          selectedFileIds.add(file['id']);
+                                        } else {
+                                          selectedFileIds.remove(file['id']);
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                            SizedBox(height: 8),
                             Wrap(
                               spacing: 8,
+                              runSpacing: 4,
                               children:
-                                  files
-                                      .where(
-                                        (file) => selectedFileIds.contains(
-                                          file['id'],
-                                        ),
-                                      )
-                                      .map(
-                                        (file) => Chip(
-                                          label: Text(file['name']),
-                                          onDeleted: () {
-                                            setState(() {
-                                              selectedFileIds.remove(
-                                                file['id'],
-                                              );
-                                            });
-                                          },
-                                        ),
-                                      )
-                                      .toList(),
+                                  selectedFileIds.map((fileId) {
+                                    final file = files.firstWhere(
+                                      (f) => f['id'] == fileId,
+                                      orElse: () => {'link': 'Unknown File'},
+                                    );
+                                    return Chip(
+                                      label: Text(
+                                        file['link'] ?? 'Unknown File',
+                                      ),
+                                      onDeleted: () {
+                                        setState(() {
+                                          selectedFileIds.remove(fileId);
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
                             ),
                           ],
                         ],
@@ -335,20 +248,38 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                   setState(() => isLoading = true);
                                   final user =
                                       FirebaseAuth.instance.currentUser;
+
+                                  // Create comment data
+                                  Map<String, dynamic> commentData = {
+                                    'title': titleController.text.trim(),
+                                    'body': bodyController.text.trim(),
+                                    'timestamp': FieldValue.serverTimestamp(),
+                                    'mentionedFiles': selectedFileIds,
+                                    'authorEmail': user?.email ?? 'Unknown',
+                                  };
+
+                                  // Add milestone assignment if selected
+                                  if (selectedMilestoneId != null) {
+                                    commentData['assignedMilestoneId'] =
+                                        selectedMilestoneId;
+                                    // Get milestone name for display
+                                    final milestone = milestones.firstWhere(
+                                      (m) => m['id'] == selectedMilestoneId,
+                                      orElse:
+                                          () => {'name': 'Unknown Milestone'},
+                                    );
+                                    commentData['assignedMilestoneName'] =
+                                        milestone['name'];
+                                  }
+
                                   await FirebaseFirestore.instance
                                       .collection('organisations')
                                       .doc(widget.organisationId)
                                       .collection('projects')
                                       .doc(widget.projectId)
                                       .collection('comments')
-                                      .add({
-                                        'title': titleController.text.trim(),
-                                        'body': bodyController.text.trim(),
-                                        'timestamp':
-                                            FieldValue.serverTimestamp(),
-                                        'mentionedFiles': selectedFileIds,
-                                        'authorEmail': user?.email ?? 'Unknown',
-                                      });
+                                      .add(commentData);
+
                                   setState(() => isLoading = false);
                                   Navigator.pop(context, true);
                                 }
@@ -394,7 +325,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
 
     return AlertDialog(
       title: Text(
-        "Project comments",
+        widget.customTitle ?? "Project comments",
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
       ),
       content: SizedBox(
@@ -475,12 +406,60 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                 padding: EdgeInsets.fromLTRB(0, 10, 10, 10),
                                 child: Icon(Icons.comment, size: 24),
                               ),
-                              title: Text(
-                                data['title'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      data['title'] ?? '',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  if (data['assignedMilestoneId'] != null)
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.secondaryContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.outline,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.flag,
+                                            size: 14,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            data['assignedMilestoneName'] ??
+                                                'Milestone',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
                               subtitle: Text(
                                 data['body'] ?? '',

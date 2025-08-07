@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -815,24 +816,38 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 context: context,
                                                 sheetPosition:
                                                     SheetPosition.right,
-                                                body: Padding(
-                                                  padding: EdgeInsets.fromLTRB(
-                                                    20,
-                                                    10,
-                                                    20,
-                                                    10,
-                                                  ),
-                                                  child: MilestoneSheet(
-                                                    isTeacher: widget.isTeacher,
-                                                    milestone: milestone,
-                                                    projectTitle: projectName,
-                                                    organisationId:
-                                                        widget.organisationId,
-                                                    projectId:
-                                                        widget.project.id,
-                                                    allowEdit:
-                                                        milestone['sharedId'] ==
-                                                        null,
+                                                body: BlocProvider<
+                                                  OrganisationBloc
+                                                >(
+                                                  create:
+                                                      (
+                                                        context,
+                                                      ) => OrganisationBloc(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                      ),
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.fromLTRB(
+                                                          20,
+                                                          10,
+                                                          20,
+                                                          10,
+                                                        ),
+                                                    child: MilestoneSheet(
+                                                      isTeacher:
+                                                          widget.isTeacher,
+                                                      milestone: milestone,
+                                                      projectTitle: projectName,
+                                                      organisationId:
+                                                          widget.organisationId,
+                                                      projectId:
+                                                          widget.project.id,
+                                                      allowEdit:
+                                                          milestone['sharedId'] ==
+                                                          null,
+                                                    ),
                                                   ),
                                                 ),
                                                 header: SizedBox(height: 20),
@@ -961,24 +976,38 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 context: context,
                                                 sheetPosition:
                                                     SheetPosition.right,
-                                                body: Padding(
-                                                  padding: EdgeInsets.fromLTRB(
-                                                    20,
-                                                    10,
-                                                    20,
-                                                    10,
-                                                  ),
-                                                  child: MilestoneSheet(
-                                                    isTeacher: widget.isTeacher,
-                                                    milestone: milestone,
-                                                    projectTitle: projectName,
-                                                    organisationId:
-                                                        widget.organisationId,
-                                                    projectId:
-                                                        widget.project.id,
-                                                    allowEdit:
-                                                        milestone['sharedId'] ==
-                                                        null,
+                                                body: BlocProvider<
+                                                  OrganisationBloc
+                                                >(
+                                                  create:
+                                                      (
+                                                        context,
+                                                      ) => OrganisationBloc(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                      ),
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.fromLTRB(
+                                                          20,
+                                                          10,
+                                                          20,
+                                                          10,
+                                                        ),
+                                                    child: MilestoneSheet(
+                                                      isTeacher:
+                                                          widget.isTeacher,
+                                                      milestone: milestone,
+                                                      projectTitle: projectName,
+                                                      organisationId:
+                                                          widget.organisationId,
+                                                      projectId:
+                                                          widget.project.id,
+                                                      allowEdit:
+                                                          milestone['sharedId'] ==
+                                                          null,
+                                                    ),
                                                   ),
                                                 ),
                                                 header: SizedBox(height: 20),
@@ -1281,22 +1310,36 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 context: context,
                                                 sheetPosition:
                                                     SheetPosition.right,
-                                                body: Padding(
-                                                  padding: EdgeInsets.fromLTRB(
-                                                    20,
-                                                    10,
-                                                    20,
-                                                    10,
-                                                  ),
-                                                  child: MilestoneSheet(
-                                                    isTeacher: widget.isTeacher,
-                                                    milestone: milestone,
-                                                    projectTitle: projectName,
-                                                    organisationId:
-                                                        widget.organisationId,
-                                                    projectId:
-                                                        widget.project.id,
-                                                    allowEdit: false,
+                                                body: BlocProvider<
+                                                  OrganisationBloc
+                                                >(
+                                                  create:
+                                                      (
+                                                        context,
+                                                      ) => OrganisationBloc(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                      ),
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.fromLTRB(
+                                                          20,
+                                                          10,
+                                                          20,
+                                                          10,
+                                                        ),
+                                                    child: MilestoneSheet(
+                                                      isTeacher:
+                                                          widget.isTeacher,
+                                                      milestone: milestone,
+                                                      projectTitle: projectName,
+                                                      organisationId:
+                                                          widget.organisationId,
+                                                      projectId:
+                                                          widget.project.id,
+                                                      allowEdit: false,
+                                                    ),
                                                   ),
                                                 ),
                                                 header: SizedBox(height: 20),

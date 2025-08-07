@@ -112,6 +112,8 @@ class CommentsSheet extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        SizedBox(height: 4),
+
                         Text(
                           comment['authorEmail'] ?? 'Unknown author',
                           style: TextStyle(
@@ -120,19 +122,19 @@ class CommentsSheet extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: Text(
+                            comment['timestamp'] != null
+                                ? DateFormat('dd/MM/yy HH:mm').format(
+                                  (comment['timestamp'] as Timestamp).toDate(),
+                                )
+                                : '',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
                       ],
-                    ),
-                    Spacer(),
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Text(
-                        comment['timestamp'] != null
-                            ? DateFormat('dd/MM/yy HH:mm').format(
-                              (comment['timestamp'] as Timestamp).toDate(),
-                            )
-                            : '',
-                        style: TextStyle(color: Colors.grey),
-                      ),
                     ),
                   ],
                 ),
@@ -148,6 +150,45 @@ class CommentsSheet extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 24),
+              // Show milestone assignment if present
+              if (comment['assignedMilestoneId'] != null) ...[
+                Text(
+                  'Assigned to Milestone:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.flag,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          comment['assignedMilestoneName'] ??
+                              'Unknown Milestone',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 24),
+              ],
               Text(
                 'Mentioned Files:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

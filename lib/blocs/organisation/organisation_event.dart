@@ -78,9 +78,7 @@ class RejectProjectRequestEvent extends OrganisationEvent {
 class RemoveMemberEvent extends OrganisationEvent {
   final String memberId;
 
-  const RemoveMemberEvent({
-    required this.memberId,
-  });
+  const RemoveMemberEvent({required this.memberId});
 }
 
 class RefreshJoinCodeEvent extends OrganisationEvent {
@@ -122,59 +120,6 @@ class UnsendMilestoneReviewRequestEvent extends OrganisationEvent {
   });
 }
 
-class SubmitTaskReviewRequestEvent extends OrganisationEvent {
-  final String projectId;
-  final String milestoneId;
-  final String milestoneName;
-  final String taskId;
-  final String taskName;
-  final String projectName;
-  final DateTime dueDate;
-
-  const SubmitTaskReviewRequestEvent({
-    required this.projectId,
-    required this.milestoneId,
-    required this.milestoneName,
-    required this.taskId,
-    required this.taskName,
-    required this.projectName,
-    required this.dueDate,
-  });
-}
-
-class UnsendTaskReviewRequestEvent extends OrganisationEvent {
-  final String projectId;
-  final String taskId;
-  const UnsendTaskReviewRequestEvent({
-    required this.projectId,
-    required this.taskId,
-  });
-}
-
-class AcceptTaskReviewRequestEvent extends OrganisationEvent {
-  final String organisationId;
-  final String projectId;
-  final String taskId;
-  const AcceptTaskReviewRequestEvent({
-    required this.organisationId,
-    required this.projectId,
-    required this.taskId,
-  });
-}
-
-class DeclineTaskReviewRequestEvent extends OrganisationEvent {
-  final String organisationId;
-  final String projectId;
-  final String taskId;
-  final String? feedback;
-  const DeclineTaskReviewRequestEvent({
-    required this.organisationId,
-    required this.projectId,
-    required this.taskId,
-    this.feedback,
-  });
-}
-
 class ChangeMemberRoleEvent extends OrganisationEvent {
   // final String organisationId;
   final String memberId;
@@ -188,12 +133,12 @@ class ChangeMemberRoleEvent extends OrganisationEvent {
 }
 
 class FetchOrganisationEvent extends OrganisationEvent {
-  // For when the OrganisationsBloc calls this bloc, then it probably already has some data 
+  // For when the OrganisationsBloc calls this bloc, then it probably already has some data
   // that we can use to avoid unnecessary firestore reads.
-  final Organisation? initialData; 
+  final Organisation? initialData;
 
-  const FetchOrganisationEvent(
-    {this.initialData}
+  const FetchOrganisationEvent({
+    this.initialData,
     // {required this.organisationId}
-  );
+  });
 }

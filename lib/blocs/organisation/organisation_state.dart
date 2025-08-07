@@ -25,7 +25,6 @@ class OrganisationLoaded extends OrganisationState {
   final List<Project> projects;
   final List<ProjectRequest> projectRequests;
   final List<MilestoneReviewRequest> milestoneReviewRequests;
-  final List<TaskReviewRequest> taskReviewRequests;
   final int memberCount;
   final String userRole; // 'teacher', 'student_teacher', or 'member'
   final String joinCode; // 6-character join code
@@ -38,7 +37,6 @@ class OrganisationLoaded extends OrganisationState {
     required this.projects,
     required this.projectRequests,
     required this.milestoneReviewRequests,
-    required this.taskReviewRequests,
     required this.memberCount,
     required this.userRole,
     required this.joinCode,
@@ -53,7 +51,6 @@ class OrganisationLoaded extends OrganisationState {
       projects: organisation.projects,
       projectRequests: organisation.projectRequests,
       milestoneReviewRequests: organisation.milestoneReviewRequests,
-      taskReviewRequests: organisation.taskReviewRequests,
       memberCount: organisation.memberCount,
       userRole: organisation.userRole,
       joinCode: organisation.joinCode,
@@ -69,7 +66,6 @@ class OrganisationLoaded extends OrganisationState {
     projects,
     projectRequests,
     milestoneReviewRequests,
-    taskReviewRequests,
     memberCount,
     userRole,
     joinCode,

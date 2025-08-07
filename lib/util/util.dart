@@ -77,49 +77,17 @@ Future<Organisation?> loadOrganisationDataById(
       List<Project> projects =
           projectsSnapshot.docs.map((projectDoc) {
             final projectData = projectDoc.data() as Map<String, dynamic>;
-            return Project(
-              id: projectDoc.id,
-              title: projectData['title'] ?? projectData['Name'] ?? '',
-              description:
-                  projectData['description'] ??
-                  projectData['Description'] ??
-                  '',
-              createdAt:
-                  projectData['createdAt'] != null
-                      ? (projectData['createdAt'] is String
-                          ? DateTime.parse(projectData['createdAt'])
-                          : (projectData['createdAt'] as Timestamp).toDate())
-                      : DateTime.now(),
-              updatedAt:
-                  projectData['updatedAt'] != null
-                      ? (projectData['updatedAt'] is String
-                          ? DateTime.parse(projectData['updatedAt'])
-                          : (projectData['updatedAt'] as Timestamp).toDate())
-                      : DateTime.now(),
-            );
+            projectData['id'] =
+                projectDoc.id; // Add the document ID to the data
+            return Project.fromJson(projectData);
           }).toList();
 
       List<ProjectRequest> projectRequests =
           projectRequestsSnapshot.docs.map((requestDoc) {
             final requestData = requestDoc.data() as Map<String, dynamic>;
-            return ProjectRequest(
-              id: requestDoc.id,
-              title: requestData['title'] ?? '',
-              description: requestData['description'] ?? '',
-              requestedBy: requestData['requestedBy'] ?? '',
-              requesterEmail: requestData['requesterEmail'] ?? '',
-              requestedAt:
-                  requestData['requestedAt'] != null
-                      ? (requestData['requestedAt'] is String
-                          ? DateTime.parse(requestData['requestedAt'])
-                          : (requestData['requestedAt'] as Timestamp).toDate())
-                      : DateTime.now(),
-              memberEmails:
-                  (requestData['memberEmails'] as List<dynamic>?)
-                      ?.map((e) => e as String)
-                      .toList() ??
-                  [],
-            );
+            requestData['id'] =
+                requestDoc.id; // Add the document ID to the data
+            return ProjectRequest.fromJson(requestData);
           }).toList();
 
       List<MilestoneReviewRequest> milestoneReviewRequests = [];
@@ -131,21 +99,10 @@ Future<Organisation?> loadOrganisationDataById(
               .get();
       for (var requestDoc in milestoneReviewRequestsSnapshot.docs) {
         final requestData = requestDoc.data() as Map<String, dynamic>;
+        requestData['id'] = requestDoc.id; // Add the document ID to the data
         milestoneReviewRequests.add(
           MilestoneReviewRequest.fromJson(requestData),
         );
-      }
-
-      List<TaskReviewRequest> taskReviewRequests = [];
-      QuerySnapshot taskReviewRequestsSnapshot =
-          await firestore
-              .collection('organisations')
-              .doc(orgId)
-              .collection('taskReviewRequests')
-              .get();
-      for (var requestDoc in taskReviewRequestsSnapshot.docs) {
-        final requestData = requestDoc.data() as Map<String, dynamic>;
-        taskReviewRequests.add(TaskReviewRequest.fromJson(requestData));
       }
 
       return Organisation(
@@ -159,7 +116,6 @@ Future<Organisation?> loadOrganisationDataById(
         userRole: userRole,
         joinCode: data['joinCode'] ?? '',
         milestoneReviewRequests: milestoneReviewRequests,
-        taskReviewRequests: taskReviewRequests,
       );
     }
   } catch (e) {
