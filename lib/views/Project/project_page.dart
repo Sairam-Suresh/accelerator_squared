@@ -60,10 +60,6 @@ class _ProjectPageState extends State<ProjectPage>
     // Initialize TabController with correct length based on user role
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   void _refreshData() {
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
@@ -547,7 +543,10 @@ class _ProjectPageState extends State<ProjectPage>
                                         ),
                               )
                               : _selectedIndex == 1
-                              ? OrgStatistics(projects: projects)
+                              ? OrgStatistics(
+                                  projects: projects,
+                                  organisationId: widget.organisationId,
+                                )
                               : _selectedIndex == 2
                               ? ProjectRequests(
                                 organisationId: widget.organisationId,

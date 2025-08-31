@@ -23,7 +23,7 @@ class OrgMilestones extends StatefulWidget {
 }
 
 class _OrgMilestonesState extends State<OrgMilestones> {
-  Set<String> _deletingMilestoneIds = {};
+  final Set<String> _deletingMilestoneIds = {};
   String? _pendingDeleteMilestoneId;
 
   @override
@@ -131,14 +131,10 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                         // Collect all milestones from all projects
                         final allMilestones = <Map<String, dynamic>>[];
                         for (final project in projects) {
-                          if (project.milestones is List) {
-                            for (final m in project.milestones) {
-                              if (m is Map<String, dynamic>) {
-                                allMilestones.add(m);
-                              }
-                            }
-                          }
-                        }
+                          for (final m in project.milestones) {
+                            allMilestones.add(m);
+                                                    }
+                                                }
                         // Find sharedId values that appear in every project
                         final sharedIdCounts = <String, int>{};
                         for (final milestone in allMilestones) {
@@ -288,7 +284,7 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                                                   color: Colors.white,
                                                   style: ButtonStyle(
                                                     iconColor:
-                                                        MaterialStateProperty.all<
+                                                        WidgetStateProperty.all<
                                                           Color
                                                         >(Colors.red),
                                                   ),

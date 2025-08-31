@@ -96,7 +96,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 16),
-                !pendingRequests.isEmpty
+                pendingRequests.isNotEmpty
                     ? Expanded(
                       child: ListView.builder(
                         itemBuilder: (context, index) {

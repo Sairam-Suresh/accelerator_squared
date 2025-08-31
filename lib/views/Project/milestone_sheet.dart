@@ -35,10 +35,10 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   bool _isDeleting = false;
   bool _isEditing = false;
   bool _isSaving = false;
-  bool _isUpdatingDate = false;
+  final bool _isUpdatingDate = false;
   bool _tasksLoading = true;
-  bool _isSendingTaskReview = false;
-  bool _isUnsendTaskReview = false;
+  final bool _isSendingTaskReview = false;
+  final bool _isUnsendTaskReview = false;
   bool _showCompletedTasks = false;
 
   TextEditingController nameController = TextEditingController();
@@ -785,7 +785,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   create: (context) => OrganisationsBloc(),
                   child: Builder(
                     builder: (context) {
-                      bool _isSending = false;
+                      bool isSending = false;
                       return StatefulBuilder(
                         builder: (context, setState) {
                           return SizedBox(
@@ -806,9 +806,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                   !_tasksLoading &&
                                           (_tasks.isEmpty ||
                                               allTasksCompleted) &&
-                                          !_isSending
+                                          !isSending
                                       ? () async {
-                                        setState(() => _isSending = true);
+                                        setState(() => isSending = true);
                                         final orgBloc =
                                             context.read<OrganisationsBloc>();
                                         orgBloc.add(
@@ -845,7 +845,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                             )
                                             .then((state) {
                                               setState(
-                                                () => _isSending = false,
+                                                () => isSending = false,
                                               );
                                               if (state
                                                   is OrganisationsLoaded) {
@@ -878,7 +878,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       }
                                       : null,
                               icon:
-                                  _isSending
+                                  isSending
                                       ? SizedBox(
                                         width: 20,
                                         height: 20,
@@ -918,7 +918,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 create: (context) => OrganisationsBloc(),
                 child: Builder(
                   builder: (context) {
-                    bool _isUnsend = false;
+                    bool isUnsend = false;
                     return StatefulBuilder(
                       builder: (context, setState) {
                         return SizedBox(
@@ -933,10 +933,10 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                               ),
                             ),
                             onPressed:
-                                _isUnsend
+                                isUnsend
                                     ? null
                                     : () async {
-                                      setState(() => _isUnsend = true);
+                                      setState(() => isUnsend = true);
                                       final orgBloc =
                                           context.read<OrganisationsBloc>();
                                       orgBloc.add(
@@ -953,7 +953,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                                 state is OrganisationsError,
                                           )
                                           .then((state) {
-                                            setState(() => _isUnsend = false);
+                                            setState(() => isUnsend = false);
                                             if (state is OrganisationsLoaded) {
                                               ScaffoldMessenger.of(
                                                 context,
@@ -980,7 +980,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                           });
                                     },
                             icon:
-                                _isUnsend
+                                isUnsend
                                     ? SizedBox(
                                       width: 20,
                                       height: 20,

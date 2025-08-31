@@ -655,8 +655,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .update({'isCompleted': event.isCompleted});
       emit(
         ProjectActionSuccess(
-          'Milestone marked as ' +
-              (event.isCompleted ? 'completed' : 'incomplete'),
+          'Milestone marked as ${event.isCompleted ? 'completed' : 'incomplete'}',
         ),
       );
       add(FetchProjectsEvent(orgId, projectId: projectId));
@@ -671,12 +670,16 @@ class ProjectWithDetails {
   final Map<String, dynamic> data;
   final List<Map<String, dynamic>> milestones;
   final List<Map<String, dynamic>> comments;
+  
   ProjectWithDetails({
     required this.id,
     required this.data,
     required this.milestones,
     required this.comments,
   });
+
+  /// Gets the project name from the data map
+  String get name => data['name'] as String? ?? data['title'] as String? ?? 'Unknown Project';
 }
 
 class _EmitProjectsLoaded extends ProjectsEvent {

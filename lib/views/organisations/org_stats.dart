@@ -1,48 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
 
 class OrgStatistics extends StatefulWidget {
-  const OrgStatistics({super.key, required this.projects});
+  const OrgStatistics({
+    super.key, 
+    required this.projects,
+    required this.organisationId,
+  });
 
   final List<Project> projects;
+  final String organisationId;
 
   @override
   State<OrgStatistics> createState() => _OrgStatisticsState();
 }
 
 class _OrgStatisticsState extends State<OrgStatistics> {
-  var sampleMilestonesDict = {
-    "Milestone 1": ["Completed", "100%"],
-    "Milestone 2": ["Incomplete", "75%"],
-    "Milestone 3": ["Incomplete", "Pending further review"],
-    "Milestone 4": ["Completed", "100%"],
-    "Milestone 5": ["Incomplete", "50%"],
-    "Milestone 6": ["Completed", "100%"],
-    "Milestone 7": ["Completed", "100%"],
-    "Milestone 8": ["Completed", "100%"],
-  };
+  @override
+  void initState() {
+    super.initState();
+    // Fetch projects with milestones data
+    context.read<ProjectsBloc>().add(FetchProjectsEvent(widget.organisationId));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<OrganisationsBloc, OrganisationsState>(
-      listener: (context, state) {
-        if (state is OrganisationsLoaded) {
-          // Refresh data when organisation data is updated
-          // The parent widget will handle the refresh
+    return BlocBuilder<ProjectsBloc, ProjectsState>(
+      builder: (context, projectsState) {
+        if (projectsState is ProjectsLoading) {
+          return const Center(child: CircularProgressIndicator());
         }
+        
+        if (projectsState is ProjectsError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Error loading data: ${projectsState.message}'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<ProjectsBloc>().add(FetchProjectsEvent(widget.organisationId));
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        if (projectsState is ProjectsLoaded) {
+          return _buildContent(projectsState.projects);
+        }
+        
+        // Fallback: convert Project to ProjectWithDetails for compatibility
+        final fallbackProjects = widget.projects.map((p) => ProjectWithDetails(
+          id: p.id,
+          data: {'name': p.name, 'title': p.title, 'description': p.description},
+          milestones: [],
+          comments: [],
+        )).toList();
+        
+        return _buildContent(fallbackProjects);
       },
-      child: _buildContent(),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(List<ProjectWithDetails> projects) {
+    // Get organization-wide milestones (milestones that exist in ALL projects)
+    final orgWideMilestones = _getOrganizationWideMilestones(projects);
+    
     // Calculate summary stats
-    int totalProjects = widget.projects.length;
-    int totalMilestones = sampleMilestonesDict.length;
-    int completedMilestones = sampleMilestonesDict.values
-        .where((v) => v[0] == "Completed").length;
+    int totalProjects = projects.length;
+    int totalMilestones = orgWideMilestones.length;
+    int completedMilestones = _getCompletedMilestonesCount(orgWideMilestones, projects);
 
     return SafeArea(
       child: Padding(
@@ -84,9 +119,9 @@ class _OrgStatisticsState extends State<OrgStatistics> {
                         dataRowMaxHeight: 80,
                         columns: [
                           DataColumn(label: Text("Project")),
-                          ...sampleMilestonesDict.keys.map((m) => DataColumn(label: Text(m))),
+                          ...orgWideMilestones.map((m) => DataColumn(label: Text(m['name'] ?? 'Unknown'))),
                         ],
-                        rows: widget.projects.map((project) {
+                        rows: projects.map((project) {
                           return DataRow(
                             cells: [
                               DataCell(Row(
@@ -99,29 +134,25 @@ class _OrgStatisticsState extends State<OrgStatistics> {
                                   Text(project.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ],
                               )),
-                              ...sampleMilestonesDict.entries.map((entry) {
-                                final status = entry.value[0];
-                                final percent = entry.value[1];
-                                return DataCell(Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Chip(
-                                      label: Text(status),
-                                      backgroundColor: status == "Completed"
-                                          ? Colors.green.shade100
-                                          : Colors.orange.shade100,
-                                      labelStyle: TextStyle(
-                                        color: status == "Completed"
-                                            ? Colors.green.shade800
-                                            : Colors.orange.shade800,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      visualDensity: VisualDensity.compact,
+                              ...orgWideMilestones.map((orgMilestone) {
+                                final milestoneStatus = _getMilestoneStatusForProject(orgMilestone, project);
+                                final isCompleted = milestoneStatus['isCompleted'] ?? false;
+                                final status = isCompleted ? "Completed" : "Incomplete";
+                                
+                                return DataCell(Center(
+                                  child: Chip(
+                                    label: Text(status),
+                                    backgroundColor: isCompleted
+                                        ? Colors.green.shade100
+                                        : Colors.orange.shade100,
+                                    labelStyle: TextStyle(
+                                      color: isCompleted
+                                          ? Colors.green.shade800
+                                          : Colors.orange.shade800,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(percent, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                  ],
+                                    visualDensity: VisualDensity.compact,
+                                  ),
                                 ));
                               }),
                             ],
@@ -152,5 +183,104 @@ class _OrgStatisticsState extends State<OrgStatistics> {
         Text(label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
+  }
+
+  /// Gets milestones that exist in ALL projects (organization-wide milestones)
+  /// These are identified by having the same sharedId across all projects
+  List<Map<String, dynamic>> _getOrganizationWideMilestones(List<ProjectWithDetails> projects) {
+    if (projects.isEmpty) return [];
+    
+    // Collect all milestones from all projects
+    final allMilestones = <Map<String, dynamic>>[];
+    for (final project in projects) {
+      allMilestones.addAll(project.milestones);
+    }
+    
+    // Count how many times each sharedId appears
+    final sharedIdCounts = <String, int>{};
+    for (final milestone in allMilestones) {
+      final sharedId = milestone['sharedId'];
+      if (sharedId != null && sharedId.toString().isNotEmpty) {
+        sharedIdCounts[sharedId] = (sharedIdCounts[sharedId] ?? 0) + 1;
+      }
+    }
+    
+    // Only include milestones that appear in every project
+    final orgWideSharedIds = sharedIdCounts.entries
+        .where((entry) => entry.value == projects.length)
+        .map((entry) => entry.key)
+        .toSet();
+    
+    // Get one representative milestone for each org-wide sharedId
+    final orgWideMilestones = <Map<String, dynamic>>[];
+    final seenSharedIds = <String>{};
+    
+    for (final milestone in allMilestones) {
+      final sharedId = milestone['sharedId'];
+      if (sharedId != null && 
+          orgWideSharedIds.contains(sharedId) && 
+          !seenSharedIds.contains(sharedId)) {
+        seenSharedIds.add(sharedId);
+        orgWideMilestones.add(milestone);
+      }
+    }
+    
+    return orgWideMilestones;
+  }
+
+  /// Gets the completion status of a specific milestone for a specific project
+  Map<String, dynamic> _getMilestoneStatusForProject(
+    Map<String, dynamic> orgMilestone, 
+    ProjectWithDetails project
+  ) {
+    final sharedId = orgMilestone['sharedId'];
+    if (sharedId == null) {
+      return {'isCompleted': false};
+    }
+    
+    // Find the milestone in this project with the same sharedId
+    final projectMilestone = project.milestones.firstWhere(
+      (m) => m['sharedId'] == sharedId,
+      orElse: () => <String, dynamic>{},
+    );
+    
+    if (projectMilestone.isEmpty) {
+      return {'isCompleted': false};
+    }
+    
+    final isCompleted = projectMilestone['isCompleted'] ?? false;
+    
+    return {
+      'isCompleted': isCompleted,
+    };
+  }
+
+  /// Counts how many organization-wide milestones are completed across all projects
+  int _getCompletedMilestonesCount(
+    List<Map<String, dynamic>> orgWideMilestones,
+    List<ProjectWithDetails> projects
+  ) {
+    if (projects.isEmpty) return 0;
+    
+    int completedCount = 0;
+    
+    for (final orgMilestone in orgWideMilestones) {
+      // Check if this milestone is completed in ALL projects
+      bool completedInAllProjects = true;
+      
+      for (final project in projects) {
+        final status = _getMilestoneStatusForProject(orgMilestone, project);
+        if (!(status['isCompleted'] ?? false)) {
+          completedInAllProjects = false;
+          break;
+        }
+      }
+      
+      if (completedInAllProjects) {
+        completedCount++;
+      }
+    }
+    
+    return completedCount;
   }
 }

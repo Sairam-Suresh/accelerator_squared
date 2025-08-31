@@ -31,7 +31,7 @@ class ProjectDetails extends StatefulWidget {
 }
 
 class _ProjectDetailsState extends State<ProjectDetails> {
-  Set<String> _deletingMilestoneIds = {};
+  final Set<String> _deletingMilestoneIds = {};
   String? _pendingDeleteMilestoneId;
   bool showingCompletedMilestones = false;
 
@@ -216,11 +216,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                   projectDescription =
                       project.data['description'] ?? projectDescription;
                   milestones = project.milestones;
-                }
-
-                // Safety check to ensure milestones is not null
-                if (milestones == null) {
-                  milestones = [];
                 }
 
                 // After fetching milestones, add logic to separate pending review milestones
@@ -795,8 +790,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                             incompleteMilestones[index -
                                                 pendingReviewMilestones.length];
                                         // Safety check for milestone data
-                                        if (milestone == null ||
-                                            milestone['id'] == null) {
+                                        if (milestone['id'] == null) {
                                           return SizedBox.shrink();
                                         }
 
@@ -968,7 +962,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                                   Colors.white,
                                                               style: ButtonStyle(
                                                                 iconColor:
-                                                                    MaterialStateProperty.all<
+                                                                    WidgetStateProperty.all<
                                                                       Color
                                                                     >(
                                                                       Colors
