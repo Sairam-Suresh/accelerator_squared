@@ -15,6 +15,7 @@ import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:metadata_fetch/metadata_fetch.dart';
 
 class ProjectDetails extends StatefulWidget {
   final String organisationId;
@@ -352,7 +353,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                   ),
                                   SizedBox(width: 8),
                                   Text(
-                                    "Files",
+                                    "Links",
                                     style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.w600,
@@ -409,87 +410,30 @@ class _ProjectDetailsState extends State<ProjectDetails> {
 
                                     return filenameList.isNotEmpty
                                         ? ListView.builder(
+                                          itemCount: filenameList.length,
                                           itemBuilder: (context, index) {
-                                            return Card(
-                                              elevation: 2,
-                                              margin: EdgeInsets.only(
-                                                bottom: 8,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: InkWell(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                onTap: () async {
-                                                  await launchUrl(
-                                                    Uri.parse(
-                                                      'https://${filenameList[index]}',
-                                                    ),
-                                                  );
-                                                },
-                                                child: ListTile(
-                                                  contentPadding:
-                                                      EdgeInsets.all(16),
-                                                  leading: Container(
-                                                    padding: EdgeInsets.all(12),
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          Theme.of(context)
-                                                              .colorScheme
-                                                              .secondaryContainer,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.link_rounded,
-                                                      color:
-                                                          Theme.of(context)
-                                                              .colorScheme
-                                                              .onSecondaryContainer,
-                                                      size: 24,
-                                                    ),
-                                                  ),
-                                                  title: Text(
-                                                    filenameList[index],
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                  trailing: IconButton(
-                                                    onPressed: () {
-                                                      context.read<ProjectsBloc>().add(
-                                                        DeleteFileLinkEvent(
-                                                          organisationId:
-                                                              widget
-                                                                  .organisationId,
-                                                          projectId:
-                                                              widget.project.id,
-                                                          fileId:
-                                                              filenameIds[index],
-                                                        ),
-                                                      );
-                                                      setState(() {
-                                                        filenameList.remove(
-                                                          filenameList[index],
-                                                        );
-                                                      });
-                                                    },
-                                                    icon: Icon(
-                                                      Icons.delete_rounded,
-                                                      color: Colors.red,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
+                                            return LinkPreviewCard(
+                                              url: filenameList[index],
+                                              onDelete: () {
+                                                context
+                                                    .read<ProjectsBloc>()
+                                                    .add(
+                                                      DeleteFileLinkEvent(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                        projectId:
+                                                            widget.project.id,
+                                                        fileId:
+                                                            filenameIds[index],
+                                                      ),
+                                                    );
+                                                setState(() {
+                                                  filenameList.removeAt(index);
+                                                });
+                                              },
                                             );
                                           },
-                                          itemCount: filenameList.length,
                                         )
                                         : Center(
                                           child: Column(
@@ -672,7 +616,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       },
                                       icon: Icon(Icons.add_rounded, size: 20),
                                       label: Text(
-                                        "Add files via link",
+                                        "Add Links",
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -1463,5 +1407,75 @@ class _ProjectDetailsState extends State<ProjectDetails> {
       default:
         return Icons.insert_drive_file_rounded;
     }
+  }
+}
+
+class LinkPreviewCard extends StatelessWidget {
+  final String url;
+  final VoidCallback onDelete;
+  const LinkPreviewCard({super.key, required this.url, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Metadata?>(
+      future: MetadataFetch.extract(Uri.parse(url).toString()),
+      builder: (context, snapshot) {
+        final metadata = snapshot.data;
+
+        return Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              await launchUrl(Uri.parse(url));
+            },
+            child: ListTile(
+              contentPadding: EdgeInsets.all(16),
+              leading: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child:
+                    metadata != null && metadata.image != null
+                        ? Image.network(
+                          metadata.image!,
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.cover,
+                        )
+                        : Icon(
+                          Icons.link_rounded,
+                          color:
+                              Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                          size: 24,
+                        ),
+              ),
+              title: Text(
+                metadata?.title ?? url,
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+              subtitle:
+                  metadata?.description != null
+                      ? Text(
+                        metadata!.description!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                      : null,
+              trailing: IconButton(
+                onPressed: onDelete,
+                icon: Icon(Icons.delete_rounded, color: Colors.red),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
