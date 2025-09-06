@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/views/Project/tasks/create_task_dialog.dart';
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
@@ -810,11 +811,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       ? () async {
                                         setState(() => isSending = true);
                                         final orgBloc =
-                                            context.read<OrganisationsBloc>();
+                                            context.read<OrganisationBloc>();
                                         orgBloc.add(
                                           SubmitMilestoneReviewRequestEvent(
-                                            organisationId:
-                                                widget.organisationId,
                                             projectId: widget.projectId,
                                             milestoneId: widget.milestone['id'],
                                             milestoneName:
@@ -839,40 +838,42 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                         orgBloc.stream
                                             .firstWhere(
                                               (state) =>
-                                                  state
-                                                      is OrganisationsLoaded ||
-                                                  state is OrganisationsError,
+                                                  state is OrganisationLoaded ||
+                                                  state is OrganisationError,
                                             )
                                             .then((state) {
-                                              setState(
-                                                () => isSending = false,
-                                              );
-                                              if (state
-                                                  is OrganisationsLoaded) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Milestone sent for review!',
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
+                                              if (mounted) {
+                                                setState(
+                                                  () => isSending = false,
                                                 );
-                                                Navigator.of(context).pop();
-                                              } else if (state
-                                                  is OrganisationsError) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      state.message,
+                                                if (state
+                                                    is OrganisationLoaded) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Milestone sent for review!',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.green,
                                                     ),
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                );
+                                                  );
+                                                  Navigator.of(context).pop();
+                                                } else if (state
+                                                    is OrganisationError) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        state.message,
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                    ),
+                                                  );
+                                                }
                                               }
                                             });
                                       }
@@ -914,8 +915,10 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                 widget.milestone['pendingReview'] == true &&
                 !widget.isTeacher) ...[
               SizedBox(height: 12),
-              BlocProvider<OrganisationsBloc>(
-                create: (context) => OrganisationsBloc(),
+              BlocProvider<OrganisationBloc>(
+                create:
+                    (context) =>
+                        OrganisationBloc(organisationId: widget.organisationId),
                 child: Builder(
                   builder: (context) {
                     bool isUnsend = false;
@@ -938,10 +941,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                     : () async {
                                       setState(() => isUnsend = true);
                                       final orgBloc =
-                                          context.read<OrganisationsBloc>();
+                                          context.read<OrganisationBloc>();
                                       orgBloc.add(
                                         UnsendMilestoneReviewRequestEvent(
-                                          organisationId: widget.organisationId,
                                           projectId: widget.projectId,
                                           milestoneId: widget.milestone['id'],
                                         ),
@@ -949,33 +951,38 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       orgBloc.stream
                                           .firstWhere(
                                             (state) =>
-                                                state is OrganisationsLoaded ||
-                                                state is OrganisationsError,
+                                                state is OrganisationLoaded ||
+                                                state is OrganisationError,
                                           )
                                           .then((state) {
-                                            setState(() => isUnsend = false);
-                                            if (state is OrganisationsLoaded) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Milestone review request unsent.',
+                                            if (mounted) {
+                                              setState(() => isUnsend = false);
+                                              if (state is OrganisationLoaded) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Milestone review request unsent.',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.green,
                                                   ),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                              Navigator.of(context).pop();
-                                            } else if (state
-                                                is OrganisationsError) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(state.message),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
+                                                );
+                                                Navigator.of(context).pop();
+                                              } else if (state
+                                                  is OrganisationError) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      state.message,
+                                                    ),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
                                             }
                                           });
                                     },
@@ -1924,46 +1931,59 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
           // --- REPLACE student review request buttons with mark as completed/incomplete for students ---
           if (!widget.isTeacher) ...[
             SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-                onPressed: () {
-                  final bloc = context.read<ProjectsBloc>();
-                  bloc.add(
-                    UpdateTaskEvent(
-                      organisationId: widget.organisationId,
-                      projectId: widget.projectId,
-                      taskId: task['id'],
-                      name: task['name'] ?? '',
-                      content: task['content'] ?? '',
-                      deadline:
-                          task['deadline'] is DateTime
-                              ? task['deadline']
-                              : (task['deadline'] is Timestamp
-                                  ? task['deadline'].toDate()
-                                  : DateTime.now()),
-                      isCompleted: !isTaskCompleted,
+            BlocProvider(
+              create: (context) => OrganisationsBloc(),
+              child: Builder(
+                builder: (context) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      onPressed: () {
+                        final bloc = context.read<ProjectsBloc>();
+                        bloc.add(
+                          UpdateTaskEvent(
+                            organisationId: widget.organisationId,
+                            projectId: widget.projectId,
+                            taskId: task['id'],
+                            name: task['name'] ?? '',
+                            content: task['content'] ?? '',
+                            deadline:
+                                task['deadline'] is DateTime
+                                    ? task['deadline']
+                                    : (task['deadline'] is Timestamp
+                                        ? task['deadline'].toDate()
+                                        : DateTime.now()),
+                            isCompleted: !isTaskCompleted,
+                          ),
+                        );
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icon(
+                        isTaskCompleted ? Icons.undo : Icons.check,
+                        size: 20,
+                      ),
+                      label: Text(
+                        isTaskCompleted
+                            ? "Mark as incomplete"
+                            : "Mark as completed",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   );
-                  Navigator.of(context).pop();
                 },
-                icon: Icon(
-                  isTaskCompleted ? Icons.undo : Icons.check,
-                  size: 20,
-                ),
-                label: Text(
-                  isTaskCompleted ? "Mark as incomplete" : "Mark as completed",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
               ),
             ),
           ],

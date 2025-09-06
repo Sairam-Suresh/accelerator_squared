@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -249,12 +250,8 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       isChangingRole = true;
       currentOperationId = memberId;
     });
-    context.read<OrganisationsBloc>().add(
-      ChangeMemberRoleEvent(
-        organisationId: widget.organisationId,
-        memberId: memberId,
-        newRole: newRole,
-      ),
+    context.read<OrganisationBloc>().add(
+      ChangeMemberRoleEvent(memberId: memberId, newRole: newRole),
     );
   }
 
@@ -280,11 +277,8 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                     isRemovingMember = true;
                     currentOperationId = member['id'];
                   });
-                  context.read<OrganisationsBloc>().add(
-                    RemoveMemberEvent(
-                      organisationId: widget.organisationId,
-                      memberId: member['id'],
-                    ),
+                  context.read<OrganisationBloc>().add(
+                    RemoveMemberEvent(memberId: member['id']),
                   );
                 },
                 style: ElevatedButton.styleFrom(

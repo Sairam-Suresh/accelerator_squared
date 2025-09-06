@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,9 +77,11 @@ class _OrganisationSettingsDialogState
               isLeaving = false;
             });
             Navigator.of(context).pop();
+
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -169,9 +172,8 @@ class _OrganisationSettingsDialogState
                               setState(() {
                                 isSaving = true;
                               });
-                              context.read<OrganisationsBloc>().add(
+                              context.read<OrganisationBloc>().add(
                                 UpdateOrganisationEvent(
-                                  organisationId: widget.organisationId,
                                   name: nameFieldController.text,
                                   description: descriptionFieldController.text,
                                 ),
@@ -381,11 +383,8 @@ class _OrganisationSettingsDialogState
                                           setState(() {
                                             isRefreshingJoinCode = true;
                                           });
-                                          context.read<OrganisationsBloc>().add(
-                                            RefreshJoinCodeEvent(
-                                              organisationId:
-                                                  widget.organisationId,
-                                            ),
+                                          context.read<OrganisationBloc>().add(
+                                            RefreshJoinCodeEvent(),
                                           );
                                         },
                                 icon:

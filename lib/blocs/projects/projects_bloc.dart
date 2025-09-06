@@ -31,6 +31,8 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     on<DeleteTaskEvent>(_onDeleteTask);
     on<UpdateTaskEvent>(_onUpdateTask);
     on<CompleteMilestoneEvent>(_onCompleteMilestone);
+    on<CreateFileLinkEvent>(_onCreateFileLinkEvent);
+    on<DeleteFileLinkEvent>(_onDeleteFileLinkEvent);
     on<_EmitProjectsLoaded>(
       (event, emit) => emit(ProjectsLoaded(event.projects)),
     );
@@ -81,11 +83,24 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
                           .toList()
                       : <Map<String, dynamic>>[];
               print('[ProjectsBloc] Milestones fetched: $milestones');
+              final linksSnapshot =
+                  await firestore
+                      .collection('organisations')
+                      .doc(event.organisationId)
+                      .collection('projects')
+                      .doc(event.projectId)
+                      .collection('files')
+                      .get();
+
               final project = ProjectWithDetails(
                 id: event.projectId!,
                 data: projectDoc.data() ?? {},
                 milestones: milestones,
                 comments: [],
+                files:
+                    linksSnapshot.docs
+                        .map((m) => {...m.data(), 'id': m.id})
+                        .toList(),
               );
               add(_EmitProjectsLoaded([project]));
             } catch (e) {
@@ -122,6 +137,14 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
                   .doc(projectId)
                   .collection('comments')
                   .get();
+          final linksSnapshot =
+              await firestore
+                  .collection('organisations')
+                  .doc(orgId)
+                  .collection('projects')
+                  .doc(projectId)
+                  .collection('files')
+                  .get();
           print(
             '[ProjectsBloc] Fetched project $projectId with ${milestonesSnapshot.docs.length} milestones',
           );
@@ -134,6 +157,10 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
                       .map((m) => {...m.data(), 'id': m.id})
                       .toList(),
               comments: commentsSnapshot.docs.map((c) => c.data()).toList(),
+              files:
+                  linksSnapshot.docs
+                      .map((m) => {...m.data(), 'id': m.id})
+                      .toList(),
             ),
           );
         }
@@ -206,6 +233,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
         },
         milestones: [],
         comments: [],
+        files: [],
       );
       emit(ProjectsLoaded([optimisticProject]));
       emit(ProjectActionSuccess('Project updated successfully'));
@@ -663,6 +691,59 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
       emit(ProjectsError(e.toString()));
     }
   }
+
+  Future<void> _onCreateFileLinkEvent(
+    CreateFileLinkEvent event,
+    Emitter<ProjectsState> emit,
+  ) async {
+    emit(ProjectsLoading());
+    try {
+      final orgId = event.organisationId;
+      final projectId = event.projectId;
+      final fileId = const Uuid().v4();
+      await firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('projects')
+          .doc(projectId)
+          .collection('files')
+          .doc(fileId)
+          .set({
+            'link': event.link,
+            'createdAt': FieldValue.serverTimestamp(),
+            'createdBy': auth.currentUser?.uid ?? '',
+            'createdByEmail': auth.currentUser?.email ?? '',
+          });
+      emit(ProjectActionSuccess('File link created successfully'));
+      add(FetchProjectsEvent(orgId, projectId: projectId));
+    } catch (e) {
+      emit(ProjectsError(e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteFileLinkEvent(
+    DeleteFileLinkEvent event,
+    Emitter<ProjectsState> emit,
+  ) async {
+    emit(ProjectsLoading());
+    try {
+      final orgId = event.organisationId;
+      final projectId = event.projectId;
+      final fileId = event.fileId;
+      await firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('projects')
+          .doc(projectId)
+          .collection('files')
+          .doc(fileId)
+          .delete();
+      emit(ProjectActionSuccess('File link deleted successfully'));
+      add(FetchProjectsEvent(orgId, projectId: projectId));
+    } catch (e) {
+      emit(ProjectsError(e.toString()));
+    }
+  }
 }
 
 class ProjectWithDetails {
@@ -670,12 +751,13 @@ class ProjectWithDetails {
   final Map<String, dynamic> data;
   final List<Map<String, dynamic>> milestones;
   final List<Map<String, dynamic>> comments;
-  
+  final List<Map<String, dynamic>> files;
   ProjectWithDetails({
     required this.id,
     required this.data,
     required this.milestones,
     required this.comments,
+    required this.files,
   });
 
   /// Gets the project name from the data map

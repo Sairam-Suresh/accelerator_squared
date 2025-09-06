@@ -7,13 +7,15 @@ import 'package:accelerator_squared/views/Project/project_members.dart'
     show ProjectMembersDialog;
 import 'package:awesome_side_sheet/Enums/sheet_position.dart';
 import 'package:awesome_side_sheet/side_sheet.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:metadata_fetch/metadata_fetch.dart';
 
 class ProjectDetails extends StatefulWidget {
   final String organisationId;
@@ -35,13 +37,13 @@ class _ProjectDetailsState extends State<ProjectDetails> {
   String? _pendingDeleteMilestoneId;
   bool showingCompletedMilestones = false;
 
-  var filenameList = [
-    "hello.py",
-    "scoobert.png",
-    "skibidi.txt",
-    "rizz.exe",
-    "bomb.pdf",
-  ];
+  // var filenameList = [
+  //   "hello.py",
+  //   "scoobert.png",
+  //   "skibidi.txt",
+  //   "rizz.exe",
+  //   "bomb.pdf",
+  // ];
 
   @override
   void initState() {
@@ -82,6 +84,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                         data: {},
                         milestones: [],
                         comments: [],
+                        files: [],
                       ),
                 );
                 projectName = project.data['title'] ?? projectName;
@@ -98,9 +101,13 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                 showDialog(
                   context: context,
                   builder: (context) {
-                    return CommentsDialog(
-                      commentsContents: const [],
-                      commentsList: const [],
+                    return BlocProvider.value(
+                      value: context.read<ProjectsBloc>(),
+                      child: CommentsDialog(
+                        projectId: widget.project.id,
+                        organisationId: widget.organisationId,
+                        userRole: widget.isTeacher ? 'teacher' : 'member',
+                      ),
                     );
                   },
                 );
@@ -210,6 +217,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                           data: {},
                           milestones: [],
                           comments: [],
+                          files: [],
                         ),
                   );
                   projectName = project.data['title'] ?? projectName;
@@ -322,11 +330,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       ),
                                     );
                                   }
-                                  return Container(
-                                    child: Text(
-                                      projectDescription,
-                                      style: TextStyle(fontSize: 17.5),
-                                    ),
+                                  return Text(
+                                    projectDescription,
+                                    style: TextStyle(fontSize: 17.5),
                                   );
                                 },
                               ),
@@ -342,7 +348,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                   ),
                                   SizedBox(width: 8),
                                   Text(
-                                    "Files",
+                                    "Links",
                                     style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.w600,
@@ -357,80 +363,72 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                               SizedBox(height: 12),
                               // File list area scales to available space
                               Expanded(
-                                child:
-                                    filenameList.isNotEmpty
+                                child: BlocBuilder<ProjectsBloc, ProjectsState>(
+                                  key: ValueKey('files_${widget.project.id}'),
+                                  builder: (context, state) {
+                                    ProjectWithDetails? project;
+                                    if (state is ProjectsLoaded) {
+                                      try {
+                                        project = state.projects.firstWhere(
+                                          (p) => p.id == widget.project.id,
+                                        );
+                                      } catch (e) {
+                                        project = null;
+                                      }
+                                    } else if (state is ProjectActionSuccess) {
+                                      context.read<ProjectsBloc>().add(
+                                        FetchProjectsEvent(
+                                          widget.organisationId,
+                                          projectId: widget.project.id,
+                                        ),
+                                      );
+                                    }
+
+                                    // --- Add this loading indicator ---
+                                    if (state is ProjectsLoading) {
+                                      return Center(
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    }
+                                    // --- End loading indicator ---
+
+                                    List<String> filenameList = [];
+                                    List<String> filenameIds = [];
+
+                                    project?.files.forEach((link) {
+                                      if (link['link'] != null &&
+                                          link['link'].isNotEmpty) {
+                                        filenameList.add(link['link']);
+                                        filenameIds.add(link['id'] ?? '');
+                                      }
+                                    });
+
+                                    return filenameList.isNotEmpty
                                         ? ListView.builder(
+                                          itemCount: filenameList.length,
                                           itemBuilder: (context, index) {
-                                            return Card(
-                                              elevation: 2,
-                                              margin: EdgeInsets.only(
-                                                bottom: 8,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: ListTile(
-                                                contentPadding: EdgeInsets.all(
-                                                  16,
-                                                ),
-                                                leading: Container(
-                                                  padding: EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .secondaryContainer,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: Icon(
-                                                    _getFileIcon(
-                                                      filenameList[index],
-                                                    ),
-                                                    color:
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .onSecondaryContainer,
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                                title: Text(
-                                                  filenameList[index],
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                                subtitle: Text(
-                                                  "12KB",
-                                                  style: TextStyle(
-                                                    color:
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurfaceVariant,
-                                                  ),
-                                                ),
-                                                trailing: IconButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      filenameList.remove(
-                                                        filenameList[index],
-                                                      );
-                                                    });
-                                                  },
-                                                  icon: Icon(
-                                                    Icons.delete_rounded,
-                                                    color: Colors.red,
-                                                  ),
-                                                ),
-                                              ),
+                                            return LinkPreviewCard(
+                                              url: filenameList[index],
+                                              onDelete: () {
+                                                context
+                                                    .read<ProjectsBloc>()
+                                                    .add(
+                                                      DeleteFileLinkEvent(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                        projectId:
+                                                            widget.project.id,
+                                                        fileId:
+                                                            filenameIds[index],
+                                                      ),
+                                                    );
+                                                setState(() {
+                                                  filenameList.removeAt(index);
+                                                });
+                                              },
                                             );
                                           },
-                                          itemCount: filenameList.length,
-                                          // No shrinkWrap, no physics: let ListView fill the Expanded
                                         )
                                         : Center(
                                           child: Column(
@@ -447,7 +445,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ),
                                               SizedBox(height: 16),
                                               Text(
-                                                "No files uploaded yet",
+                                                "No files linked yet",
                                                 style: TextStyle(
                                                   fontSize: 18,
                                                   color:
@@ -459,7 +457,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ),
                                               SizedBox(height: 8),
                                               Text(
-                                                "Upload files to get started",
+                                                "Add links to get started",
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   color:
@@ -470,7 +468,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               ),
                                             ],
                                           ),
-                                        ),
+                                        );
+                                  },
+                                ),
                               ),
                               SizedBox(height: 12),
                               Row(
@@ -497,31 +497,121 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       ),
                                       onPressed: () async {
                                         // Add file upload functionality
-                                        FilePickerResult? result =
-                                            await FilePicker.platform.pickFiles(
-                                              allowMultiple: true,
-                                            );
-                                        if (result != null) {
-                                          List<String?> fileBytes =
-                                              result.files
-                                                  .map(
-                                                    (file) =>
-                                                        file.bytes.toString(),
-                                                  )
-                                                  .toList();
-                                          List<String?> filenames =
-                                              result.files
-                                                  .map((file) => file.name)
-                                                  .toList();
-                                          print(filenames);
+                                        // FilePickerResult? result =
+                                        //     await FilePicker.platform.pickFiles(
+                                        //       allowMultiple: true,
+                                        //     );
+                                        // if (result != null) {
+                                        //   List<String?> fileBytes =
+                                        //       result.files
+                                        //           .map(
+                                        //             (file) =>
+                                        //                 file.bytes.toString(),
+                                        //           )
+                                        //           .toList();
+                                        //   List<String?> filenames =
+                                        //       result.files
+                                        //           .map((file) => file.name)
+                                        //           .toList();
+                                        //   print(filenames);
+                                        // }
+
+                                        var link = "";
+
+                                        await showDialog(
+                                          context: context,
+                                          builder:
+                                              (context) => Dialog(
+                                                child: Container(
+                                                  padding: EdgeInsets.all(20),
+                                                  width:
+                                                      MediaQuery.of(
+                                                        context,
+                                                      ).size.width /
+                                                      2,
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        "Add link to project",
+                                                        style: TextStyle(
+                                                          fontSize: 24,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .onSurface,
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 16),
+                                                      Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: TextField(
+                                                              onChanged: (
+                                                                value,
+                                                              ) {
+                                                                link = value;
+                                                              },
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                    labelText:
+                                                                        "Link",
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                          IconButton(
+                                                            onPressed: () {
+                                                              if (link
+                                                                  .isEmpty) {
+                                                                ScaffoldMessenger.of(
+                                                                  context,
+                                                                ).showSnackBar(
+                                                                  SnackBar(
+                                                                    content: Text(
+                                                                      "Please enter a link",
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                                return;
+                                                              }
+
+                                                              Navigator.pop(
+                                                                context,
+                                                              );
+                                                            },
+                                                            icon: Icon(
+                                                              Icons
+                                                                  .check_rounded,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                        );
+
+                                        if (link.isNotEmpty && mounted) {
+                                          context.read<ProjectsBloc>().add(
+                                            CreateFileLinkEvent(
+                                              organisationId:
+                                                  widget.organisationId,
+                                              projectId: widget.project.id,
+                                              link: link,
+                                            ),
+                                          );
                                         }
                                       },
-                                      icon: Icon(
-                                        Icons.upload_rounded,
-                                        size: 20,
-                                      ),
+                                      icon: Icon(Icons.add_rounded, size: 20),
                                       label: Text(
-                                        "Upload Files",
+                                        "Add Links",
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -665,24 +755,38 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 context: context,
                                                 sheetPosition:
                                                     SheetPosition.right,
-                                                body: Padding(
-                                                  padding: EdgeInsets.fromLTRB(
-                                                    20,
-                                                    10,
-                                                    20,
-                                                    10,
-                                                  ),
-                                                  child: MilestoneSheet(
-                                                    isTeacher: widget.isTeacher,
-                                                    milestone: milestone,
-                                                    projectTitle: projectName,
-                                                    organisationId:
-                                                        widget.organisationId,
-                                                    projectId:
-                                                        widget.project.id,
-                                                    allowEdit:
-                                                        milestone['sharedId'] ==
-                                                        null,
+                                                body: BlocProvider<
+                                                  OrganisationBloc
+                                                >(
+                                                  create:
+                                                      (
+                                                        context,
+                                                      ) => OrganisationBloc(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                      ),
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.fromLTRB(
+                                                          20,
+                                                          10,
+                                                          20,
+                                                          10,
+                                                        ),
+                                                    child: MilestoneSheet(
+                                                      isTeacher:
+                                                          widget.isTeacher,
+                                                      milestone: milestone,
+                                                      projectTitle: projectName,
+                                                      organisationId:
+                                                          widget.organisationId,
+                                                      projectId:
+                                                          widget.project.id,
+                                                      allowEdit:
+                                                          milestone['sharedId'] ==
+                                                          null,
+                                                    ),
                                                   ),
                                                 ),
                                                 header: SizedBox(height: 20),
@@ -810,24 +914,38 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 context: context,
                                                 sheetPosition:
                                                     SheetPosition.right,
-                                                body: Padding(
-                                                  padding: EdgeInsets.fromLTRB(
-                                                    20,
-                                                    10,
-                                                    20,
-                                                    10,
-                                                  ),
-                                                  child: MilestoneSheet(
-                                                    isTeacher: widget.isTeacher,
-                                                    milestone: milestone,
-                                                    projectTitle: projectName,
-                                                    organisationId:
-                                                        widget.organisationId,
-                                                    projectId:
-                                                        widget.project.id,
-                                                    allowEdit:
-                                                        milestone['sharedId'] ==
-                                                        null,
+                                                body: BlocProvider<
+                                                  OrganisationBloc
+                                                >(
+                                                  create:
+                                                      (
+                                                        context,
+                                                      ) => OrganisationBloc(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                      ),
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.fromLTRB(
+                                                          20,
+                                                          10,
+                                                          20,
+                                                          10,
+                                                        ),
+                                                    child: MilestoneSheet(
+                                                      isTeacher:
+                                                          widget.isTeacher,
+                                                      milestone: milestone,
+                                                      projectTitle: projectName,
+                                                      organisationId:
+                                                          widget.organisationId,
+                                                      projectId:
+                                                          widget.project.id,
+                                                      allowEdit:
+                                                          milestone['sharedId'] ==
+                                                          null,
+                                                    ),
                                                   ),
                                                 ),
                                                 header: SizedBox(height: 20),
@@ -1130,22 +1248,36 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 context: context,
                                                 sheetPosition:
                                                     SheetPosition.right,
-                                                body: Padding(
-                                                  padding: EdgeInsets.fromLTRB(
-                                                    20,
-                                                    10,
-                                                    20,
-                                                    10,
-                                                  ),
-                                                  child: MilestoneSheet(
-                                                    isTeacher: widget.isTeacher,
-                                                    milestone: milestone,
-                                                    projectTitle: projectName,
-                                                    organisationId:
-                                                        widget.organisationId,
-                                                    projectId:
-                                                        widget.project.id,
-                                                    allowEdit: false,
+                                                body: BlocProvider<
+                                                  OrganisationBloc
+                                                >(
+                                                  create:
+                                                      (
+                                                        context,
+                                                      ) => OrganisationBloc(
+                                                        organisationId:
+                                                            widget
+                                                                .organisationId,
+                                                      ),
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.fromLTRB(
+                                                          20,
+                                                          10,
+                                                          20,
+                                                          10,
+                                                        ),
+                                                    child: MilestoneSheet(
+                                                      isTeacher:
+                                                          widget.isTeacher,
+                                                      milestone: milestone,
+                                                      projectTitle: projectName,
+                                                      organisationId:
+                                                          widget.organisationId,
+                                                      projectId:
+                                                          widget.project.id,
+                                                      allowEdit: false,
+                                                    ),
                                                   ),
                                                 ),
                                                 header: SizedBox(height: 20),
@@ -1264,8 +1396,80 @@ class _ProjectDetailsState extends State<ProjectDetails> {
       case 'zip':
       case 'rar':
         return Icons.archive_rounded;
+      case 'LINK':
+        return Icons.link_rounded;
       default:
         return Icons.insert_drive_file_rounded;
     }
+  }
+}
+
+class LinkPreviewCard extends StatelessWidget {
+  final String url;
+  final VoidCallback onDelete;
+  const LinkPreviewCard({super.key, required this.url, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Metadata?>(
+      future: MetadataFetch.extract(Uri.parse(url).toString()),
+      builder: (context, snapshot) {
+        final metadata = snapshot.data;
+
+        return Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              await launchUrl(Uri.parse(url));
+            },
+            child: ListTile(
+              contentPadding: EdgeInsets.all(16),
+              leading: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child:
+                    metadata != null && metadata.image != null
+                        ? Image.network(
+                          metadata.image!,
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.cover,
+                        )
+                        : Icon(
+                          Icons.link_rounded,
+                          color:
+                              Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                          size: 24,
+                        ),
+              ),
+              title: Text(
+                metadata?.title ?? url,
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+              subtitle:
+                  metadata?.description != null
+                      ? Text(
+                        metadata!.description!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                      : null,
+              trailing: IconButton(
+                onPressed: onDelete,
+                icon: Icon(Icons.delete_rounded, color: Colors.red),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

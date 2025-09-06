@@ -1,14 +1,14 @@
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 
 class ProjectCard extends StatefulWidget {
   final Project project;
   final VoidCallback? onTap;
   final String organisationId;
   final bool isTeacher;
-  
+
   const ProjectCard({
     super.key,
     required this.project,
@@ -24,63 +24,68 @@ class ProjectCard extends StatefulWidget {
 class _ProjectCardState extends State<ProjectCard> {
   bool isDeleting = false;
 
-  void _showDeleteConfirmation(BuildContext context) {
+  void _showDeleteConfirmation(OrganisationBloc organisationBloc) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.delete_forever, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Delete Project'),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to delete "${widget.project.name}"? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: isDeleting ? null : () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: isDeleting ? null : () {
-              setState(() {
-                isDeleting = true;
-              });
-              Navigator.of(context).pop();
-              context.read<OrganisationsBloc>().add(
-                DeleteProjectEvent(
-                  organisationId: widget.organisationId,
-                  projectId: widget.project.id,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.delete_forever, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Delete Project'),
+              ],
             ),
-            child: isDeleting 
-              ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Text('Delete'),
+            content: Text(
+              'Are you sure you want to delete "${widget.project.name}"? This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed:
+                    isDeleting ? null : () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed:
+                    isDeleting
+                        ? null
+                        : () {
+                          setState(() {
+                            isDeleting = true;
+                          });
+                          Navigator.of(context).pop();
+                          organisationBloc.add(
+                            DeleteProjectEvent(projectId: widget.project.id),
+                          );
+                        },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child:
+                    isDeleting
+                        ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                        : Text('Delete'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<OrganisationsBloc, OrganisationsState>(
+    return BlocListener<OrganisationBloc, OrganisationState>(
       listener: (context, state) {
-        if (state is OrganisationsLoaded && isDeleting) {
+        if (state is OrganisationLoaded && isDeleting) {
           setState(() {
             isDeleting = false;
           });
@@ -90,34 +95,33 @@ class _ProjectCardState extends State<ProjectCard> {
               backgroundColor: Colors.green,
             ),
           );
-        } else if (state is OrganisationsError && isDeleting) {
+        } else if (state is OrganisationError && isDeleting) {
           setState(() {
             isDeleting = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         }
       },
       child: Card(
         elevation: 4.0,
-        shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: InkWell(
           onTap: widget.onTap,
           borderRadius: BorderRadius.circular(20),
-          splashColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-          highlightColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+          splashColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.1),
+          highlightColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.05),
           child: Container(
             padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -153,62 +157,70 @@ class _ProjectCardState extends State<ProjectCard> {
                       PopupMenuButton<String>(
                         icon: Icon(
                           Icons.more_vert,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                           size: 20,
                         ),
                         tooltip: 'More options',
                         onSelected: (value) {
                           if (value == 'delete') {
-                            _showDeleteConfirmation(context);
+                            _showDeleteConfirmation(
+                              context.read<OrganisationBloc>(),
+                            );
                           }
                         },
-                        itemBuilder: (context) => [
-                          PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
-                                  size: 20,
+                        itemBuilder:
+                            (context) => [
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Delete Project',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Delete Project',
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                              ),
+                            ],
                       ),
                     ],
                   ],
                 ),
                 SizedBox(height: 16),
-                
+
                 // Description
                 Text(
-                  widget.project.description.isNotEmpty 
-                    ? widget.project.description 
-                    : "No description provided",
+                  widget.project.description.isNotEmpty
+                      ? widget.project.description
+                      : "No description provided",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                     height: 1.4,
                   ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Spacer(),
-                
+
                 // Footer with creation date
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -217,13 +229,17 @@ class _ProjectCardState extends State<ProjectCard> {
                       Icon(
                         Icons.calendar_today_rounded,
                         size: 14,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       SizedBox(width: 6),
                       Text(
                         'Created: ${widget.project.createdAt.toString().split(' ')[0]}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -237,4 +253,4 @@ class _ProjectCardState extends State<ProjectCard> {
       ),
     );
   }
-} 
+}

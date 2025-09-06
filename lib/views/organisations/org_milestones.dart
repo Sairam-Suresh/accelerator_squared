@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/views/Project/milestone_sheet.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'dart:async';
@@ -194,21 +195,29 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                                         MediaQuery.of(context).size.width / 3,
                                     context: context,
                                     sheetPosition: SheetPosition.right,
-                                    body: Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        20,
-                                        10,
-                                        20,
-                                        10,
-                                      ),
-                                      child: MilestoneSheet(
-                                        isTeacher: widget.isTeacher,
-                                        milestone: milestone,
-                                        projectTitle: 'Organisation-wide',
-                                        organisationId: widget.organisationId,
-                                        projectId:
-                                            projects[0].id, // Use any projectId
-                                        allowEdit: true,
+                                    body: BlocProvider<OrganisationBloc>(
+                                      create:
+                                          (context) => OrganisationBloc(
+                                            organisationId:
+                                                widget.organisationId,
+                                          ),
+                                      child: Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          20,
+                                          10,
+                                          20,
+                                          10,
+                                        ),
+                                        child: MilestoneSheet(
+                                          isTeacher: widget.isTeacher,
+                                          milestone: milestone,
+                                          projectTitle: 'Organisation-wide',
+                                          organisationId: widget.organisationId,
+                                          projectId:
+                                              projects[0]
+                                                  .id, // Use any projectId
+                                          allowEdit: true,
+                                        ),
                                       ),
                                     ),
                                     header: SizedBox(height: 20),
