@@ -31,6 +31,12 @@ class _RequestDialogState extends State<ProjectRequests> {
   void initState() {
     super.initState();
     currentRequests = List.from(widget.projectRequests);
+    // Ensure this page has fresh data when opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+      }
+    });
   }
 
   @override
@@ -45,34 +51,46 @@ class _RequestDialogState extends State<ProjectRequests> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<OrganisationsBloc, OrganisationsState>(
-      listener: (context, state) {
-        if (state is OrganisationsLoaded) {
-          // Reset loading states when operation completes
-          if (isApproving || isRejecting) {
-            setState(() {
-              isApproving = false;
-              isRejecting = false;
-              currentRequestId = null;
-            });
-          }
-        } else if (state is OrganisationsError) {
-          // Reset loading states on error
-          if (isApproving || isRejecting) {
-            setState(() {
-              isApproving = false;
-              isRejecting = false;
-              currentRequestId = null;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<OrganisationsBloc, OrganisationsState>(
+          listener: (context, state) {
+            if (state is OrganisationsLoaded) {
+              // Reset loading states when operation completes
+              if (isApproving || isRejecting) {
+                setState(() {
+                  isApproving = false;
+                  isRejecting = false;
+                  currentRequestId = null;
+                });
+              }
+            } else if (state is OrganisationsError) {
+              // Reset loading states on error
+              if (isApproving || isRejecting) {
+                setState(() {
+                  isApproving = false;
+                  isRejecting = false;
+                  currentRequestId = null;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
+        // When single-organisation actions complete, refresh the organisations list
+        BlocListener<OrganisationBloc, OrganisationState>(
+          listener: (context, state) {
+            if (state is OrganisationLoaded || state is OrganisationError) {
+              context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+            }
+          },
+        ),
+      ],
       child: _buildContent(),
     );
   }
@@ -92,10 +110,29 @@ class _RequestDialogState extends State<ProjectRequests> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Pending Project Requests (${pendingRequests.length})',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                // Manual refresh button
+                Row(
+                  children: [
+                    Text(
+                      'Pending Project Requests (${pendingRequests.length})',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Spacer(),
+                    IconButton(
+                      tooltip: 'Refresh',
+                      icon: Icon(Icons.refresh),
+                      onPressed: () {
+                        context.read<OrganisationsBloc>().add(
+                          FetchOrganisationsEvent(),
+                        );
+                      },
+                    ),
+                  ],
                 ),
+
                 SizedBox(height: 16),
                 pendingRequests.isNotEmpty
                     ? Expanded(

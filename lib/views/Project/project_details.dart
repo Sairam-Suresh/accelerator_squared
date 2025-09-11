@@ -248,6 +248,22 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                         )
                         .toList();
 
+                // Sort by due date ascending (earliest first). Leave pendingReview as-is.
+                int compareByDueDateAsc(
+                  Map<String, dynamic> a,
+                  Map<String, dynamic> b,
+                ) {
+                  final ad = _parseDueDate(a['dueDate']);
+                  final bd = _parseDueDate(b['dueDate']);
+                  if (ad == null && bd == null) return 0;
+                  if (ad == null) return 1; // nulls last
+                  if (bd == null) return -1;
+                  return ad.compareTo(bd);
+                }
+
+                incompleteMilestones.sort(compareByDueDateAsc);
+                completedMilestones.sort(compareByDueDateAsc);
+
                 return Column(
                   children: [
                     Row(
@@ -1368,6 +1384,23 @@ class _ProjectDetailsState extends State<ProjectDetails> {
       return 'Due: 	${dueDate.day.toString().padLeft(2, '0')}/${dueDate.month.toString().padLeft(2, '0')}/${dueDate.year.toString().substring(2)}';
     }
     return '';
+  }
+
+  DateTime? _parseDueDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    if (raw is Timestamp) return raw.toDate();
+    if (raw is String) {
+      return DateTime.tryParse(raw);
+    }
+    try {
+      final toDate = (raw as dynamic).toDate;
+      if (toDate is Function) {
+        final dt = (raw as dynamic).toDate();
+        if (dt is DateTime) return dt;
+      }
+    } catch (_) {}
+    return null;
   }
 
   IconData _getFileIcon(String filename) {

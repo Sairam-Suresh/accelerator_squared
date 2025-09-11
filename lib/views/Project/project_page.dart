@@ -138,35 +138,37 @@ class _ProjectsPageState extends State<ProjectsPage>
           ],
         ),
         actions: [
-          BlocBuilder<OrganisationsBloc, OrganisationsState>(
-            builder: (context, state) {
-              final isLoading = state is OrganisationsLoading;
-              return IconButton(
-                onPressed:
-                    isLoading
-                        ? null
-                        : () {
-                          context.read<OrganisationBloc>().add(
-                            FetchOrganisationEvent(),
-                          );
-                        },
-                icon:
-                    isLoading
-                        ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
+          if (!(organisationStateLoaded.userRole != 'member' &&
+              _selectedIndex == 2))
+            BlocBuilder<OrganisationsBloc, OrganisationsState>(
+              builder: (context, state) {
+                final isLoading = state is OrganisationsLoading;
+                return IconButton(
+                  onPressed:
+                      isLoading
+                          ? null
+                          : () {
+                            context.read<OrganisationBloc>().add(
+                              FetchOrganisationEvent(),
+                            );
+                          },
+                  icon:
+                      isLoading
+                          ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.primary,
+                              ),
                             ),
-                          ),
-                        )
-                        : Icon(Icons.refresh),
-                tooltip: 'Refresh data',
-              );
-            },
-          ),
+                          )
+                          : Icon(Icons.refresh),
+                  tooltip: 'Refresh data',
+                );
+              },
+            ),
           SizedBox(width: 10),
         ],
       ),

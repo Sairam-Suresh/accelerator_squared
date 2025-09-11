@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/models/projects.dart';
+import 'package:intl/intl.dart';
 
 class OrgStatistics extends StatefulWidget {
   const OrgStatistics({
@@ -86,6 +87,16 @@ class _OrgStatisticsState extends State<OrgStatistics> {
     // Get organization-wide milestones (milestones that exist in ALL projects)
     final orgWideMilestones = _getOrganizationWideMilestones(projects);
 
+    // Sort milestones by due date ascending (earliest first)
+    final sortedMilestones = [...orgWideMilestones]..sort((a, b) {
+      final ad = _parseDueDate(a['dueDate']);
+      final bd = _parseDueDate(b['dueDate']);
+      if (ad == null && bd == null) return 0;
+      if (ad == null) return 1; // nulls last
+      if (bd == null) return -1;
+      return ad.compareTo(bd);
+    });
+
     // Calculate summary stats
     int totalProjects = projects.length;
     int totalMilestones = orgWideMilestones.length;
@@ -152,10 +163,32 @@ class _OrgStatisticsState extends State<OrgStatistics> {
                         dataRowMaxHeight: 80,
                         columns: [
                           DataColumn(label: Text("Project")),
-                          ...orgWideMilestones.map(
-                            (m) =>
-                                DataColumn(label: Text(m['name'] ?? 'Unknown')),
-                          ),
+                          ...sortedMilestones.map((m) {
+                            final due = _parseDueDate(m['dueDate']);
+                            final dueLabel =
+                                due != null
+                                    ? DateFormat('dd/MM/yy').format(due)
+                                    : 'No due date';
+                            return DataColumn(
+                              label: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(m['name'] ?? 'Unknown'),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    dueLabel,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                         ],
                         rows:
                             projects.map((project) {
@@ -187,7 +220,7 @@ class _OrgStatisticsState extends State<OrgStatistics> {
                                       ],
                                     ),
                                   ),
-                                  ...orgWideMilestones.map((orgMilestone) {
+                                  ...sortedMilestones.map((orgMilestone) {
                                     final milestoneStatus =
                                         _getMilestoneStatusForProject(
                                           orgMilestone,
@@ -367,5 +400,24 @@ class _OrgStatisticsState extends State<OrgStatistics> {
     }
 
     return completedCount;
+  }
+
+  /// Parses the milestone due date which may be DateTime, Timestamp-like, or String
+  DateTime? _parseDueDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    // Firestore Timestamp has toDate method; avoid importing Timestamp here
+    try {
+      // If it has a toDate method (e.g., Timestamp), call it
+      final toDate = (raw as dynamic).toDate;
+      if (toDate is Function) {
+        final dt = (raw as dynamic).toDate();
+        if (dt is DateTime) return dt;
+      }
+    } catch (_) {}
+    if (raw is String) {
+      return DateTime.tryParse(raw);
+    }
+    return null;
   }
 }
