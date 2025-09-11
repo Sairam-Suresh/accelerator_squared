@@ -10,6 +10,8 @@ class OrganisationSettingsDialog extends StatefulWidget {
   final String orgDescription;
   final String joinCode;
   final bool isTeacher;
+  final OrganisationBloc? organisationBloc;
+  final OrganisationsBloc? organisationsBloc;
 
   const OrganisationSettingsDialog({
     super.key,
@@ -18,6 +20,8 @@ class OrganisationSettingsDialog extends StatefulWidget {
     required this.orgDescription,
     required this.joinCode,
     required this.isTeacher,
+    this.organisationBloc,
+    this.organisationsBloc,
   });
 
   @override
@@ -46,7 +50,13 @@ class _OrganisationSettingsDialogState
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<OrganisationsBloc, OrganisationsState>(
+    // Resolve blocs from injected instances first, fallback to context
+    final OrganisationBloc organisationBloc =
+        widget.organisationBloc ?? context.read<OrganisationBloc>();
+    final OrganisationsBloc organisationsBloc =
+        widget.organisationsBloc ?? context.read<OrganisationsBloc>();
+
+    final Widget dialog = BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
         if (state is OrganisationsLoaded) {
           if (isSaving) {
@@ -172,7 +182,7 @@ class _OrganisationSettingsDialogState
                               setState(() {
                                 isSaving = true;
                               });
-                              context.read<OrganisationBloc>().add(
+                              organisationBloc.add(
                                 UpdateOrganisationEvent(
                                   name: nameFieldController.text,
                                   description: descriptionFieldController.text,
@@ -383,7 +393,7 @@ class _OrganisationSettingsDialogState
                                           setState(() {
                                             isRefreshingJoinCode = true;
                                           });
-                                          context.read<OrganisationBloc>().add(
+                                          organisationBloc.add(
                                             RefreshJoinCodeEvent(),
                                           );
                                         },
@@ -605,17 +615,13 @@ class _OrganisationSettingsDialogState
                                                           Navigator.of(
                                                             context,
                                                           ).pop(); // Close settings dialog
-                                                          context
-                                                              .read<
-                                                                OrganisationsBloc
-                                                              >()
-                                                              .add(
-                                                                LeaveOrganisationEvent(
-                                                                  organisationId:
-                                                                      widget
-                                                                          .organisationId,
-                                                                ),
-                                                              );
+                                                          organisationsBloc.add(
+                                                            LeaveOrganisationEvent(
+                                                              organisationId:
+                                                                  widget
+                                                                      .organisationId,
+                                                            ),
+                                                          );
                                                           Navigator.of(
                                                             context,
                                                           ).pop();
@@ -793,17 +799,13 @@ class _OrganisationSettingsDialogState
                                                             Navigator.of(
                                                               context,
                                                             ).pop(); // Close settings dialog
-                                                            context
-                                                                .read<
-                                                                  OrganisationsBloc
-                                                                >()
-                                                                .add(
-                                                                  DeleteOrganisationEvent(
-                                                                    organisationId:
-                                                                        widget
-                                                                            .organisationId,
-                                                                  ),
-                                                                );
+                                                            organisationsBloc.add(
+                                                              DeleteOrganisationEvent(
+                                                                organisationId:
+                                                                    widget
+                                                                        .organisationId,
+                                                              ),
+                                                            );
                                                             Navigator.of(
                                                               context,
                                                             ).pop();
@@ -860,5 +862,24 @@ class _OrganisationSettingsDialogState
         ),
       ),
     );
+
+    // If blocs are passed explicitly, ensure they are provided above the dialog tree
+    if (widget.organisationBloc != null || widget.organisationsBloc != null) {
+      return MultiBlocProvider(
+        providers: [
+          if (widget.organisationBloc != null)
+            BlocProvider<OrganisationBloc>.value(
+              value: widget.organisationBloc!,
+            ),
+          if (widget.organisationsBloc != null)
+            BlocProvider<OrganisationsBloc>.value(
+              value: widget.organisationsBloc!,
+            ),
+        ],
+        child: dialog,
+      );
+    }
+
+    return dialog;
   }
 }

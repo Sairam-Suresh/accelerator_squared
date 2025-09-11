@@ -64,19 +64,22 @@ class _ProjectsPageState extends State<ProjectsPage>
               padding: EdgeInsets.only(left: 10),
               child: IconButton(
                 onPressed: () {
+                  // Read blocs from the current page context BEFORE opening the dialog.
+                  // The dialog's builder gets a new context that may not have these providers.
+                  final orgBloc = context.read<OrganisationBloc>();
+                  final orgsBloc = context.read<OrganisationsBloc>();
                   showDialog(
                     context: context,
-                    builder: (context) {
-                      return BlocProvider.value(
-                        value: context.watch<OrganisationBloc>(),
-                        child: OrganisationSettingsDialog(
-                          orgDescription: organisationStateLoaded.description,
-                          orgName: organisationStateLoaded.name,
-                          isTeacher:
-                              organisationStateLoaded.userRole == 'teacher',
-                          organisationId: organisationStateLoaded.id,
-                          joinCode: organisationStateLoaded.joinCode,
-                        ),
+                    builder: (_) {
+                      return OrganisationSettingsDialog(
+                        orgDescription: organisationStateLoaded.description,
+                        orgName: organisationStateLoaded.name,
+                        isTeacher:
+                            organisationStateLoaded.userRole == 'teacher',
+                        organisationId: organisationStateLoaded.id,
+                        joinCode: organisationStateLoaded.joinCode,
+                        organisationBloc: orgBloc,
+                        organisationsBloc: orgsBloc,
                       );
                     },
                   );
@@ -172,51 +175,232 @@ class _ProjectsPageState extends State<ProjectsPage>
           SizedBox(width: 10),
         ],
       ),
-      body:
-          organisationStateLoaded.userRole == 'member'
-              ? Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border(
-                        right: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                          width: 1,
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: context.read<OrganisationBloc>()),
+          BlocProvider.value(value: context.read<OrganisationsBloc>()),
+        ],
+        child:
+            organisationStateLoaded.userRole == 'member'
+                ? Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border(
+                          right: BorderSide(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 1,
+                          ),
                         ),
                       ),
-                    ),
-                    child: NavigationRail(
-                      backgroundColor: Colors.transparent,
-                      onDestinationSelected: (value) {
-                        setState(() {
-                          _selectedIndex = value;
-                        });
-                      },
-                      labelType: NavigationRailLabelType.all,
-                      destinations: [
-                        NavigationRailDestination(
-                          icon: Icon(Icons.list),
-                          label: Text("Projects"),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.flag),
-                          label: Text("Milestones"),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.groups),
-                          label: Text("Members"),
-                        ),
-                      ],
+                      child: NavigationRail(
+                        backgroundColor: Colors.transparent,
+                        onDestinationSelected: (value) {
+                          setState(() {
+                            _selectedIndex = value;
+                          });
+                        },
+                        labelType: NavigationRailLabelType.all,
+                        destinations: [
+                          NavigationRailDestination(
+                            icon: Icon(Icons.list),
+                            label: Text("Projects"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.flag),
+                            label: Text("Milestones"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.groups),
+                            label: Text("Members"),
+                          ),
+                        ],
 
-                      selectedIndex: _selectedIndex,
+                        selectedIndex: _selectedIndex,
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child:
-                        _selectedIndex == 0
-                            ? SafeArea(
-                              child: Padding(
+                    Expanded(
+                      child:
+                          _selectedIndex == 0
+                              ? SafeArea(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 10),
+                                  child:
+                                      organisationStateLoaded.projects.isEmpty
+                                          ? Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.folder_off,
+                                                  size: 64,
+                                                  color: Colors.grey,
+                                                ),
+                                                SizedBox(height: 16),
+                                                Text(
+                                                  'No projects found',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.grey,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'There are no projects in this organisation yet.',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                          : Column(
+                                            children: [
+                                              Expanded(
+                                                child: GridView.count(
+                                                  childAspectRatio: 1.5,
+                                                  crossAxisCount: 3,
+                                                  crossAxisSpacing: 10,
+                                                  mainAxisSpacing: 10,
+                                                  children:
+                                                      organisationStateLoaded.projects.map((
+                                                        project,
+                                                      ) {
+                                                        return ProjectCard(
+                                                          project: project,
+                                                          organisationId:
+                                                              organisationStateLoaded
+                                                                  .id,
+                                                          isTeacher:
+                                                              organisationStateLoaded
+                                                                  .userRole ==
+                                                              'teacher',
+                                                          onTap: () {
+                                                            Navigator.of(
+                                                                  context,
+                                                                )
+                                                                .push(
+                                                                  MaterialPageRoute(
+                                                                    builder:
+                                                                        (
+                                                                          context,
+                                                                        ) => BlocProvider(
+                                                                          create:
+                                                                              (_) =>
+                                                                                  ProjectsBloc(),
+                                                                          child: ProjectDetails(
+                                                                            organisationId:
+                                                                                organisationStateLoaded.id,
+                                                                            project:
+                                                                                project,
+                                                                            isTeacher:
+                                                                                organisationStateLoaded.userRole !=
+                                                                                "member",
+                                                                            key: ValueKey(
+                                                                              project.id,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                  ),
+                                                                )
+                                                                .then((_) {
+                                                                  context
+                                                                      .read<
+                                                                        ProjectsBloc
+                                                                      >()
+                                                                      .add(
+                                                                        FetchProjectsEvent(
+                                                                          organisationStateLoaded
+                                                                              .id,
+                                                                        ),
+                                                                      );
+                                                                  context
+                                                                      .read<
+                                                                        OrganisationsBloc
+                                                                      >()
+                                                                      .add(
+                                                                        FetchOrganisationsEvent(),
+                                                                      );
+                                                                });
+                                                          },
+                                                        );
+                                                      }).toList(),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                ),
+                              )
+                              : _selectedIndex == 1
+                              ? OrgMilestones(
+                                isTeacher:
+                                    organisationStateLoaded.userRole !=
+                                    'member',
+                                organisationId: organisationStateLoaded.id,
+                              )
+                              : OrgMembers(
+                                teacherView: false,
+                                organisationId: organisationStateLoaded.id,
+                                organisationName: organisationStateLoaded.name,
+                              ),
+                    ),
+                  ],
+                )
+                : Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border(
+                          right: BorderSide(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: NavigationRail(
+                        backgroundColor: Colors.transparent,
+                        onDestinationSelected: (value) {
+                          setState(() {
+                            _selectedIndex = value;
+                          });
+                        },
+                        labelType: NavigationRailLabelType.all,
+                        destinations: [
+                          NavigationRailDestination(
+                            icon: Icon(Icons.list),
+                            label: Text("Projects"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.auto_graph_rounded),
+                            label: Text("Statistics"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.check_box_outlined),
+                            label: Text("Requests"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.flag),
+                            label: Text("Milestones"),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(Icons.groups),
+                            label: Text("Members"),
+                          ),
+                        ],
+                        selectedIndex: _selectedIndex,
+                      ),
+                    ),
+                    Expanded(
+                      child: Builder(
+                        builder: (context) {
+                          switch (_selectedIndex) {
+                            case 0:
+                              return Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 10),
                                 child:
                                     organisationStateLoaded.projects.isEmpty
@@ -325,231 +509,62 @@ class _ProjectsPageState extends State<ProjectsPage>
                                             ),
                                           ],
                                         ),
-                              ),
-                            )
-                            : _selectedIndex == 1
-                            ? OrgMilestones(
-                              isTeacher:
-                                  organisationStateLoaded.userRole != 'member',
-                              organisationId: organisationStateLoaded.id,
-                            )
-                            : OrgMembers(
-                              teacherView: false,
-                              organisationId: organisationStateLoaded.id,
-                              organisationName: organisationStateLoaded.name,
-                            ),
-                  ),
-                ],
-              )
-              : Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border(
-                        right: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: NavigationRail(
-                      backgroundColor: Colors.transparent,
-                      onDestinationSelected: (value) {
-                        setState(() {
-                          _selectedIndex = value;
-                        });
-                      },
-                      labelType: NavigationRailLabelType.all,
-                      destinations: [
-                        NavigationRailDestination(
-                          icon: Icon(Icons.list),
-                          label: Text("Projects"),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.auto_graph_rounded),
-                          label: Text("Statistics"),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.check_box_outlined),
-                          label: Text("Requests"),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.flag),
-                          label: Text("Milestones"),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.groups),
-                          label: Text("Members"),
-                        ),
-                      ],
-                      selectedIndex: _selectedIndex,
-                    ),
-                  ),
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        switch (_selectedIndex) {
-                          case 0:
-                            return Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10),
-                              child:
-                                  organisationStateLoaded.projects.isEmpty
-                                      ? Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.folder_off,
-                                              size: 64,
-                                              color: Colors.grey,
-                                            ),
-                                            SizedBox(height: 16),
-                                            Text(
-                                              'No projects found',
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                color: Colors.grey,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            SizedBox(height: 8),
-                                            Text(
-                                              'There are no projects in this organisation yet.',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                      : Column(
-                                        children: [
-                                          Expanded(
-                                            child: GridView.count(
-                                              childAspectRatio: 1.5,
-                                              crossAxisCount: 3,
-                                              crossAxisSpacing: 10,
-                                              mainAxisSpacing: 10,
-                                              children:
-                                                  organisationStateLoaded.projects.map((
-                                                    project,
-                                                  ) {
-                                                    return ProjectCard(
-                                                      project: project,
-                                                      organisationId:
-                                                          organisationStateLoaded
-                                                              .id,
-                                                      isTeacher:
-                                                          organisationStateLoaded
-                                                              .userRole ==
-                                                          'teacher',
-                                                      onTap: () {
-                                                        Navigator.of(context)
-                                                            .push(
-                                                              MaterialPageRoute(
-                                                                builder:
-                                                                    (
-                                                                      context,
-                                                                    ) => BlocProvider(
-                                                                      create:
-                                                                          (_) =>
-                                                                              ProjectsBloc(),
-                                                                      child: ProjectDetails(
-                                                                        organisationId:
-                                                                            organisationStateLoaded.id,
-                                                                        project:
-                                                                            project,
-                                                                        isTeacher:
-                                                                            organisationStateLoaded.userRole !=
-                                                                            "member",
-                                                                        key: ValueKey(
-                                                                          project
-                                                                              .id,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                              ),
-                                                            )
-                                                            .then((_) {
-                                                              context
-                                                                  .read<
-                                                                    ProjectsBloc
-                                                                  >()
-                                                                  .add(
-                                                                    FetchProjectsEvent(
-                                                                      organisationStateLoaded
-                                                                          .id,
-                                                                    ),
-                                                                  );
-                                                              context
-                                                                  .read<
-                                                                    OrganisationsBloc
-                                                                  >()
-                                                                  .add(
-                                                                    FetchOrganisationsEvent(),
-                                                                  );
-                                                            });
-                                                      },
-                                                    );
-                                                  }).toList(),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                            );
-                          case 1:
-                            // For member: Milestones, for teacher: Statistics
-                            if (organisationStateLoaded.userRole == 'member') {
+                              );
+                            case 1:
+                              // For member: Milestones, for teacher: Statistics
+                              if (organisationStateLoaded.userRole ==
+                                  'member') {
+                                return OrgMilestones(
+                                  isTeacher: false,
+                                  organisationId: organisationStateLoaded.id,
+                                );
+                              } else {
+                                return OrgStatistics(
+                                  organisationId: organisationStateLoaded.id,
+                                  projects: organisationStateLoaded.projects,
+                                );
+                              }
+                            case 2:
+                              // For member: Members, for teacher: Requests
+                              if (organisationStateLoaded.userRole ==
+                                  'member') {
+                                return OrgMembers(
+                                  teacherView: false,
+                                  organisationId: organisationStateLoaded.id,
+                                  organisationName:
+                                      organisationStateLoaded.name,
+                                );
+                              } else {
+                                return ProjectRequests(
+                                  organisationId: organisationStateLoaded.id,
+                                  projectRequests:
+                                      organisationStateLoaded.projectRequests,
+                                );
+                              }
+                            case 3:
+                              // Only for teacher: Milestones
                               return OrgMilestones(
-                                isTeacher: false,
+                                isTeacher:
+                                    organisationStateLoaded.userRole !=
+                                    'member',
                                 organisationId: organisationStateLoaded.id,
                               );
-                            } else {
-                              return OrgStatistics(
-                                organisationId: organisationStateLoaded.id,
-                                projects: organisationStateLoaded.projects,
-                              );
-                            }
-                          case 2:
-                            // For member: Members, for teacher: Requests
-                            if (organisationStateLoaded.userRole == 'member') {
+                            case 4:
+                              // Only for teacher: Members
                               return OrgMembers(
-                                teacherView: false,
+                                teacherView: true,
                                 organisationId: organisationStateLoaded.id,
                                 organisationName: organisationStateLoaded.name,
                               );
-                            } else {
-                              return ProjectRequests(
-                                organisationId: organisationStateLoaded.id,
-                                projectRequests:
-                                    organisationStateLoaded.projectRequests,
-                              );
-                            }
-                          case 3:
-                            // Only for teacher: Milestones
-                            return OrgMilestones(
-                              isTeacher:
-                                  organisationStateLoaded.userRole != 'member',
-                              organisationId: organisationStateLoaded.id,
-                            );
-                          case 4:
-                            // Only for teacher: Members
-                            return OrgMembers(
-                              teacherView: true,
-                              organisationId: organisationStateLoaded.id,
-                              organisationName: organisationStateLoaded.name,
-                            );
-                          default:
-                            return SizedBox.shrink();
-                        }
-                      },
+                            default:
+                              return SizedBox.shrink();
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+      ),
     );
   }
 }
