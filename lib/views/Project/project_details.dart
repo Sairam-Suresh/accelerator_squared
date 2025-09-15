@@ -248,6 +248,19 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                         )
                         .toList();
 
+                // If there are no incomplete milestones, default to showing completed ones
+                if (!showingCompletedMilestones &&
+                    incompleteMilestones.isEmpty &&
+                    completedMilestones.isNotEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        showingCompletedMilestones = true;
+                      });
+                    }
+                  });
+                }
+
                 // Sort by due date ascending (earliest first). Leave pendingReview as-is.
                 int compareByDueDateAsc(
                   Map<String, dynamic> a,
