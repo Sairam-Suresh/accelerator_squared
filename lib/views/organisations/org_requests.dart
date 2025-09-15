@@ -26,6 +26,12 @@ class _RequestDialogState extends State<ProjectRequests> {
   bool isRejecting = false;
   String? currentRequestId;
   List<ProjectRequest> currentRequests = [];
+  bool isAcceptingMilestone = false;
+  String? currentMilestoneKey; // format: projectId|milestoneId
+  bool isRefreshing = false;
+  List<dynamic> lastMilestoneReviewRequests = [];
+  bool isDecliningMilestone = false;
+  String? currentDeclineKey; // format: projectId|milestoneId
 
   @override
   void initState() {
@@ -57,20 +63,43 @@ class _RequestDialogState extends State<ProjectRequests> {
           listener: (context, state) {
             if (state is OrganisationsLoaded) {
               // Reset loading states when operation completes
-              if (isApproving || isRejecting) {
+              if (isApproving || isRejecting || isAcceptingMilestone) {
                 setState(() {
                   isApproving = false;
                   isRejecting = false;
                   currentRequestId = null;
+                  isAcceptingMilestone = false;
+                  currentMilestoneKey = null;
+                });
+              }
+              // Update last known milestone review requests and clear refresh spinner
+              try {
+                final org = state.organisations.firstWhere(
+                  (o) => o.id == widget.organisationId,
+                );
+                setState(() {
+                  lastMilestoneReviewRequests = org.milestoneReviewRequests;
+                  isRefreshing = false;
+                });
+              } catch (_) {
+                setState(() {
+                  isRefreshing = false;
                 });
               }
             } else if (state is OrganisationsError) {
               // Reset loading states on error
-              if (isApproving || isRejecting) {
+              if (isApproving ||
+                  isRejecting ||
+                  isAcceptingMilestone ||
+                  isDecliningMilestone) {
                 setState(() {
                   isApproving = false;
                   isRejecting = false;
                   currentRequestId = null;
+                  isAcceptingMilestone = false;
+                  currentMilestoneKey = null;
+                  isDecliningMilestone = false;
+                  currentDeclineKey = null;
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -79,6 +108,9 @@ class _RequestDialogState extends State<ProjectRequests> {
                   ),
                 );
               }
+              setState(() {
+                isRefreshing = false;
+              });
             }
           },
         ),
@@ -90,6 +122,8 @@ class _RequestDialogState extends State<ProjectRequests> {
             }
           },
         ),
+        // Do not reset milestone loading on Projects updates; wait for OrganisationsLoaded
+        // so the item disappears at the same time the spinner stops.
       ],
       child: _buildContent(),
     );
@@ -102,11 +136,18 @@ class _RequestDialogState extends State<ProjectRequests> {
       padding: EdgeInsets.all(15),
       child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
         builder: (context, state) {
-          if (state is OrganisationsLoaded) {
-            final org = state.organisations.firstWhere(
-              (o) => o.id == widget.organisationId,
-            );
-            final milestoneReviewRequests = org.milestoneReviewRequests;
+          if (state is OrganisationsLoaded ||
+              (state is OrganisationsLoading &&
+                  lastMilestoneReviewRequests.isNotEmpty)) {
+            // Prefer live data; if loading, fallback to the last snapshot to keep UI intact
+            final org =
+                state is OrganisationsLoaded
+                    ? state.organisations.firstWhere(
+                      (o) => o.id == widget.organisationId,
+                    )
+                    : null;
+            final milestoneReviewRequests =
+                org?.milestoneReviewRequests ?? lastMilestoneReviewRequests;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -123,12 +164,25 @@ class _RequestDialogState extends State<ProjectRequests> {
                     Spacer(),
                     IconButton(
                       tooltip: 'Refresh',
-                      icon: Icon(Icons.refresh),
-                      onPressed: () {
-                        context.read<OrganisationsBloc>().add(
-                          FetchOrganisationsEvent(),
-                        );
-                      },
+                      icon:
+                          isRefreshing
+                              ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Icon(Icons.refresh),
+                      onPressed:
+                          isRefreshing
+                              ? null
+                              : () {
+                                setState(() => isRefreshing = true);
+                                context.read<OrganisationsBloc>().add(
+                                  FetchOrganisationsEvent(),
+                                );
+                              },
                     ),
                   ],
                 ),
@@ -409,104 +463,124 @@ class _RequestDialogState extends State<ProjectRequests> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       TextButton(
-                                        onPressed: () async {
-                                          // Decline: show create new comment dialog for feedback, then unsend
-                                          final result =
-                                              await _showCreateCommentDialog(
-                                                context,
-                                                req.projectId,
-                                                req.milestoneId,
-                                              );
-                                          if (result == true) {
-                                            // Unsend milestone review
-                                            context.read<OrganisationBloc>().add(
-                                              UnsendMilestoneReviewRequestEvent(
-                                                projectId: req.projectId,
-                                                milestoneId: req.milestoneId,
-                                              ),
-                                            );
-                                            // Also refresh the projects data to update milestone status
-                                            context.read<ProjectsBloc>().add(
-                                              FetchProjectsEvent(
-                                                widget.organisationId,
-                                                projectId: req.projectId,
-                                              ),
-                                            );
-                                            // Refresh orgs after a short delay to ensure updates propagate
-                                            Future.delayed(
-                                              Duration(milliseconds: 500),
-                                              () {
-                                                context
-                                                    .read<OrganisationBloc>()
-                                                    .add(
-                                                      FetchOrganisationEvent(),
+                                        onPressed:
+                                            (isDecliningMilestone &&
+                                                    currentDeclineKey ==
+                                                        '${req.projectId}|${req.milestoneId}')
+                                                ? null
+                                                : () async {
+                                                  // Decline: show create new comment dialog for feedback, then unsend
+                                                  final result =
+                                                      await _showCreateCommentDialog(
+                                                        context,
+                                                        req.projectId,
+                                                        req.milestoneId,
+                                                      );
+                                                  if (result == true) {
+                                                    setState(() {
+                                                      isDecliningMilestone =
+                                                          true;
+                                                      currentDeclineKey =
+                                                          '${req.projectId}|${req.milestoneId}';
+                                                    });
+                                                    // Unsend milestone review
+                                                    context
+                                                        .read<
+                                                          OrganisationBloc
+                                                        >()
+                                                        .add(
+                                                          UnsendMilestoneReviewRequestEvent(
+                                                            projectId:
+                                                                req.projectId,
+                                                            milestoneId:
+                                                                req.milestoneId,
+                                                          ),
+                                                        );
+                                                    // Also refresh project details for milestone status
+                                                    context
+                                                        .read<ProjectsBloc>()
+                                                        .add(
+                                                          FetchProjectsEvent(
+                                                            widget
+                                                                .organisationId,
+                                                            projectId:
+                                                                req.projectId,
+                                                          ),
+                                                        );
+                                                    // Trigger organisations refresh to update requests list
+                                                    context
+                                                        .read<
+                                                          OrganisationsBloc
+                                                        >()
+                                                        .add(
+                                                          FetchOrganisationsEvent(),
+                                                        );
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          'Milestone declined and comment created.',
+                                                        ),
+                                                        backgroundColor:
+                                                            Colors.orange,
+                                                      ),
                                                     );
-                                              },
-                                            );
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Milestone declined and comment created.',
-                                                ),
-                                                backgroundColor: Colors.orange,
-                                              ),
-                                            );
-                                          }
-                                        },
+                                                  }
+                                                },
                                         style: TextButton.styleFrom(
                                           foregroundColor: Colors.red,
                                         ),
-                                        child: Text('Decline'),
+                                        child:
+                                            (isDecliningMilestone &&
+                                                    currentDeclineKey ==
+                                                        '${req.projectId}|${req.milestoneId}')
+                                                ? SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(Colors.red),
+                                                  ),
+                                                )
+                                                : Text('Decline'),
                                       ),
                                       SizedBox(width: 8),
                                       ElevatedButton(
-                                        onPressed: () {
-                                          // Accept: mark milestone as completed and unsend milestone review
-                                          final bloc =
-                                              context.read<OrganisationBloc>();
-                                          bloc.add(
-                                            UnsendMilestoneReviewRequestEvent(
-                                              projectId: req.projectId,
-                                              milestoneId: req.milestoneId,
-                                            ),
-                                          );
-                                          // Also mark the milestone as completed
-                                          context.read<ProjectsBloc>().add(
-                                            CompleteMilestoneEvent(
-                                              organisationId:
-                                                  widget.organisationId,
-                                              projectId: req.projectId,
-                                              milestoneId: req.milestoneId,
-                                              isCompleted: true,
-                                            ),
-                                          );
-                                          // Refresh orgs after a short delay to ensure updates propagate
-                                          Future.delayed(
-                                            Duration(milliseconds: 500),
-                                            () {
-                                              bloc.add(
-                                                FetchOrganisationEvent(),
-                                              );
-                                            },
-                                          );
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Milestone review accepted and milestone marked as completed.',
-                                              ),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                        },
+                                        onPressed:
+                                            (isAcceptingMilestone &&
+                                                    currentMilestoneKey ==
+                                                        '${req.projectId}|${req.milestoneId}')
+                                                ? null
+                                                : () {
+                                                  _acceptMilestone(
+                                                    req.projectId,
+                                                    req.milestoneId,
+                                                  );
+                                                },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.green,
                                           foregroundColor: Colors.white,
                                         ),
-                                        child: Text('Accept'),
+                                        child:
+                                            (isAcceptingMilestone &&
+                                                    currentMilestoneKey ==
+                                                        '${req.projectId}|${req.milestoneId}')
+                                                ? SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(Colors.white),
+                                                  ),
+                                                )
+                                                : Text('Accept'),
                                       ),
                                     ],
                                   ),
@@ -537,6 +611,48 @@ class _RequestDialogState extends State<ProjectRequests> {
     });
     context.read<OrganisationBloc>().add(
       ApproveProjectRequestEvent(requestId: request.id),
+    );
+  }
+
+  void _acceptMilestone(String projectId, String milestoneId) {
+    setState(() {
+      isAcceptingMilestone = true;
+      currentMilestoneKey = '$projectId|$milestoneId';
+    });
+    final orgBloc = context.read<OrganisationBloc>();
+    final projectsBloc = context.read<ProjectsBloc>();
+
+    // Unsend review request and mark milestone complete
+    orgBloc.add(
+      UnsendMilestoneReviewRequestEvent(
+        projectId: projectId,
+        milestoneId: milestoneId,
+      ),
+    );
+    projectsBloc.add(
+      CompleteMilestoneEvent(
+        organisationId: widget.organisationId,
+        projectId: projectId,
+        milestoneId: milestoneId,
+        isCompleted: true,
+      ),
+    );
+
+    // Fetch updated project to reflect milestone status promptly
+    projectsBloc.add(
+      FetchProjectsEvent(widget.organisationId, projectId: projectId),
+    );
+
+    // Also refresh organisations to update requests list
+    context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Milestone review accepted and milestone marked as completed.',
+        ),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 
