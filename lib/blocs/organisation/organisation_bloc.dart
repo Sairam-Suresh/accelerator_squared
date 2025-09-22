@@ -226,6 +226,14 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           });
         }
 
+        // Copy existing organisation-wide milestones to the new project
+        // Add a small delay to ensure the project document is fully written
+        await Future.delayed(Duration(milliseconds: 100));
+        await _copyOrgWideMilestonesToNewProject(_organisationId, projectId);
+
+        // Add another small delay to ensure milestones are written before fetching
+        await Future.delayed(Duration(milliseconds: 100));
+
         add(FetchOrganisationEvent());
       } catch (e) {
         emit(OrganisationError(e.toString()));
@@ -752,6 +760,160 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
       add(FetchOrganisationEvent(initialData: _initialState));
     } else {
       add(FetchOrganisationEvent());
+    }
+  }
+
+  /// Copies existing organisation-wide milestones to a new project
+  Future<void> _copyOrgWideMilestonesToNewProject(
+    String orgId,
+    String newProjectId,
+  ) async {
+    try {
+      print(
+        '[OrganisationBloc] Copying org-wide milestones to new project: $newProjectId',
+      );
+
+      // Get all existing projects in the organisation (excluding the new one)
+      final projectsSnapshot =
+          await firestore
+              .collection('organisations')
+              .doc(orgId)
+              .collection('projects')
+              .where(FieldPath.documentId, isNotEqualTo: newProjectId)
+              .get();
+
+      print(
+        '[OrganisationBloc] Found ${projectsSnapshot.docs.length} existing projects',
+      );
+
+      if (projectsSnapshot.docs.isEmpty) {
+        print('[OrganisationBloc] No existing projects, nothing to copy');
+        return; // No existing projects, nothing to copy
+      }
+
+      // Collect all milestones from all existing projects
+      final allMilestones = <Map<String, dynamic>>[];
+      for (final projectDoc in projectsSnapshot.docs) {
+        final milestonesSnapshot =
+            await firestore
+                .collection('organisations')
+                .doc(orgId)
+                .collection('projects')
+                .doc(projectDoc.id)
+                .collection('milestones')
+                .get();
+
+        print(
+          '[OrganisationBloc] Project ${projectDoc.id} has ${milestonesSnapshot.docs.length} milestones',
+        );
+
+        for (final milestoneDoc in milestonesSnapshot.docs) {
+          final milestoneData = milestoneDoc.data();
+          milestoneData['projectId'] = projectDoc.id;
+          allMilestones.add(milestoneData);
+        }
+      }
+
+      print(
+        '[OrganisationBloc] Total milestones collected: ${allMilestones.length}',
+      );
+
+      // Find sharedId values that appear in every existing project
+      final sharedIdCounts = <String, int>{};
+      for (final milestone in allMilestones) {
+        final sharedId = milestone['sharedId'];
+        if (sharedId != null && sharedId.toString().isNotEmpty) {
+          sharedIdCounts[sharedId] = (sharedIdCounts[sharedId] ?? 0) + 1;
+        }
+      }
+
+      print('[OrganisationBloc] SharedId counts: $sharedIdCounts');
+
+      // Only include milestones that appear in every existing project (org-wide)
+      final orgWideSharedIds =
+          sharedIdCounts.entries
+              .where((entry) => entry.value == projectsSnapshot.docs.length)
+              .map((entry) => entry.key)
+              .toSet();
+
+      print('[OrganisationBloc] Org-wide sharedIds: $orgWideSharedIds');
+
+      // Get one representative milestone for each org-wide sharedId
+      final orgWideMilestones = <Map<String, dynamic>>[];
+      final seenSharedIds = <String>{};
+
+      for (final milestone in allMilestones) {
+        final sharedId = milestone['sharedId'];
+        if (sharedId != null &&
+            orgWideSharedIds.contains(sharedId) &&
+            !seenSharedIds.contains(sharedId)) {
+          seenSharedIds.add(sharedId);
+          orgWideMilestones.add(milestone);
+        }
+      }
+
+      // Copy each org-wide milestone to the new project
+      print(
+        '[OrganisationBloc] Copying ${orgWideMilestones.length} org-wide milestones to new project',
+      );
+      for (final milestone in orgWideMilestones) {
+        final milestoneData = Map<String, dynamic>.from(milestone);
+        // Remove projectId as it's not part of the milestone document
+        milestoneData.remove('projectId');
+
+        print(
+          '[OrganisationBloc] Copying milestone: ${milestone['name']} with sharedId: ${milestone['sharedId']}',
+        );
+
+        await firestore
+            .collection('organisations')
+            .doc(orgId)
+            .collection('projects')
+            .doc(newProjectId)
+            .collection('milestones')
+            .doc(milestone['sharedId'])
+            .set(milestoneData);
+      }
+
+      // If no org-wide milestones found, copy all milestones from the first project as a fallback
+      if (orgWideMilestones.isEmpty && allMilestones.isNotEmpty) {
+        print(
+          '[OrganisationBloc] No org-wide milestones found, copying all milestones from first project as fallback',
+        );
+        final firstProjectMilestones =
+            allMilestones
+                .where((m) => m['projectId'] == projectsSnapshot.docs.first.id)
+                .toList();
+
+        for (final milestone in firstProjectMilestones) {
+          final milestoneData = Map<String, dynamic>.from(milestone);
+          milestoneData.remove('projectId');
+
+          // Generate a new sharedId for these milestones
+          final newSharedId = const Uuid().v4();
+          milestoneData['sharedId'] = newSharedId;
+
+          print(
+            '[OrganisationBloc] Copying fallback milestone: ${milestone['name']} with new sharedId: $newSharedId',
+          );
+
+          await firestore
+              .collection('organisations')
+              .doc(orgId)
+              .collection('projects')
+              .doc(newProjectId)
+              .collection('milestones')
+              .doc(newSharedId)
+              .set(milestoneData);
+        }
+      }
+
+      print(
+        '[OrganisationBloc] Successfully copied ${orgWideMilestones.length} milestones to new project',
+      );
+    } catch (e) {
+      print('Error copying org-wide milestones: $e');
+      // Don't throw - this shouldn't fail project creation
     }
   }
 }
