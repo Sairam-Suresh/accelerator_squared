@@ -525,26 +525,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                         ),
                                       ),
                                       onPressed: () async {
-                                        // Add file upload functionality
-                                        // FilePickerResult? result =
-                                        //     await FilePicker.platform.pickFiles(
-                                        //       allowMultiple: true,
-                                        //     );
-                                        // if (result != null) {
-                                        //   List<String?> fileBytes =
-                                        //       result.files
-                                        //           .map(
-                                        //             (file) =>
-                                        //                 file.bytes.toString(),
-                                        //           )
-                                        //           .toList();
-                                        //   List<String?> filenames =
-                                        //       result.files
-                                        //           .map((file) => file.name)
-                                        //           .toList();
-                                        //   print(filenames);
-                                        // }
-
                                         var link = "";
 
                                         await showDialog(
@@ -633,7 +613,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               organisationId:
                                                   widget.organisationId,
                                               projectId: widget.project.id,
-                                              link: link,
+                                              link: "https://$link",
                                             ),
                                           );
                                         }
