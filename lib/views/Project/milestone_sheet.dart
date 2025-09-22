@@ -59,6 +59,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   @override
   void initState() {
     super.initState();
+    print("is edit allowed: ${widget.allowEdit}");
     nameController.text = widget.milestone['name'] ?? '';
     descriptionController.text = widget.milestone['description'] ?? '';
     _listenToTasks();
@@ -328,7 +329,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   ),
                   Spacer(),
                   // Only show edit button if milestone is not organization-wide (no sharedId) or allowEdit is true
-                  (widget.milestone['sharedId'] == null || widget.allowEdit)
+                  (widget.allowEdit)
                       ? (!_isEditing
                           ? IconButton(
                             onPressed: () {
@@ -1010,8 +1011,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
             widget.isTeacher ? SizedBox(height: 12) : SizedBox.shrink(),
 
             // Only show delete button if milestone is not organization-wide (no sharedId) and user is teacher
-            widget.isTeacher &&
-                    (widget.milestone['sharedId'] == null || widget.allowEdit)
+            widget.isTeacher && (widget.allowEdit)
                 ? SizedBox(
                   width: double.infinity,
                   height: 56,

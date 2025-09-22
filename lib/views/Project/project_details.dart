@@ -813,8 +813,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                       projectId:
                                                           widget.project.id,
                                                       allowEdit:
+                                                          widget.isTeacher &&
                                                           milestone['sharedId'] ==
-                                                          null,
+                                                              null,
                                                     ),
                                                   ),
                                                 ),
@@ -972,8 +973,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                       projectId:
                                                           widget.project.id,
                                                       allowEdit:
+                                                          widget.isTeacher &&
                                                           milestone['sharedId'] ==
-                                                          null,
+                                                              null,
                                                     ),
                                                   ),
                                                 ),
