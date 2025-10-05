@@ -7,6 +7,7 @@ import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/create_
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/join_organisation_dialog.dart';
 import 'package:accelerator_squared/widgets/organisation_card.dart';
 import 'package:accelerator_squared/views/Project/project_page.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -176,11 +177,9 @@ class _HomePageState extends State<HomePage> {
             );
           } else {
             // Show other errors as snackbar
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
+            SnackBarHelper.showError(
+              context,
+              message: state.message,
             );
           }
         }

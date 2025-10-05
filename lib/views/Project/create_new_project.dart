@@ -1,6 +1,7 @@
 import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -58,8 +59,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching organisation members: $e')),
+        SnackBarHelper.showError(
+          context,
+          message: 'Error fetching organisation members: $e',
         );
       }
     }
@@ -84,22 +86,19 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
             isCreating = false;
           });
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.isTeacher
-                    ? 'Project created successfully'
-                    : 'Project request submitted successfully',
-              ),
-              backgroundColor: Colors.green,
-            ),
+          SnackBarHelper.showSuccess(
+            context,
+            message: widget.isTeacher
+                ? 'Project created successfully'
+                : 'Project request submitted successfully',
           );
         } else if (state is OrganisationError && isCreating) {
           setState(() {
             isCreating = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          SnackBarHelper.showError(
+            context,
+            message: state.message,
           );
         }
       },

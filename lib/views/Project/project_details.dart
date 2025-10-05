@@ -37,14 +37,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
   String? _pendingDeleteMilestoneId;
   bool showingCompletedMilestones = false;
 
-  // var filenameList = [
-  //   "hello.py",
-  //   "scoobert.png",
-  //   "skibidi.txt",
-  //   "rizz.exe",
-  //   "bomb.pdf",
-  // ];
-
   @override
   void initState() {
     super.initState();

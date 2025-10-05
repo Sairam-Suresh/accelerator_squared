@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/views/organisations/org_settings.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 
 class OrganisationCard extends StatefulWidget {
   final Organisation organisation;
@@ -66,11 +67,9 @@ class _OrganisationCardState extends State<OrganisationCard> {
             );
           } else {
             // Show other errors as snackbar
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
+            SnackBarHelper.showError(
+              context,
+              message: state.message,
             );
           }
         } else if (state is OrganisationsLoaded) {
@@ -89,11 +88,9 @@ class _OrganisationCardState extends State<OrganisationCard> {
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Left organisation successfully'),
-                backgroundColor: Colors.green,
-              ),
+            SnackBarHelper.showSuccess(
+              context,
+              message: 'Left organisation successfully',
             );
           }
         }

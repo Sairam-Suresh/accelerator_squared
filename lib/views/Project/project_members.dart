@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 
 class ProjectMembersDialog extends StatefulWidget {
   final String organisationId;
@@ -73,8 +74,9 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
         isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching project members: $e')),
+        SnackBarHelper.showError(
+          context,
+          message: 'Error fetching project members: $e',
         );
       }
     }
@@ -105,8 +107,9 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching organisation members: $e')),
+        SnackBarHelper.showError(
+          context,
+          message: 'Error fetching organisation members: $e',
         );
       }
     }
@@ -117,11 +120,9 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
 
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(memberEmailController.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.red,
-        ),
+      SnackBarHelper.showError(
+        context,
+        message: 'Please enter a valid email address',
       );
       return;
     }
@@ -134,22 +135,18 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
       orElse: () => {'email': '', 'role': ''},
     );
     if ((orgMember['email'] as String).isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('This email is not a member of the organisation.'),
-          backgroundColor: Colors.red,
-        ),
+      SnackBarHelper.showError(
+        context,
+        message: 'This email is not a member of the organisation.',
       );
       return;
     }
 
     // Disallow teachers in projects (follow create_new_project.dart)
     if (orgMember['role'] == 'teacher') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Teachers cannot be added to projects.'),
-          backgroundColor: Colors.red,
-        ),
+      SnackBarHelper.showError(
+        context,
+        message: 'Teachers cannot be added to projects.',
       );
       return;
     }
@@ -159,8 +156,9 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
       (m) => (m['email'] as String).toLowerCase() == email.toLowerCase(),
     );
     if (alreadyInProject) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('This user is already a project member.')),
+      SnackBarHelper.showError(
+        context,
+        message: 'This user is already a project member.',
       );
       return;
     }
@@ -210,12 +208,7 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
       await fetchMembers();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Member added to project'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        SnackBarHelper.showSuccess(context, message: 'Member added to project');
       }
 
       setState(() {
@@ -228,12 +221,7 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
         isAddingMember = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error adding member: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBarHelper.showError(context, message: 'Error adding member: $e');
       }
     }
   }
@@ -270,21 +258,14 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
 
       await fetchMembers();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Member removed from project'),
-            backgroundColor: Colors.green,
-          ),
+        SnackBarHelper.showSuccess(
+          context,
+          message: 'Member removed from project',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error removing member: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackBarHelper.showError(context, message: 'Error removing member: $e');
       }
     } finally {
       if (mounted) {

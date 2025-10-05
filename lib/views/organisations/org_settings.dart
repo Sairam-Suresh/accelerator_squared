@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 
 class OrganisationSettingsDialog extends StatefulWidget {
   final String organisationId;
@@ -64,23 +65,17 @@ class _OrganisationSettingsDialogState
               isSaving = false;
               editing = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Organisation "${nameFieldController.text}" updated successfully',
-                ),
-                backgroundColor: Colors.green,
-              ),
+            SnackBarHelper.showSuccess(
+              context,
+              message: 'Organisation "${nameFieldController.text}" updated successfully',
             );
           } else if (isRefreshingJoinCode) {
             setState(() {
               isRefreshingJoinCode = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Join code refreshed!'),
-                backgroundColor: Colors.green,
-              ),
+            SnackBarHelper.showSuccess(
+              context,
+              message: 'Join code refreshed!',
             );
           } else if (isLeaving) {
             setState(() {
@@ -92,13 +87,9 @@ class _OrganisationSettingsDialogState
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Successfully left organisation "${widget.orgName}"',
-                ),
-                backgroundColor: Colors.green,
-              ),
+            SnackBarHelper.showSuccess(
+              context,
+              message: 'Successfully left organisation "${widget.orgName}"',
             );
           } else if (isDeleting) {
             setState(() {
@@ -108,13 +99,9 @@ class _OrganisationSettingsDialogState
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Organisation "${widget.orgName}" deleted successfully',
-                ),
-                backgroundColor: Colors.green,
-              ),
+            SnackBarHelper.showSuccess(
+              context,
+              message: 'Organisation "${widget.orgName}" deleted successfully',
             );
           }
         } else if (state is OrganisationsError) {
@@ -122,41 +109,33 @@ class _OrganisationSettingsDialogState
             setState(() {
               isSaving = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
+            SnackBarHelper.showError(
+              context,
+              message: state.message,
             );
           } else if (isRefreshingJoinCode) {
             setState(() {
               isRefreshingJoinCode = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
+            SnackBarHelper.showError(
+              context,
+              message: state.message,
             );
           } else if (isLeaving) {
             setState(() {
               isLeaving = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
+            SnackBarHelper.showError(
+              context,
+              message: state.message,
             );
           } else if (isDeleting) {
             setState(() {
               isDeleting = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
+            SnackBarHelper.showError(
+              context,
+              message: state.message,
             );
           }
         }
@@ -441,13 +420,9 @@ class _OrganisationSettingsDialogState
                                   Clipboard.setData(
                                     ClipboardData(text: currentJoinCode),
                                   );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Join code copied to clipboard!',
-                                      ),
-                                      backgroundColor: Colors.green,
-                                    ),
+                                  SnackBarHelper.showSuccess(
+                                    context,
+                                    message: 'Join code copied to clipboard!',
                                   );
                                 }
                               },

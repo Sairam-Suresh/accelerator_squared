@@ -425,27 +425,42 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                       ),
                                       decoration: BoxDecoration(
                                         color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.secondaryContainer,
+                                            data['milestoneDeclined'] == true
+                                                ? Theme.of(
+                                                  context,
+                                                ).colorScheme.errorContainer
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .secondaryContainer,
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.outline,
+                                              data['milestoneDeclined'] == true
+                                                  ? Theme.of(
+                                                    context,
+                                                  ).colorScheme.error
+                                                  : Theme.of(
+                                                    context,
+                                                  ).colorScheme.outline,
                                         ),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            Icons.flag,
+                                            data['milestoneDeclined'] == true
+                                                ? Icons.flag_outlined
+                                                : Icons.flag,
                                             size: 14,
                                             color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
+                                                data['milestoneDeclined'] ==
+                                                        true
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onErrorContainer
+                                                    : Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
                                           ),
                                           SizedBox(width: 4),
                                           Text(
@@ -454,8 +469,27 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w500,
+                                              color:
+                                                  data['milestoneDeclined'] ==
+                                                          true
+                                                      ? Theme.of(context)
+                                                          .colorScheme
+                                                          .onErrorContainer
+                                                      : null,
                                             ),
                                           ),
+                                          if (data['milestoneDeclined'] ==
+                                              true) ...[
+                                            SizedBox(width: 4),
+                                            Icon(
+                                              Icons.cancel_outlined,
+                                              size: 12,
+                                              color:
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .onErrorContainer,
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ),

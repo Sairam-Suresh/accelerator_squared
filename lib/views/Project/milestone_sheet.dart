@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 import 'dart:async';
 
 class MilestoneSheet extends StatefulWidget {
@@ -47,6 +48,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   TextEditingController dueDateController = TextEditingController();
   TextEditingController taskNameController = TextEditingController();
   TextEditingController taskDescriptionController = TextEditingController();
+  DateTime? milestoneDueDate;
   DateTime? taskDueDate;
   int? editingTaskIndex;
 
@@ -62,6 +64,15 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
     print("is edit allowed: ${widget.allowEdit}");
     nameController.text = widget.milestone['name'] ?? '';
     descriptionController.text = widget.milestone['description'] ?? '';
+    // Initialize milestone due date state from incoming data
+    final initialDue = widget.milestone['dueDate'];
+    if (initialDue is DateTime) {
+      milestoneDueDate = initialDue;
+    } else if (initialDue is Timestamp) {
+      milestoneDueDate = initialDue.toDate();
+    } else if (initialDue is String) {
+      milestoneDueDate = DateTime.tryParse(initialDue);
+    }
     _listenToTasks();
   }
 
@@ -107,21 +118,20 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
     final milestone = widget.milestone;
     // Format due date
     String formattedDueDate = 'Unknown';
-    final dueDateRaw = milestone['dueDate'];
-    if (dueDateRaw != null) {
-      DateTime? dueDate;
-      if (dueDateRaw is DateTime) {
-        dueDate = dueDateRaw;
-      } else if (dueDateRaw is String) {
-        try {
-          dueDate = DateTime.parse(dueDateRaw);
-        } catch (_) {}
-      } else if (dueDateRaw is Timestamp) {
-        dueDate = dueDateRaw.toDate();
-      }
-      if (dueDate != null) {
-        formattedDueDate = DateFormat('dd/MM/yy').format(dueDate);
-      }
+    final DateTime? effectiveMilestoneDueDate =
+        milestoneDueDate ??
+        (() {
+          final dueDateRaw = milestone['dueDate'];
+          if (dueDateRaw == null) return null;
+          if (dueDateRaw is DateTime) return dueDateRaw;
+          if (dueDateRaw is Timestamp) return dueDateRaw.toDate();
+          if (dueDateRaw is String) return DateTime.tryParse(dueDateRaw);
+          return null;
+        })();
+    if (effectiveMilestoneDueDate != null) {
+      formattedDueDate = DateFormat(
+        'dd/MM/yy',
+      ).format(effectiveMilestoneDueDate);
     }
     final bool isCompleted = widget.milestone['isCompleted'] == true;
     // Compute completed/incomplete tasks
@@ -143,15 +153,14 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
       listener: (context, state) {
         if (state is ProjectActionSuccess &&
             state.message == 'Task deleted successfully') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Task deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
+          SnackBarHelper.showSuccess(
+            context,
+            message: 'Task deleted successfully',
           );
         } else if (state is ProjectsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          SnackBarHelper.showError(
+            context,
+            message: state.message,
           );
         }
       },
@@ -418,14 +427,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                               name: name,
                                               description: description,
                                               dueDate:
-                                                  milestone['dueDate']
-                                                          is DateTime
-                                                      ? milestone['dueDate']
-                                                      : (milestone['dueDate']
-                                                              is Timestamp
-                                                          ? milestone['dueDate']
-                                                              .toDate()
-                                                          : DateTime.now()),
+                                                  milestoneDueDate ??
+                                                  effectiveMilestoneDueDate ??
+                                                  DateTime.now(),
                                             ),
                                           );
                                         }
@@ -552,7 +556,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                 ? null
                                 : () async {
                                   final DateTime initialDate =
-                                      taskDueDate ?? DateTime.now();
+                                      milestoneDueDate ??
+                                      effectiveMilestoneDueDate ??
+                                      DateTime.now();
                                   final picked = await showDatePicker(
                                     context: context,
                                     initialDate: initialDate,
@@ -561,7 +567,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                   );
                                   if (picked != null) {
                                     setState(() {
-                                      taskDueDate = picked;
+                                      milestoneDueDate = picked;
                                     });
                                   }
                                 },
@@ -596,21 +602,27 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
 
                                   if (updatedMilestone != null) {
                                     // Format the updated due date
-                                    final updatedDueDateRaw =
-                                        updatedMilestone['dueDate'];
-                                    if (updatedDueDateRaw != null) {
-                                      DateTime? updatedDueDate;
-                                      if (updatedDueDateRaw is DateTime) {
-                                        updatedDueDate = updatedDueDateRaw;
-                                      } else if (updatedDueDateRaw
-                                          is Timestamp) {
-                                        updatedDueDate =
-                                            updatedDueDateRaw.toDate();
-                                      }
-                                      if (updatedDueDate != null) {
-                                        displayDueDate = DateFormat(
-                                          'dd/MM/yy',
-                                        ).format(updatedDueDate);
+                                    if (milestoneDueDate != null) {
+                                      displayDueDate = DateFormat(
+                                        'dd/MM/yy',
+                                      ).format(milestoneDueDate!);
+                                    } else {
+                                      final updatedDueDateRaw =
+                                          updatedMilestone['dueDate'];
+                                      if (updatedDueDateRaw != null) {
+                                        DateTime? updatedDueDate;
+                                        if (updatedDueDateRaw is DateTime) {
+                                          updatedDueDate = updatedDueDateRaw;
+                                        } else if (updatedDueDateRaw
+                                            is Timestamp) {
+                                          updatedDueDate =
+                                              updatedDueDateRaw.toDate();
+                                        }
+                                        if (updatedDueDate != null) {
+                                          displayDueDate = DateFormat(
+                                            'dd/MM/yy',
+                                          ).format(updatedDueDate);
+                                        }
                                       }
                                     }
                                   }
@@ -1105,11 +1117,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                   _deleteSubscription?.cancel();
                                   if (mounted) {
                                     setState(() => _isDeleting = false);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
+                                    SnackBarHelper.showError(
+                                      context,
+                                      message: 'Error: $e',
                                     );
                                   }
                                 }
@@ -1806,13 +1816,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                               final content =
                                   taskDescriptionController.text.trim();
                               if (name.isEmpty || content.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Name and description cannot be empty',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
+                                SnackBarHelper.showError(
+                                  context,
+                                  message: 'Name and description cannot be empty',
                                 );
                                 return;
                               }
@@ -1831,13 +1837,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                       isEditingTask = false;
                                       isSavingTask = false;
                                     });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Task updated successfully',
-                                        ),
-                                        backgroundColor: Colors.green,
-                                      ),
+                                    SnackBarHelper.showSuccess(
+                                      context,
+                                      message: 'Task updated successfully',
                                     );
                                   }
                                 } else if (state is ProjectsError) {
@@ -1846,11 +1848,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                     setState(() {
                                       isSavingTask = false;
                                     });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(state.message),
-                                        backgroundColor: Colors.red,
-                                      ),
+                                    SnackBarHelper.showError(
+                                      context,
+                                      message: state.message,
                                     );
                                   }
                                 }
@@ -1874,11 +1874,9 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                   setState(() {
                                     isSavingTask = false;
                                   });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: $e'),
-                                      backgroundColor: Colors.red,
-                                    ),
+                                  SnackBarHelper.showError(
+                                    context,
+                                    message: 'Error: $e',
                                   );
                                 }
                               }

@@ -13,8 +13,14 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   StreamSubscription? _milestonesSubscription;
+  StreamSubscription? _projectSubscription;
+  StreamSubscription? _filesSubscription;
   String? _currentOrgId;
   String? _currentProjectId;
+
+  Map<String, dynamic> _liveProjectData = {};
+  List<Map<String, dynamic>> _liveMilestones = [];
+  List<Map<String, dynamic>> _liveFiles = [];
 
   ProjectsBloc() : super(ProjectsInitial()) {
     on<FetchProjectsEvent>(_onFetchProjects);
@@ -46,13 +52,61 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     emit(ProjectsLoading());
     // Cancel previous subscription if any
     await _milestonesSubscription?.cancel();
+    await _projectSubscription?.cancel();
+    await _filesSubscription?.cancel();
     _currentOrgId = event.organisationId;
     _currentProjectId = event.projectId;
     if (event.projectId != null) {
-      // Listen to milestones for a specific project
+      // Listen to project, milestones and files for a specific project (real-time)
       final path =
           'organisations/${event.organisationId}/projects/${event.projectId}/milestones';
       print('[ProjectsBloc] Listening to milestones at: $path');
+      // Project document listener
+      _projectSubscription = firestore
+          .collection('organisations')
+          .doc(event.organisationId)
+          .collection('projects')
+          .doc(event.projectId)
+          .snapshots()
+          .listen((projectDoc) {
+            if (!projectDoc.exists) {
+              add(_EmitProjectsError('Project not found.'));
+              return;
+            }
+            _liveProjectData = projectDoc.data() ?? {};
+            // Emit combined state when project changes
+            final project = ProjectWithDetails(
+              id: event.projectId!,
+              data: _liveProjectData,
+              milestones: _liveMilestones,
+              comments: const [],
+              files: _liveFiles,
+            );
+            add(_EmitProjectsLoaded([project]));
+          });
+      // Files collection listener
+      _filesSubscription = firestore
+          .collection('organisations')
+          .doc(event.organisationId)
+          .collection('projects')
+          .doc(event.projectId)
+          .collection('files')
+          .snapshots()
+          .listen((linksSnapshot) {
+            _liveFiles =
+                linksSnapshot.docs
+                    .map((m) => {...m.data(), 'id': m.id})
+                    .toList();
+            final project = ProjectWithDetails(
+              id: event.projectId!,
+              data: _liveProjectData,
+              milestones: _liveMilestones,
+              comments: const [],
+              files: _liveFiles,
+            );
+            add(_EmitProjectsLoaded([project]));
+          });
+      // Milestones collection listener
       _milestonesSubscription = firestore
           .collection('organisations')
           .doc(event.organisationId)
@@ -65,17 +119,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
               print(
                 '[ProjectsBloc] Milestones snapshot docs: ${milestonesSnapshot.docs.length}',
               );
-              final projectDoc =
-                  await firestore
-                      .collection('organisations')
-                      .doc(event.organisationId)
-                      .collection('projects')
-                      .doc(event.projectId)
-                      .get();
-              if (!projectDoc.exists) {
-                add(_EmitProjectsError('Project not found.'));
-                return;
-              }
               final milestones =
                   milestonesSnapshot.docs.isNotEmpty
                       ? milestonesSnapshot.docs
@@ -83,24 +126,13 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
                           .toList()
                       : <Map<String, dynamic>>[];
               print('[ProjectsBloc] Milestones fetched: $milestones');
-              final linksSnapshot =
-                  await firestore
-                      .collection('organisations')
-                      .doc(event.organisationId)
-                      .collection('projects')
-                      .doc(event.projectId)
-                      .collection('files')
-                      .get();
-
+              _liveMilestones = milestones;
               final project = ProjectWithDetails(
                 id: event.projectId!,
-                data: projectDoc.data() ?? {},
-                milestones: milestones,
-                comments: [],
-                files:
-                    linksSnapshot.docs
-                        .map((m) => {...m.data(), 'id': m.id})
-                        .toList(),
+                data: _liveProjectData,
+                milestones: _liveMilestones,
+                comments: const [],
+                files: _liveFiles,
               );
               add(_EmitProjectsLoaded([project]));
             } catch (e) {
@@ -330,7 +362,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             'isCompleted': false,
           });
       emit(ProjectActionSuccess('Milestone added successfully'));
-      add(FetchProjectsEvent(orgId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -416,7 +447,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
       }
 
       emit(ProjectActionSuccess('Milestone updated successfully'));
-      add(FetchProjectsEvent(orgId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -492,7 +522,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
       }
 
       emit(ProjectActionSuccess('Milestone deleted successfully'));
-      add(FetchProjectsEvent(orgId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -613,7 +642,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             'createdBy': uid,
           });
       emit(ProjectActionSuccess('Task added successfully'));
-      add(FetchProjectsEvent(orgId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -637,7 +665,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .doc(taskId)
           .delete();
       emit(ProjectActionSuccess('Task deleted successfully'));
-      add(FetchProjectsEvent(orgId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -667,7 +694,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .doc(event.taskId)
           .update(updateData);
       emit(ProjectActionSuccess('Task updated successfully'));
-      add(FetchProjectsEvent(event.organisationId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -695,7 +721,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           'Milestone marked as ${event.isCompleted ? 'completed' : 'incomplete'}',
         ),
       );
-      add(FetchProjectsEvent(orgId, projectId: projectId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -724,7 +749,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
             'createdByEmail': auth.currentUser?.email ?? '',
           });
       emit(ProjectActionSuccess('File link created successfully'));
-      add(FetchProjectsEvent(orgId, projectId: projectId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }
@@ -748,7 +772,6 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
           .doc(fileId)
           .delete();
       emit(ProjectActionSuccess('File link deleted successfully'));
-      add(FetchProjectsEvent(orgId, projectId: projectId));
     } catch (e) {
       emit(ProjectsError(e.toString()));
     }

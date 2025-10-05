@@ -134,8 +134,8 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                         for (final project in projects) {
                           for (final m in project.milestones) {
                             allMilestones.add(m);
-                                                    }
-                                                }
+                          }
+                        }
                         // Find sharedId values that appear in every project
                         final sharedIdCounts = <String, int>{};
                         for (final milestone in allMilestones) {

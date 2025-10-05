@@ -102,39 +102,44 @@ class CommentsSheet extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          comment['title'] ?? '',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            comment['title'] ?? '',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
-                        ),
-                        SizedBox(height: 4),
-
-                        Text(
-                          comment['authorEmail'] ?? 'Unknown author',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                          SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                comment['authorEmail'] ?? 'Unknown author',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                comment['timestamp'] != null
+                                    ? DateFormat('dd/MM/yy HH:mm').format(
+                                      (comment['timestamp'] as Timestamp)
+                                          .toDate(),
+                                    )
+                                    : '',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
                           ),
-                        ),
-                        SizedBox(height: 4),
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: Text(
-                            comment['timestamp'] != null
-                                ? DateFormat('dd/MM/yy HH:mm').format(
-                                  (comment['timestamp'] as Timestamp).toDate(),
-                                )
-                                : '',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -160,30 +165,73 @@ class CommentsSheet extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    color:
+                        comment['milestoneDeclined'] == true
+                            ? Theme.of(context).colorScheme.errorContainer
+                            : Theme.of(context).colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
+                      color:
+                          comment['milestoneDeclined'] == true
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.outline,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.flag,
-                        color: Theme.of(context).colorScheme.primary,
+                        comment['milestoneDeclined'] == true
+                            ? Icons.flag_outlined
+                            : Icons.flag,
+                        color:
+                            comment['milestoneDeclined'] == true
+                                ? Theme.of(context).colorScheme.onErrorContainer
+                                : Theme.of(context).colorScheme.primary,
                         size: 20,
                       ),
                       SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          comment['assignedMilestoneName'] ??
-                              'Unknown Milestone',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              comment['assignedMilestoneName'] ??
+                                  'Unknown Milestone',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                color:
+                                    comment['milestoneDeclined'] == true
+                                        ? Theme.of(
+                                          context,
+                                        ).colorScheme.onErrorContainer
+                                        : null,
+                              ),
+                            ),
+                            if (comment['milestoneDeclined'] == true) ...[
+                              SizedBox(height: 4),
+                              Text(
+                                'This milestone was declined',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onErrorContainer,
+                                  fontWeight: FontWeight.w500,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
+                      if (comment['milestoneDeclined'] == true)
+                        Icon(
+                          Icons.cancel_outlined,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                          size: 16,
+                        ),
                     ],
                   ),
                 ),

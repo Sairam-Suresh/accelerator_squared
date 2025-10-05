@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 
 class OrgMembers extends StatefulWidget {
   const OrgMembers({
@@ -91,11 +92,9 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
 
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(memberEmailController.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.red,
-        ),
+      SnackBarHelper.showError(
+        context,
+        message: 'Please enter a valid email address',
       );
       return;
     }
@@ -310,11 +309,9 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
             currentOperationId = null;
           });
           fetchMembers();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Member operation completed successfully'),
-              backgroundColor: Colors.green,
-            ),
+          SnackBarHelper.showSuccess(
+            context,
+            message: 'Member operation completed successfully',
           );
         } else if (state is OrganisationsError && memberOperationInProgress) {
           setState(() {
@@ -324,8 +321,9 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
             isRemovingMember = false;
             currentOperationId = null;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          SnackBarHelper.showError(
+            context,
+            message: state.message,
           );
         }
       },

@@ -6,6 +6,8 @@ import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:accelerator_squared/util/snackbar_helper.dart';
+import 'dart:async';
 
 class ProjectRequests extends StatefulWidget {
   const ProjectRequests({
@@ -33,16 +35,162 @@ class _RequestDialogState extends State<ProjectRequests> {
   bool isDecliningMilestone = false;
   String? currentDeclineKey; // format: projectId|milestoneId
 
+  // Real-time listeners
+  StreamSubscription<QuerySnapshot>? _milestoneReviewRequestsSubscription;
+  StreamSubscription<QuerySnapshot>? _projectRequestsSubscription;
+  Map<String, StreamSubscription<DocumentSnapshot>> _milestoneSubscriptions =
+      {};
+  Map<String, String> _milestoneNamesCache = {}; // Cache for milestone names
+
   @override
   void initState() {
     super.initState();
     currentRequests = List.from(widget.projectRequests);
+    // Start real-time listeners
+    _startRealTimeListeners();
     // Ensure this page has fresh data when opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _milestoneReviewRequestsSubscription?.cancel();
+    _projectRequestsSubscription?.cancel();
+    // Cancel all milestone subscriptions
+    for (final subscription in _milestoneSubscriptions.values) {
+      subscription.cancel();
+    }
+    super.dispose();
+  }
+
+  void _startRealTimeListeners() {
+    final firestore = FirebaseFirestore.instance;
+
+    // Listen to milestone review requests changes
+    _milestoneReviewRequestsSubscription = firestore
+        .collection('organisations')
+        .doc(widget.organisationId)
+        .collection('milestoneReviewRequests')
+        .snapshots()
+        .listen((snapshot) {
+          if (mounted) {
+            setState(() {
+              lastMilestoneReviewRequests =
+                  snapshot.docs.map((doc) {
+                    final data = doc.data();
+                    data['id'] = doc.id;
+                    return data;
+                  }).toList();
+            });
+            // Update milestone names cache for new/updated requests
+            _updateMilestoneNamesCache();
+          }
+        });
+
+    // Listen to project requests changes
+    _projectRequestsSubscription = firestore
+        .collection('organisations')
+        .doc(widget.organisationId)
+        .collection('projectRequests')
+        .snapshots()
+        .listen((snapshot) {
+          if (mounted) {
+            setState(() {
+              currentRequests =
+                  snapshot.docs.map((doc) {
+                    final data = doc.data();
+                    data['id'] = doc.id;
+                    return ProjectRequest.fromJson(data);
+                  }).toList();
+            });
+          }
+        });
+  }
+
+  Future<void> _updateMilestoneNamesCache() async {
+    final firestore = FirebaseFirestore.instance;
+    final updatedCache = <String, String>{};
+    final newSubscriptions = <String, StreamSubscription<DocumentSnapshot>>{};
+
+    for (final request in lastMilestoneReviewRequests) {
+      // Ensure request is a Map before accessing its properties
+      if (request is! Map<String, dynamic>) {
+        print('Warning: Request is not a Map: $request');
+        continue;
+      }
+
+      final projectId = request['projectId'] as String?;
+      final milestoneId = request['milestoneId'] as String?;
+
+      if (projectId != null && milestoneId != null) {
+        final cacheKey = '$projectId|$milestoneId';
+
+        // Only fetch if not already cached
+        if (!_milestoneNamesCache.containsKey(cacheKey)) {
+          try {
+            final milestoneDoc =
+                await firestore
+                    .collection('organisations')
+                    .doc(widget.organisationId)
+                    .collection('projects')
+                    .doc(projectId)
+                    .collection('milestones')
+                    .doc(milestoneId)
+                    .get();
+
+            if (milestoneDoc.exists) {
+              final milestoneData = milestoneDoc.data();
+              final milestoneName =
+                  milestoneData?['name'] as String? ?? 'Unknown Milestone';
+              updatedCache[cacheKey] = milestoneName;
+            }
+          } catch (e) {
+            print('Error fetching milestone name: $e');
+          }
+        } else {
+          updatedCache[cacheKey] = _milestoneNamesCache[cacheKey]!;
+        }
+
+        // Set up real-time listener for this milestone if not already listening
+        if (!_milestoneSubscriptions.containsKey(cacheKey)) {
+          final subscription = firestore
+              .collection('organisations')
+              .doc(widget.organisationId)
+              .collection('projects')
+              .doc(projectId)
+              .collection('milestones')
+              .doc(milestoneId)
+              .snapshots()
+              .listen((docSnapshot) {
+                if (mounted && docSnapshot.exists) {
+                  final milestoneData = docSnapshot.data();
+                  final milestoneName =
+                      milestoneData?['name'] as String? ?? 'Unknown Milestone';
+                  setState(() {
+                    _milestoneNamesCache[cacheKey] = milestoneName;
+                  });
+                }
+              });
+          newSubscriptions[cacheKey] = subscription;
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _milestoneNamesCache.addAll(updatedCache);
+        _milestoneSubscriptions.addAll(newSubscriptions);
+      });
+    }
+  }
+
+  String _getMilestoneName(String projectId, String milestoneId) {
+    final cacheKey = '$projectId|$milestoneId';
+    return _milestoneNamesCache[cacheKey] ?? 'Loading...';
   }
 
   @override
@@ -101,12 +249,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                   isDecliningMilestone = false;
                   currentDeclineKey = null;
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                SnackBarHelper.showError(context, message: state.message);
               }
               setState(() {
                 isRefreshing = false;
@@ -147,7 +290,11 @@ class _RequestDialogState extends State<ProjectRequests> {
                     )
                     : null;
             final milestoneReviewRequests =
-                org?.milestoneReviewRequests ?? lastMilestoneReviewRequests;
+                org?.milestoneReviewRequests != null
+                    ? org!.milestoneReviewRequests
+                        .map((req) => req.toJson())
+                        .toList()
+                    : lastMilestoneReviewRequests;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -380,6 +527,17 @@ class _RequestDialogState extends State<ProjectRequests> {
                         itemCount: milestoneReviewRequests.length,
                         itemBuilder: (context, index) {
                           final req = milestoneReviewRequests[index];
+
+                          // Ensure req is a Map before accessing its properties
+                          if (req is! Map<String, dynamic>) {
+                            return Card(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Text('Invalid request data'),
+                              ),
+                            );
+                          }
+
                           return Card(
                             elevation: 2,
                             margin: EdgeInsets.only(bottom: 12),
@@ -398,13 +556,17 @@ class _RequestDialogState extends State<ProjectRequests> {
                                             Row(
                                               children: [
                                                 Text(
-                                                  req.milestoneName,
+                                                  _getMilestoneName(
+                                                    req['projectId'] as String,
+                                                    req['milestoneId']
+                                                        as String,
+                                                  ),
                                                   style: TextStyle(
                                                     fontSize: 18,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
-                                                if (req.isOrgWide)
+                                                if (req['isOrgWide'] as bool)
                                                   Padding(
                                                     padding:
                                                         const EdgeInsets.only(
@@ -431,7 +593,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                             ),
                                             SizedBox(height: 4),
                                             Text(
-                                              'Project: ${req.projectName}',
+                                              'Project: ${req['projectName'] as String}',
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 color: Colors.grey.shade600,
@@ -439,7 +601,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                             ),
                                             SizedBox(height: 4),
                                             Text(
-                                              'Due: ${_formatDate(req.dueDate)}',
+                                              'Due: ${_formatDate(req['dueDate'] is Timestamp ? (req['dueDate'] as Timestamp).toDate() : DateTime.parse(req['dueDate'] as String))}',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey.shade500,
@@ -447,7 +609,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                             ),
                                             SizedBox(height: 4),
                                             Text(
-                                              'Sent for review: ${_formatDate(req.sentForReviewAt)}',
+                                              'Sent for review: ${_formatDate(req['sentForReviewAt'] is Timestamp ? (req['sentForReviewAt'] as Timestamp).toDate() : DateTime.parse(req['sentForReviewAt'] as String))}',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey.shade500,
@@ -466,22 +628,24 @@ class _RequestDialogState extends State<ProjectRequests> {
                                         onPressed:
                                             (isDecliningMilestone &&
                                                     currentDeclineKey ==
-                                                        '${req.projectId}|${req.milestoneId}')
+                                                        '${req['projectId'] as String}|${req['milestoneId'] as String}')
                                                 ? null
                                                 : () async {
                                                   // Decline: show create new comment dialog for feedback, then unsend
                                                   final result =
                                                       await _showCreateCommentDialog(
                                                         context,
-                                                        req.projectId,
-                                                        req.milestoneId,
+                                                        req['projectId']
+                                                            as String,
+                                                        req['milestoneId']
+                                                            as String,
                                                       );
                                                   if (result == true) {
                                                     setState(() {
                                                       isDecliningMilestone =
                                                           true;
                                                       currentDeclineKey =
-                                                          '${req.projectId}|${req.milestoneId}';
+                                                          '${req['projectId'] as String}|${req['milestoneId'] as String}';
                                                     });
                                                     // Unsend milestone review
                                                     context
@@ -491,9 +655,11 @@ class _RequestDialogState extends State<ProjectRequests> {
                                                         .add(
                                                           UnsendMilestoneReviewRequestEvent(
                                                             projectId:
-                                                                req.projectId,
+                                                                req['projectId']
+                                                                    as String,
                                                             milestoneId:
-                                                                req.milestoneId,
+                                                                req['milestoneId']
+                                                                    as String,
                                                           ),
                                                         );
                                                     // Also refresh project details for milestone status
@@ -504,7 +670,8 @@ class _RequestDialogState extends State<ProjectRequests> {
                                                             widget
                                                                 .organisationId,
                                                             projectId:
-                                                                req.projectId,
+                                                                req['projectId']
+                                                                    as String,
                                                           ),
                                                         );
                                                     // Trigger organisations refresh to update requests list
@@ -515,16 +682,10 @@ class _RequestDialogState extends State<ProjectRequests> {
                                                         .add(
                                                           FetchOrganisationsEvent(),
                                                         );
-                                                    ScaffoldMessenger.of(
+                                                    SnackBarHelper.showWarning(
                                                       context,
-                                                    ).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text(
+                                                      message:
                                                           'Milestone declined and comment created.',
-                                                        ),
-                                                        backgroundColor:
-                                                            Colors.orange,
-                                                      ),
                                                     );
                                                   }
                                                 },
@@ -534,7 +695,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                         child:
                                             (isDecliningMilestone &&
                                                     currentDeclineKey ==
-                                                        '${req.projectId}|${req.milestoneId}')
+                                                        '${req['projectId'] as String}|${req['milestoneId'] as String}')
                                                 ? SizedBox(
                                                   width: 16,
                                                   height: 16,
@@ -553,12 +714,13 @@ class _RequestDialogState extends State<ProjectRequests> {
                                         onPressed:
                                             (isAcceptingMilestone &&
                                                     currentMilestoneKey ==
-                                                        '${req.projectId}|${req.milestoneId}')
+                                                        '${req['projectId'] as String}|${req['milestoneId'] as String}')
                                                 ? null
                                                 : () {
                                                   _acceptMilestone(
-                                                    req.projectId,
-                                                    req.milestoneId,
+                                                    req['projectId'] as String,
+                                                    req['milestoneId']
+                                                        as String,
                                                   );
                                                 },
                                         style: ElevatedButton.styleFrom(
@@ -568,7 +730,7 @@ class _RequestDialogState extends State<ProjectRequests> {
                                         child:
                                             (isAcceptingMilestone &&
                                                     currentMilestoneKey ==
-                                                        '${req.projectId}|${req.milestoneId}')
+                                                        '${req['projectId'] as String}|${req['milestoneId'] as String}')
                                                 ? SizedBox(
                                                   width: 16,
                                                   height: 16,
@@ -646,13 +808,9 @@ class _RequestDialogState extends State<ProjectRequests> {
     // Also refresh organisations to update requests list
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Milestone review accepted and milestone marked as completed.',
-        ),
-        backgroundColor: Colors.green,
-      ),
+    SnackBarHelper.showSuccess(
+      context,
+      message: 'Milestone review accepted and milestone marked as completed.',
     );
   }
 
@@ -732,7 +890,6 @@ class _RequestDialogState extends State<ProjectRequests> {
 
     final titleController = TextEditingController();
     final bodyController = TextEditingController();
-    List<String> selectedFileIds = [];
     String? selectedMilestoneId = milestoneId; // Pre-select the milestone
     List<Map<String, dynamic>> milestones = [];
 
@@ -829,102 +986,140 @@ class _RequestDialogState extends State<ProjectRequests> {
                             maxLines: 3,
                           ),
                           SizedBox(height: 8),
-                          // Milestone assignment dropdown (pre-selected)
+                          // Milestone assignment (non-changeable for declined milestones)
                           if (milestones.isNotEmpty) ...[
-                            DropdownButtonFormField<String>(
-                              value: selectedMilestoneId,
-                              decoration: InputDecoration(
-                                labelText: 'Assign to Milestone',
-                                border: OutlineInputBorder(),
+                            Container(
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
                               ),
-                              hint: Text('Select a milestone'),
-                              items: [
-                                ...milestones.map((milestone) {
-                                  return DropdownMenuItem<String>(
-                                    value: milestone['id'],
-                                    child: Text(
-                                      milestone['name'] ?? 'Unnamed Milestone',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.flag,
+                                    color:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Assigned to Milestone:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          milestones.firstWhere(
+                                                (m) =>
+                                                    m['id'] ==
+                                                    selectedMilestoneId,
+                                                orElse:
+                                                    () => {
+                                                      'name':
+                                                          'Unknown Milestone',
+                                                    },
+                                              )['name'] ??
+                                              'Unknown Milestone',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                }).toList(),
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedMilestoneId = value;
-                                });
-                              },
+                                  ),
+                                  Icon(
+                                    Icons.lock,
+                                    color: Colors.grey.shade500,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
                             ),
                             SizedBox(height: 8),
                           ],
-                          // File attachment section
+                          // File attachment section (disabled for milestone decline)
                           if (files.isNotEmpty) ...[
-                            Text(
-                              'Attach Files:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            SizedBox(height: 8),
                             Container(
-                              constraints: BoxConstraints(maxHeight: 200),
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                itemCount: files.length,
-                                itemBuilder: (context, index) {
-                                  final file = files[index];
-                                  final isSelected = selectedFileIds.contains(
-                                    file['id'],
-                                  );
-                                  return CheckboxListTile(
-                                    title: Text(file['link'] ?? 'Unknown File'),
-                                    value: isSelected,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        if (value == true) {
-                                          selectedFileIds.add(file['id']);
-                                        } else {
-                                          selectedFileIds.remove(file['id']);
-                                        }
-                                      });
-                                    },
-                                  );
-                                },
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.errorContainer,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.attach_file,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onErrorContainer,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'File Attachments:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.onErrorContainer,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Not available for milestone decline feedback',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.onErrorContainer,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.lock,
+                                    color: Colors.grey.shade500,
+                                    size: 16,
+                                  ),
+                                ],
                               ),
                             ),
                             SizedBox(height: 8),
-                            // Show selected files
-                            if (selectedFileIds.isNotEmpty) ...[
-                              Text(
-                                'Selected Files:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children:
-                                    selectedFileIds.map((fileId) {
-                                      final file = files.firstWhere(
-                                        (f) => f['id'] == fileId,
-                                        orElse: () => {'link': 'Unknown File'},
-                                      );
-                                      return Chip(
-                                        label: Text(
-                                          file['link'] ?? 'Unknown File',
-                                        ),
-                                        onDeleted: () {
-                                          setState(() {
-                                            selectedFileIds.remove(fileId);
-                                          });
-                                        },
-                                      );
-                                    }).toList(),
-                              ),
-                              SizedBox(height: 8),
-                            ],
                           ],
                         ],
                       ),
@@ -957,23 +1152,23 @@ class _RequestDialogState extends State<ProjectRequests> {
                                     'title': titleController.text.trim(),
                                     'body': bodyController.text.trim(),
                                     'timestamp': FieldValue.serverTimestamp(),
-                                    'mentionedFiles': selectedFileIds,
+                                    'mentionedFiles':
+                                        [], // No file attachments for decline comments
                                     'authorEmail': user?.email ?? 'Unknown',
                                   };
 
                                   // Add milestone assignment (should always be present)
-                                  if (selectedMilestoneId != null) {
-                                    commentData['assignedMilestoneId'] =
-                                        selectedMilestoneId;
-                                    // Get milestone name for display
-                                    final milestone = milestones.firstWhere(
-                                      (m) => m['id'] == selectedMilestoneId,
-                                      orElse:
-                                          () => {'name': 'Unknown Milestone'},
-                                    );
-                                    commentData['assignedMilestoneName'] =
-                                        milestone['name'];
-                                  }
+                                  commentData['assignedMilestoneId'] =
+                                      selectedMilestoneId;
+                                  // Get milestone name for display
+                                  final milestone = milestones.firstWhere(
+                                    (m) => m['id'] == selectedMilestoneId,
+                                    orElse: () => {'name': 'Unknown Milestone'},
+                                  );
+                                  commentData['assignedMilestoneName'] =
+                                      milestone['name'];
+                                  // Add flag to indicate this comment is for a declined milestone
+                                  commentData['milestoneDeclined'] = true;
 
                                   await FirebaseFirestore.instance
                                       .collection('organisations')
