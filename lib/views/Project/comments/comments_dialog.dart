@@ -1,3 +1,4 @@
+import 'package:accelerator_squared/util/snackbar_helper.dart';
 import 'package:accelerator_squared/views/Project/comments/comments_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -282,6 +283,12 @@ class _CommentsDialogState extends State<CommentsDialog> {
 
                                   setState(() => isLoading = false);
                                   Navigator.pop(context, true);
+                                } else {
+                                  SnackBarHelper.showError(
+                                    context,
+                                    message:
+                                        "Comment body text cannot be empty.",
+                                  );
                                 }
                               },
                       child:

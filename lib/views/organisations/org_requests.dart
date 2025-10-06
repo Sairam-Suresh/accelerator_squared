@@ -1180,6 +1180,12 @@ class _RequestDialogState extends State<ProjectRequests> {
 
                                   setState(() => isLoading = false);
                                   Navigator.pop(context, true);
+                                } else {
+                                  SnackBarHelper.showError(
+                                    context,
+                                    message:
+                                        "Comment body text cannot be empty.",
+                                  );
                                 }
                               },
                       child:

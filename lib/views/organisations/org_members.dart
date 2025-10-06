@@ -298,35 +298,67 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<OrganisationsBloc, OrganisationsState>(
-      listener: (context, state) {
-        if (state is OrganisationsLoaded && memberOperationInProgress) {
-          setState(() {
-            memberOperationInProgress = false;
-            isAddingMember = false;
-            isChangingRole = false;
-            isRemovingMember = false;
-            currentOperationId = null;
-          });
-          fetchMembers();
-          SnackBarHelper.showSuccess(
-            context,
-            message: 'Member operation completed successfully',
-          );
-        } else if (state is OrganisationsError && memberOperationInProgress) {
-          setState(() {
-            memberOperationInProgress = false;
-            isAddingMember = false;
-            isChangingRole = false;
-            isRemovingMember = false;
-            currentOperationId = null;
-          });
-          SnackBarHelper.showError(
-            context,
-            message: state.message,
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<OrganisationsBloc, OrganisationsState>(
+          listener: (context, state) {
+            if (state is OrganisationsLoaded && memberOperationInProgress) {
+              setState(() {
+                memberOperationInProgress = false;
+                isAddingMember = false;
+                isChangingRole = false;
+                isRemovingMember = false;
+                currentOperationId = null;
+              });
+              fetchMembers();
+              SnackBarHelper.showSuccess(
+                context,
+                message: 'Member operation completed successfully',
+              );
+            } else if (state is OrganisationsError &&
+                memberOperationInProgress) {
+              setState(() {
+                memberOperationInProgress = false;
+                isAddingMember = false;
+                isChangingRole = false;
+                isRemovingMember = false;
+                currentOperationId = null;
+              });
+              SnackBarHelper.showError(context, message: state.message);
+            }
+          },
+        ),
+        BlocListener<OrganisationBloc, OrganisationState>(
+          listener: (context, state) {
+            if (state is OrganisationLoaded) {
+              // Refresh organisations list so other views reflect the change
+              context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+              // Also reset any local operation spinners and refresh members list
+              if (memberOperationInProgress) {
+                setState(() {
+                  memberOperationInProgress = false;
+                  isAddingMember = false;
+                  isChangingRole = false;
+                  isRemovingMember = false;
+                  currentOperationId = null;
+                });
+                fetchMembers();
+              }
+            } else if (state is OrganisationError) {
+              if (memberOperationInProgress) {
+                setState(() {
+                  memberOperationInProgress = false;
+                  isAddingMember = false;
+                  isChangingRole = false;
+                  isRemovingMember = false;
+                  currentOperationId = null;
+                });
+                SnackBarHelper.showError(context, message: state.message);
+              }
+            }
+          },
+        ),
+      ],
       child: _buildContent(),
     );
   }

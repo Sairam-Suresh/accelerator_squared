@@ -39,8 +39,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
   bool _isSaving = false;
   final bool _isUpdatingDate = false;
   bool _tasksLoading = true;
-  final bool _isSendingTaskReview = false;
-  final bool _isUnsendTaskReview = false;
+  // Removed unused fields
   bool _showCompletedTasks = false;
 
   TextEditingController nameController = TextEditingController();
@@ -158,10 +157,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
             message: 'Task deleted successfully',
           );
         } else if (state is ProjectsError) {
-          SnackBarHelper.showError(
-            context,
-            message: state.message,
-          );
+          SnackBarHelper.showError(context, message: state.message);
         }
       },
       child: SingleChildScrollView(
@@ -191,152 +187,160 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                     ),
                   ),
                   SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _isEditing
-                          ? SizedBox(
-                            width: MediaQuery.of(context).size.width / 5,
-                            child: TextField(
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              controller: nameController,
-                              decoration: InputDecoration(
-                                hintText: "Enter milestone name",
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _isEditing
+                            ? SizedBox(
+                              width: double.infinity,
+                              child: TextField(
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                                controller: nameController,
+                                decoration: InputDecoration(
+                                  hintText: "Enter milestone name",
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                          : BlocBuilder<ProjectsBloc, ProjectsState>(
-                            builder: (context, state) {
-                              // Get the current milestone data from the bloc if available
-                              String displayName =
-                                  nameController.text.isNotEmpty
-                                      ? nameController.text
-                                      : (milestone['name'] ?? '');
+                            )
+                            : BlocBuilder<ProjectsBloc, ProjectsState>(
+                              builder: (context, state) {
+                                // Get the current milestone data from the bloc if available
+                                String displayName =
+                                    nameController.text.isNotEmpty
+                                        ? nameController.text
+                                        : (milestone['name'] ?? '');
 
-                              if (state is ProjectsLoaded) {
-                                // Try to find updated milestone data
-                                ProjectWithDetails? project;
-                                try {
-                                  project = state.projects.firstWhere(
-                                    (p) => p.id == widget.projectId,
-                                  );
-                                } catch (e) {
-                                  project = null;
-                                }
-
-                                if (project != null) {
-                                  Map<String, dynamic>? updatedMilestone;
+                                if (state is ProjectsLoaded) {
+                                  // Try to find updated milestone data
+                                  ProjectWithDetails? project;
                                   try {
-                                    updatedMilestone = project.milestones
-                                        .firstWhere(
-                                          (m) => m['id'] == milestone['id'],
-                                        );
+                                    project = state.projects.firstWhere(
+                                      (p) => p.id == widget.projectId,
+                                    );
                                   } catch (e) {
-                                    updatedMilestone = null;
+                                    project = null;
                                   }
 
-                                  if (updatedMilestone != null) {
-                                    displayName =
-                                        updatedMilestone['name'] ?? displayName;
-                                    // Update the controller if the data changed
-                                    if (nameController.text != displayName) {
-                                      nameController.text = displayName;
+                                  if (project != null) {
+                                    Map<String, dynamic>? updatedMilestone;
+                                    try {
+                                      updatedMilestone = project.milestones
+                                          .firstWhere(
+                                            (m) => m['id'] == milestone['id'],
+                                          );
+                                    } catch (e) {
+                                      updatedMilestone = null;
+                                    }
+
+                                    if (updatedMilestone != null) {
+                                      displayName =
+                                          updatedMilestone['name'] ??
+                                          displayName;
+                                      // Update the controller if the data changed
+                                      if (nameController.text != displayName) {
+                                        nameController.text = displayName;
+                                      }
                                     }
                                   }
                                 }
-                              }
 
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayName,
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  widget.milestone['sharedId'] != null
-                                      ? Padding(
-                                        padding: EdgeInsets.only(top: 4),
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.blue.withOpacity(
-                                                0.3,
-                                              ),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'Organization-wide milestone',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.blue,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                      : Padding(
-                                        padding: EdgeInsets.only(top: 4),
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.blue.withOpacity(
-                                                0.3,
-                                              ),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'Milestone',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.blue,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayName,
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                       ),
-                                ],
-                              );
-                            },
-                          ),
-                    ],
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    widget.milestone['sharedId'] != null
+                                        ? Padding(
+                                          padding: EdgeInsets.only(top: 4),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.blue.withOpacity(
+                                                  0.3,
+                                                ),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'Organization-wide milestone',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.blue,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                        : Padding(
+                                          padding: EdgeInsets.only(top: 4),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.blue.withOpacity(
+                                                  0.3,
+                                                ),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'Milestone',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.blue,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                  ],
+                                );
+                              },
+                            ),
+                      ],
+                    ),
                   ),
-                  Spacer(),
+                  SizedBox(width: 12),
                   // Only show edit button if milestone is not organization-wide (no sharedId) or allowEdit is true
                   (widget.allowEdit)
                       ? (!_isEditing
@@ -666,7 +670,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   SizedBox(height: 5),
                   _isEditing
                       ? SizedBox(
-                        width: MediaQuery.of(context).size.width / 3 - 50,
+                        width: double.infinity,
                         child: TextField(
                           minLines: 3,
                           maxLines: 5,
@@ -737,6 +741,8 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                                   ).colorScheme.onSurfaceVariant,
                               height: 1.5,
                             ),
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
                           );
                         },
                       ),
@@ -1180,7 +1186,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                       elevation: 2,
                     ),
                     onPressed: () async {
-                      final result = await showDialog(
+                      await showDialog(
                         context: context,
                         builder: (context) {
                           return CreateTaskDialog(
@@ -1190,7 +1196,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                           );
                         },
                       );
-                      // Optionally, refresh tasks here if not using real-time
+                      // Realtime listener will update tasks; no-op here
                     },
                     icon: Icon(Icons.add, size: 20),
                     label: Text(
@@ -1618,44 +1624,48 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                   ),
                 ),
                 SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    isEditingTask
-                        ? SizedBox(
-                          width: MediaQuery.of(context).size.width / 5,
-                          child: TextField(
-                            controller: taskNameController,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      isEditingTask
+                          ? SizedBox(
+                            width: double.infinity,
+                            child: TextField(
+                              controller: taskNameController,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Task name',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                            ),
+                          )
+                          : Text(
+                            task['name'] ?? '',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
-                            decoration: InputDecoration(
-                              hintText: 'Task name',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        )
-                        : Text(
-                          task['name'] ?? '',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                    SizedBox(height: 4),
-                    Text("Task"),
-                  ],
+                      SizedBox(height: 4),
+                      Text("Task"),
+                    ],
+                  ),
                 ),
-                Spacer(),
+                SizedBox(width: 12),
                 if (!isEditingTask)
                   IconButton(
                     icon: Icon(Icons.edit, size: 20),
@@ -1818,7 +1828,8 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                               if (name.isEmpty || content.isEmpty) {
                                 SnackBarHelper.showError(
                                   context,
-                                  message: 'Name and description cannot be empty',
+                                  message:
+                                      'Name and description cannot be empty',
                                 );
                                 return;
                               }
