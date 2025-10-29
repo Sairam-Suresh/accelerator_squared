@@ -25,7 +25,8 @@ Future<Organisation?> loadOrganisationDataById(
 
     if (!orgDoc.exists) return null;
 
-    QuerySnapshot membersSnapshot = await firestore
+    // Query by uid first
+    QuerySnapshot uidMembersSnapshot = await firestore
         .collection('organisations')
         .doc(orgId)
         .collection('members')
@@ -33,15 +34,26 @@ Future<Organisation?> loadOrganisationDataById(
         .get()
         .timeout(const Duration(seconds: 5));
 
-    if (membersSnapshot.docs.isEmpty && userEmail.isNotEmpty) {
-      membersSnapshot = await firestore
+    QuerySnapshot emailMembersSnapshot;
+    
+    // Always query by email if available, to catch memberships that might
+    // only be stored with email (not uid) in the document
+    if (userEmail.isNotEmpty) {
+      emailMembersSnapshot = await firestore
           .collection('organisations')
           .doc(orgId)
           .collection('members')
           .where('email', isEqualTo: userEmail)
           .get()
           .timeout(const Duration(seconds: 5));
+    } else {
+      emailMembersSnapshot = uidMembersSnapshot;
     }
+
+    // Use the first available membership document (prefer uid match, but fallback to email)
+    QuerySnapshot membersSnapshot = uidMembersSnapshot.docs.isNotEmpty
+        ? uidMembersSnapshot
+        : emailMembersSnapshot;
 
     if (membersSnapshot.docs.isNotEmpty) {
       Map<String, dynamic> data = orgDoc.data() as Map<String, dynamic>;

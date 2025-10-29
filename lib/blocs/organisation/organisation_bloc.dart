@@ -37,8 +37,6 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           return;
         }
 
-        List<Organisation> organisations = [];
-
         QuerySnapshot uidMemberships = await firestore
             .collectionGroup('members')
             .where('uid', isEqualTo: uid)
@@ -47,7 +45,9 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
 
         QuerySnapshot emailMemberships;
 
-        if (uidMemberships.docs.isEmpty && userEmail.isNotEmpty) {
+        // Always query by email if email is available, to catch memberships
+        // that might only be stored with email (not uid)
+        if (userEmail.isNotEmpty) {
           emailMemberships = await firestore
               .collectionGroup('members')
               .where('email', isEqualTo: userEmail)
@@ -57,6 +57,7 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           emailMemberships = uidMemberships;
         }
 
+        // Combine both membership queries (duplicates will be handled when deduplicating by orgId)
         List<QueryDocumentSnapshot> allMemberships = [
           ...uidMemberships.docs,
           ...emailMemberships.docs,
