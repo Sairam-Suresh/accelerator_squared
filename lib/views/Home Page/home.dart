@@ -14,6 +14,7 @@ import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:accelerator_squared/theme.dart';
+import 'dart:html' as html; // For user agent detection
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +25,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Organisation> organisations = [];
+  bool _dialogShown = false;
 
   @override
   void initState() {
@@ -45,7 +47,45 @@ class _HomePageState extends State<HomePage> {
         _selectedIndex = maxIndex; // Always go to settings page
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showMobileAlertIfNeeded();
+    });
     // If toggled ON, do not change the index (user remains on settings)
+  }
+
+  void showMobileAlertIfNeeded() {
+    if (_dialogShown) return;
+    final userAgent = html.window.navigator.userAgent.toLowerCase();
+    final isMobile =
+        userAgent.contains('iphone') ||
+        userAgent.contains('android') ||
+        userAgent.contains('ipad') ||
+        userAgent.contains('mobile');
+
+    if (isMobile) {
+      _dialogShown = true;
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Force user to acknowledge
+        builder:
+            (context) => AlertDialog(
+              title: const Text(
+                'Mobile Device Detected',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: const Text(
+                'This web app is best experienced on a desktop or tablet screen. '
+                'For the best performance and layout, please switch to a larger device.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Continue Anyway'),
+                ),
+              ],
+            ),
+      );
+    }
   }
 
   @override
@@ -177,10 +217,7 @@ class _HomePageState extends State<HomePage> {
             );
           } else {
             // Show other errors as snackbar
-            SnackBarHelper.showError(
-              context,
-              message: state.message,
-            );
+            SnackBarHelper.showError(context, message: state.message);
           }
         }
       },
