@@ -9,6 +9,7 @@ import 'package:accelerator_squared/views/Project/milestone_sheet.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'dart:async';
 import 'package:accelerator_squared/views/Project/teacher_ui/create_milestone_dialog.dart';
+import 'package:accelerator_squared/util/page_title.dart';
 
 class OrgMilestones extends StatefulWidget {
   final String organisationId;
@@ -74,6 +75,7 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                       );
                       if (org.id == widget.organisationId &&
                           org.projects.isNotEmpty) {
+                        setPageTitle('Organisation - Create Milestone');
                         await showDialog(
                           context: context,
                           builder:
@@ -83,6 +85,7 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                                 projects: org.projects,
                               ),
                         );
+                        setPageTitle('Organisation - Milestones');
                         // Refresh after dialog closes
                         context.read<ProjectsBloc>().add(
                           FetchProjectsEvent(widget.organisationId),
@@ -187,9 +190,10 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                             return Card(
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(20),
-                                onTap: () {
+                                onTap: () async {
                                   // Open milestone sheet
-                                  aweSideSheet(
+                                  setPageTitle('Organisation - Milestone');
+                                  await aweSideSheet(
                                     footer: SizedBox(height: 10),
                                     sheetWidth:
                                         MediaQuery.of(context).size.width / 3,
@@ -223,6 +227,7 @@ class _OrgMilestonesState extends State<OrgMilestones> {
                                     header: SizedBox(height: 20),
                                     showHeaderDivider: false,
                                   );
+                                  setPageTitle('Organisation - Milestones');
                                 },
                                 child: Padding(
                                   padding: EdgeInsets.all(10),

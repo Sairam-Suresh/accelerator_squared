@@ -10,6 +10,7 @@ import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/util/snackbar_helper.dart';
 import 'dart:async';
+import 'package:accelerator_squared/util/page_title.dart';
 
 class MilestoneSheet extends StatefulWidget {
   const MilestoneSheet({
@@ -1186,6 +1187,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                       elevation: 2,
                     ),
                     onPressed: () async {
+                      setPageTitle('Project - Create Task');
                       await showDialog(
                         context: context,
                         builder: (context) {
@@ -1196,6 +1198,7 @@ class _MilestoneSheetState extends State<MilestoneSheet> {
                           );
                         },
                       );
+                      setPageTitle('Project');
                       // Realtime listener will update tasks; no-op here
                     },
                     icon: Icon(Icons.add, size: 20),

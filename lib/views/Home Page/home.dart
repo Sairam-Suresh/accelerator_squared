@@ -15,6 +15,7 @@ import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart'
 import 'package:provider/provider.dart';
 import 'package:accelerator_squared/theme.dart';
 import 'dart:html' as html; // For user agent detection
+import 'package:accelerator_squared/util/page_title.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -49,6 +50,7 @@ class _HomePageState extends State<HomePage> {
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showMobileAlertIfNeeded();
+      setPageTitle('${_getPageTitle(showInvitesPage)}');
     });
     // If toggled ON, do not change the index (user remains on settings)
   }
@@ -128,6 +130,7 @@ class _HomePageState extends State<HomePage> {
                   setState(() {
                     _selectedIndex = value;
                   });
+                  setPageTitle('${_getPageTitle(showInvitesPage)}');
                 },
                 labelType: NavigationRailLabelType.all,
                 destinations: [
@@ -303,7 +306,10 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    final showInvites = Provider.of<InvitesPageProvider>(context, listen: false).showInvitesPage;
+                    final baseTitle = _getPageTitle(showInvites);
+                    setPageTitle('Organisations - Create Organisation');
                     showDialog(
                       context: context,
                       builder: (context) {
@@ -313,7 +319,9 @@ class _HomePageState extends State<HomePage> {
                           },
                         );
                       },
-                    );
+                    ).then((_) {
+                      setPageTitle(baseTitle);
+                    });
                   },
                   icon: const Icon(Icons.add),
                   label: const Text("Create Organisation"),
@@ -323,7 +331,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(width: 16),
                 ElevatedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    final showInvites = Provider.of<InvitesPageProvider>(context, listen: false).showInvitesPage;
+                    final baseTitle = _getPageTitle(showInvites);
+                    setPageTitle('Organisations - Join Organisation');
                     showDialog(
                       context: context,
                       builder: (context) {
@@ -333,7 +344,9 @@ class _HomePageState extends State<HomePage> {
                           orgcodecontroller: orgcodecontroller,
                         );
                       },
-                    );
+                    ).then((_) {
+                      setPageTitle(baseTitle);
+                    });
                   },
                   icon: const Icon(Icons.group_add),
                   label: const Text("Join Organisation"),

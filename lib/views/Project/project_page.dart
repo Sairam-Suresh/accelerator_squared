@@ -11,6 +11,7 @@ import 'package:accelerator_squared/views/organisations/org_stats.dart';
 import 'package:accelerator_squared/views/organisations/org_requests.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:accelerator_squared/util/page_title.dart';
 
 class ProjectsPage extends StatefulWidget {
   const ProjectsPage({super.key});
@@ -25,6 +26,37 @@ class _ProjectsPageState extends State<ProjectsPage>
   late OrganisationLoaded organisationStateLoaded;
   bool isRefreshing = false;
 
+  String _sectionTitleForIndex(OrganisationLoaded state) {
+    final isMember = state.userRole == 'member';
+    if (isMember) {
+      switch (_selectedIndex) {
+        case 0:
+          return 'Projects';
+        case 1:
+          return 'Milestones';
+        case 2:
+          return 'Members';
+        default:
+          return 'Projects';
+      }
+    } else {
+      switch (_selectedIndex) {
+        case 0:
+          return 'Projects';
+        case 1:
+          return 'Statistics';
+        case 2:
+          return 'Requests';
+        case 3:
+          return 'Milestones';
+        case 4:
+          return 'Members';
+        default:
+          return 'Projects';
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     OrganisationBloc organisationBloc = context.watch<OrganisationBloc>();
@@ -32,6 +64,10 @@ class _ProjectsPageState extends State<ProjectsPage>
 
     if (organisationState is OrganisationLoaded) {
       organisationStateLoaded = organisationState;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final section = _sectionTitleForIndex(organisationStateLoaded);
+        setPageTitle('Organisation - $section');
+      });
     }
 
     return BlocListener<OrganisationBloc, OrganisationState>(
@@ -53,6 +89,8 @@ class _ProjectsPageState extends State<ProjectsPage>
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {
+            final section = _sectionTitleForIndex(organisationStateLoaded);
+            setPageTitle('Organisation - Create Project');
             showDialog(
               context: context,
               builder: (context) {
@@ -66,7 +104,9 @@ class _ProjectsPageState extends State<ProjectsPage>
                   ),
                 );
               },
-            );
+            ).then((_) {
+              setPageTitle('Organisation - $section');
+            });
           },
           child: Icon(Icons.add),
         ),
@@ -214,6 +254,8 @@ class _ProjectsPageState extends State<ProjectsPage>
                             setState(() {
                               _selectedIndex = value;
                             });
+                            final section = _sectionTitleForIndex(organisationStateLoaded);
+                            setPageTitle('Organisation - $section');
                           },
                           labelType: NavigationRailLabelType.all,
                           destinations: [
@@ -387,6 +429,8 @@ class _ProjectsPageState extends State<ProjectsPage>
                             setState(() {
                               _selectedIndex = value;
                             });
+                            final section = _sectionTitleForIndex(organisationStateLoaded);
+                            setPageTitle('Organisation - $section');
                           },
                           labelType: NavigationRailLabelType.all,
                           destinations: [

@@ -16,6 +16,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
+import 'package:accelerator_squared/util/page_title.dart';
 
 class ProjectDetails extends StatefulWidget {
   final String organisationId;
@@ -47,6 +48,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
     context.read<ProjectsBloc>().add(
       FetchProjectsEvent(widget.organisationId, projectId: widget.project.id),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setPageTitle('Project');
+    });
   }
 
   @override
@@ -81,6 +85,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                 );
                 projectName = project.data['title'] ?? projectName;
               }
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                setPageTitle('Project');
+              });
               return Text(
                 projectName,
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -90,6 +97,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
           actions: [
             IconButton(
               onPressed: () {
+                final projectTitle = widget.project.name;
+                setPageTitle('Project - Comments');
                 showDialog(
                   context: context,
                   builder: (context) {
@@ -102,7 +111,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                       ),
                     );
                   },
-                );
+                ).then((_) {
+                  setPageTitle('Project');
+                });
               },
               icon: Icon(Icons.chat),
             ),
@@ -169,6 +180,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
             widget.isTeacher
                 ? FloatingActionButton.extended(
                   onPressed: () {
+                    setPageTitle('Project - Create Milestone');
                     showDialog(
                       context: context,
                       builder: (context) {
@@ -184,7 +196,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                           ),
                         );
                       },
-                    );
+                    ).then((_) {
+                      setPageTitle('Project');
+                    });
                   },
                   label: Text("Create milestone"),
                   icon: Icon(Icons.add),
@@ -519,6 +533,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                       onPressed: () async {
                                         var link = "";
 
+                                        setPageTitle('Project - Add Links');
                                         await showDialog(
                                           context: context,
                                           builder:
@@ -597,7 +612,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                   ),
                                                 ),
                                               ),
-                                        );
+                                        ).then((_) => setPageTitle('Project'));
 
                                         if (link.isNotEmpty && mounted) {
                                           context.read<ProjectsBloc>().add(
@@ -745,8 +760,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                             borderRadius: BorderRadius.circular(
                                               20,
                                             ),
-                                            onTap: () {
-                                              aweSideSheet(
+                                            onTap: () async {
+                                              setPageTitle('Project - Milestone');
+                                              await aweSideSheet(
                                                 footer: SizedBox(height: 10),
                                                 sheetWidth:
                                                     MediaQuery.of(
@@ -794,6 +810,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 header: SizedBox(height: 20),
                                                 showHeaderDivider: false,
                                               );
+                                              setPageTitle("Project");
                                             },
                                             child: Padding(
                                               padding: EdgeInsets.all(10),
@@ -905,8 +922,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                             borderRadius: BorderRadius.circular(
                                               20,
                                             ),
-                                            onTap: () {
-                                              aweSideSheet(
+                                            onTap: () async {
+                                              setPageTitle('Project - Milestone');
+                                              await aweSideSheet(
                                                 footer: SizedBox(height: 10),
                                                 sheetWidth:
                                                     MediaQuery.of(
@@ -954,6 +972,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 header: SizedBox(height: 20),
                                                 showHeaderDivider: false,
                                               );
+                                              setPageTitle("Project");
                                             },
                                             child: Padding(
                                               padding: EdgeInsets.all(10),
@@ -1240,8 +1259,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
-                                            onTap: () {
-                                              aweSideSheet(
+                                            onTap: () async {
+                                              setPageTitle('Project - Milestone');
+                                              await aweSideSheet(
                                                 footer: SizedBox(height: 10),
                                                 sheetWidth:
                                                     MediaQuery.of(
@@ -1286,6 +1306,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                 header: SizedBox(height: 20),
                                                 showHeaderDivider: false,
                                               );
+                                              setPageTitle("Project");
                                             },
                                             child: Padding(
                                               padding: EdgeInsets.all(10),

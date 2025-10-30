@@ -3,6 +3,7 @@ import 'package:accelerator_squared/views/auth_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:accelerator_squared/util/page_title.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,6 +23,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    setPageTitle('Login');
 
     // Fade animation
     _fadeController = AnimationController(

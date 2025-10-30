@@ -54,6 +54,7 @@ dependencies:
   file_picker: ^10.2.0
   url_launcher_web: ^2.4.1
   metadata_fetch: ^0.4.2
+  firebase_analytics: ^11.6.0
 
 dev_dependencies:
   flutter_test:

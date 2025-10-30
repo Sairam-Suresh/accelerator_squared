@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:accelerator_squared/util/page_title.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -17,6 +18,7 @@ class _LoadingScreenState extends State<LoadingScreen>
   @override
   void initState() {
     super.initState();
+    setPageTitle('Loading...');
     
     // Fade animation
     _fadeController = AnimationController(
