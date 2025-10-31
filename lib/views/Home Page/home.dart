@@ -16,6 +16,8 @@ import 'package:provider/provider.dart';
 import 'package:accelerator_squared/theme.dart';
 import 'dart:html' as html; // For user agent detection
 import 'package:accelerator_squared/util/page_title.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -96,7 +98,103 @@ class _HomePageState extends State<HomePage> {
     final showInvitesPage = invitesPageProvider.showInvitesPage;
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
-      floatingActionButton: AddOrganisationButton(),
+      floatingActionButton: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: FloatingActionButton.extended(
+                  label: Text("Feedback"),
+                  icon: Icon(Icons.feedback),
+                  heroTag: 'home_info_fab',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Row(
+                            children: [
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "Feedback",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 30,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          content: SizedBox(
+                            width: MediaQuery.of(context).size.width / 2.5,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                QrImageView(
+                                  data: "https://forms.gle/7RRCyrTkxStYx47A9",
+                                  size: MediaQuery.of(context).size.width / 6,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                                SizedBox(height: 20),
+                                Text(
+                                  "Scan the QR code to access the feedback form!",
+                                ),
+                                SizedBox(height: 20),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    launchUrl(
+                                      Uri.parse(
+                                        "https://forms.gle/7RRCyrTkxStYx47A9",
+                                      ),
+                                    );
+                                  },
+                                  icon: Icon(Icons.open_in_new),
+                                  label: Padding(
+                                    padding: EdgeInsetsGeometry.symmetric(
+                                      vertical: 10,
+                                      horizontal: 8,
+                                    ),
+                                    child: Text("Feedback form"),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    elevation: 0,
+                                  ),
+                                ),
+                                SizedBox(height: 20),
+                                Text("Thank you for your feedback!"),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  elevation: 6,
+                ),
+              ),
+              const SizedBox(width: 70),
+            ],
+          ),
+          const AddOrganisationButton(),
+        ],
+      ),
       appBar: AppBar(
         title: Text(
           _getPageTitle(showInvitesPage),
@@ -307,7 +405,11 @@ class _HomePageState extends State<HomePage> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final showInvites = Provider.of<InvitesPageProvider>(context, listen: false).showInvitesPage;
+                    final showInvites =
+                        Provider.of<InvitesPageProvider>(
+                          context,
+                          listen: false,
+                        ).showInvitesPage;
                     final baseTitle = _getPageTitle(showInvites);
                     setPageTitle('Organisations - Create Organisation');
                     showDialog(
@@ -332,7 +434,11 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(width: 16),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final showInvites = Provider.of<InvitesPageProvider>(context, listen: false).showInvitesPage;
+                    final showInvites =
+                        Provider.of<InvitesPageProvider>(
+                          context,
+                          listen: false,
+                        ).showInvitesPage;
                     final baseTitle = _getPageTitle(showInvites);
                     setPageTitle('Organisations - Join Organisation');
                     showDialog(
