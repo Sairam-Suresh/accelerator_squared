@@ -59,7 +59,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     var userState = context.read<UserBloc>().state as UserLoggedIn;
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final invitesPageProvider = Provider.of<InvitesPageProvider>(context);
 
     return BlocListener<UserBloc, UserState>(
       listener: (context, state) {
@@ -290,58 +289,6 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             SizedBox(height: 32),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          "General",
-                          style: Theme.of(
-                            context,
-                          ).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Text(
-                          "Show invites page (incomplete)",
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        Spacer(),
-                        Checkbox(
-                          value: invitesPageProvider.showInvitesPage,
-                          onChanged: (value) {
-                            invitesPageProvider.setShowInvitesPage(
-                              value ?? false,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
