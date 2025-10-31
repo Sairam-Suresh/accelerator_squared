@@ -119,6 +119,10 @@ class _HomePageState extends State<HomePage> {
                         return AlertDialog(
                           title: Row(
                             children: [
+                              Icon(
+                                Icons.feedback,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                               SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -137,11 +141,17 @@ class _HomePageState extends State<HomePage> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                QrImageView(
-                                  data: "https://forms.gle/7RRCyrTkxStYx47A9",
-                                  size: MediaQuery.of(context).size.width / 6,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onSurface,
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: QrImageView(
+                                    data: "https://forms.gle/7RRCyrTkxStYx47A9",
+                                    size: MediaQuery.of(context).size.width / 6,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 0.5,
+                                    ),
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
                                 ),
                                 SizedBox(height: 20),
                                 Text(
