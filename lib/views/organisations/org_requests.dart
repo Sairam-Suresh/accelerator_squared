@@ -88,6 +88,24 @@ class _RequestDialogState extends State<ProjectRequests> {
             });
             // Update milestone names cache for new/updated requests
             _updateMilestoneNamesCache();
+            // Reset accepting/declining spinners when the item disappears
+            if ((isAcceptingMilestone || isDecliningMilestone) &&
+                currentMilestoneKey != null) {
+              final exists = lastMilestoneReviewRequests.any((r) {
+                if (r is! Map<String, dynamic>) return false;
+                final key =
+                    '${r['projectId'] as String}|${r['milestoneId'] as String}';
+                return key == currentMilestoneKey;
+              });
+              if (!exists) {
+                setState(() {
+                  isAcceptingMilestone = false;
+                  isDecliningMilestone = false;
+                  currentMilestoneKey = null;
+                  currentDeclineKey = null;
+                });
+              }
+            }
           }
         });
 
@@ -107,6 +125,19 @@ class _RequestDialogState extends State<ProjectRequests> {
                     return ProjectRequest.fromJson(data);
                   }).toList();
             });
+            // If the operated request disappeared, clear spinners
+            if ((isApproving || isRejecting) && currentRequestId != null) {
+              final exists = currentRequests.any(
+                (r) => r.id == currentRequestId,
+              );
+              if (!exists) {
+                setState(() {
+                  isApproving = false;
+                  isRejecting = false;
+                  currentRequestId = null;
+                });
+              }
+            }
           }
         });
   }
@@ -258,13 +289,8 @@ class _RequestDialogState extends State<ProjectRequests> {
           },
         ),
         // When single-organisation actions complete, refresh the organisations list
-        BlocListener<OrganisationBloc, OrganisationState>(
-          listener: (context, state) {
-            if (state is OrganisationLoaded || state is OrganisationError) {
-              context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
-            }
-          },
-        ),
+        // Removed full organisations reload on single-organisation actions;
+        // live listeners above will update the lists without reloading the page.
         // Do not reset milestone loading on Projects updates; wait for OrganisationsLoaded
         // so the item disappears at the same time the spinner stops.
       ],

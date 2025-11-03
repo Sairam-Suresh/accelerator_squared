@@ -59,12 +59,18 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
-        Set<String> orgIds =
-            allMemberships
-                .map((doc) => doc.reference.parent.parent?.id)
-                .where((id) => id != null)
-                .cast<String>()
-                .toSet();
+        // Filter memberships to only active status (default to active if missing)
+        final activeMemberships = allMemberships.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final status = (data['status'] ?? 'active') as String;
+          return status == 'active';
+        }).toList();
+
+        Set<String> orgIds = activeMemberships
+            .map((doc) => doc.reference.parent.parent?.id)
+            .where((id) => id != null)
+            .cast<String>()
+            .toSet();
 
         for (String orgId in orgIds) {
           var data = await loadOrganisationDataById(

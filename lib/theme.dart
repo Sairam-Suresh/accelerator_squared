@@ -507,7 +507,7 @@ class ThemeProvider extends ChangeNotifier {
 }
 
 class InvitesPageProvider extends ChangeNotifier {
-  bool _showInvitesPage = false;
+  bool _showInvitesPage = true;
 
   bool get showInvitesPage => _showInvitesPage;
 

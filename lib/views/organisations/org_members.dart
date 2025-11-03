@@ -1,5 +1,6 @@
 import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,16 +31,47 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
   List<Map<String, dynamic>> members = [];
   bool isLoading = true;
   String currentUserRole = 'member';
+  StreamSubscription<QuerySnapshot>? _membersSubscription;
   bool memberOperationInProgress = false;
   bool isAddingMember = false;
   bool isChangingRole = false;
   bool isRemovingMember = false;
+  bool isRetractingInvite = false;
   String? currentOperationId;
 
   @override
   void initState() {
     super.initState();
     fetchMembers();
+    _membersSubscription = firestore
+        .collection('organisations')
+        .doc(widget.organisationId)
+        .collection('members')
+        .snapshots()
+        .listen((snapshot) {
+          List<Map<String, dynamic>> membersList = [];
+          for (final doc in snapshot.docs) {
+            final memberData = doc.data();
+            membersList.add({
+              'id': doc.id,
+              'email': memberData['email'] ?? 'Unknown',
+              'role': memberData['role'] ?? 'member',
+              'uid': memberData['uid'] ?? '',
+              'status': memberData['status'] ?? 'active',
+            });
+
+            if (memberData['uid'] == auth.currentUser?.uid ||
+                memberData['email'] == auth.currentUser?.email) {
+              currentUserRole = memberData['role'] ?? 'member';
+            }
+          }
+          if (mounted) {
+            setState(() {
+              members = membersList;
+              isLoading = false;
+            });
+          }
+        });
   }
 
   Future<void> fetchMembers() async {
@@ -63,6 +95,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           'email': memberData['email'] ?? 'Unknown',
           'role': memberData['role'] ?? 'member',
           'uid': memberData['uid'] ?? '',
+          'status': memberData['status'] ?? 'active',
         });
 
         if (memberData['uid'] == auth.currentUser?.uid ||
@@ -85,6 +118,12 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         ).showSnackBar(SnackBar(content: Text('Error fetching members: $e')));
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _membersSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> addMember() async {
@@ -136,11 +175,30 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           .set({
             'email': email,
             'role': 'member',
-            'status': 'active',
+            'status': 'pending',
             'addedAt': FieldValue.serverTimestamp(),
             'addedBy': auth.currentUser?.uid,
             if (uid != null) 'uid': uid,
           });
+
+      // Create an invite document for this member
+      final inviteRef =
+          firestore
+              .collection('organisations')
+              .doc(widget.organisationId)
+              .collection('invites')
+              .doc();
+      await inviteRef.set({
+        'orgId': widget.organisationId,
+        'orgName': widget.organisationName,
+        'toEmail': email.toLowerCase(),
+        'toEmailLower': email.toLowerCase(),
+        if (uid != null) 'toUid': uid,
+        'fromUid': auth.currentUser?.uid,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'memberDocId': docId,
+      });
 
       memberEmailController.clear();
       fetchMembers();
@@ -160,62 +218,6 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         ).showSnackBar(SnackBar(content: Text('Error adding member: $e')));
       }
     }
-  }
-
-  void _showRoleMenu(BuildContext context, Map<String, dynamic> member) {
-    final String memberRole = member['role'] ?? 'member';
-    final bool isCurrentUser =
-        member['uid'] == auth.currentUser?.uid ||
-        member['email'] == auth.currentUser?.email;
-
-    if (isCurrentUser) return;
-
-    List<String> availableRoles = [];
-
-    if (currentUserRole == 'teacher') {
-      if (memberRole == 'teacher') {
-        availableRoles = ['student_teacher', 'member'];
-      } else if (memberRole == 'student_teacher') {
-        availableRoles = ['teacher', 'member'];
-      } else if (memberRole == 'member') {
-        availableRoles = ['teacher', 'student_teacher'];
-      }
-    } else if (currentUserRole == 'student_teacher') {
-      if (memberRole == 'student_teacher') {
-        availableRoles = ['member'];
-      } else if (memberRole == 'member') {
-        availableRoles = ['student_teacher'];
-      }
-    }
-
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(100, 100, 100, 100),
-      items: [
-        ...availableRoles.map(
-          (role) => PopupMenuItem<String>(
-            value: role,
-            child: Text('Change to ${_getRoleDisplayName(role)}'),
-          ),
-        ),
-        if (_canRemoveMember(memberRole))
-          PopupMenuItem<String>(
-            value: 'remove',
-            child: Text(
-              'Remove from organisation',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-      ],
-    ).then((value) {
-      if (value != null) {
-        if (value == 'remove') {
-          _showRemoveConfirmation(member);
-        } else {
-          _changeMemberRole(member['id'], value);
-        }
-      }
-    });
   }
 
   String _getRoleDisplayName(String role) {
@@ -276,9 +278,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                     isRemovingMember = true;
                     currentOperationId = member['id'];
                   });
-                  context.read<OrganisationBloc>().add(
-                    RemoveMemberEvent(memberId: member['id']),
-                  );
+                  _removeMember(member['id']);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
@@ -289,6 +289,41 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
             ],
           ),
     );
+  }
+
+  Future<void> _removeMember(String memberId) async {
+    try {
+      await firestore
+          .collection('organisations')
+          .doc(widget.organisationId)
+          .collection('members')
+          .doc(memberId)
+          .delete();
+
+      // Refresh members locally
+      await fetchMembers();
+
+      // Ask outer views to refresh organisations list
+      if (mounted) {
+        context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+        SnackBarHelper.showSuccess(
+          context,
+          message: 'Member removed successfully',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarHelper.showError(context, message: 'Error removing member: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          memberOperationInProgress = false;
+          isRemovingMember = false;
+          currentOperationId = null;
+        });
+      }
+    }
   }
 
   bool isCurrentUser(Map<String, dynamic> member) {
@@ -516,7 +551,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
     return ListView.separated(
       itemCount: members.length,
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      // physics: NeverScrollableScrollPhysics(),
       separatorBuilder: (context, index) => SizedBox(height: 7.5),
       itemBuilder: (context, index) {
         final member = members[index];
@@ -553,6 +588,53 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _buildRoleChip(context, member['role']),
+                if ((member['status'] ?? 'active') == 'pending') ...[
+                  const SizedBox(width: 8),
+                  Chip(
+                    label: Text(
+                      "Pending",
+                      style: TextStyle(color: Colors.orange.shade900),
+                    ),
+                    backgroundColor: Colors.orange.shade100,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const SizedBox(width: 8),
+                  if (widget.teacherView)
+                    OutlinedButton.icon(
+                      onPressed:
+                          (isRetractingInvite &&
+                                  currentOperationId == member['id'])
+                              ? null
+                              : () => _retractInvite(member),
+                      icon:
+                          (isRetractingInvite &&
+                                  currentOperationId == member['id'])
+                              ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              )
+                              : Icon(Icons.undo, size: 16),
+                      label: Text(
+                        (isRetractingInvite &&
+                                currentOperationId == member['id'])
+                            ? 'Retracting...'
+                            : 'Retract invite',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                ],
                 if (isCurrentUser(member)) ...[
                   const SizedBox(width: 8),
                   Chip(
@@ -563,6 +645,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                 ],
                 if (!isCurrentUser(member) &&
                     widget.teacherView &&
+                    (member['status'] ?? 'active') != 'pending' &&
                     !(currentUserRole == 'student_teacher' &&
                         member['role'] == 'teacher')) ...[
                   PopupMenuButton<String>(
@@ -684,6 +767,78 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         );
       },
     );
+  }
+
+  Future<void> _retractInvite(Map<String, dynamic> member) async {
+    try {
+      setState(() {
+        isRetractingInvite = true;
+        currentOperationId = member['id'] as String?;
+      });
+
+      // Find the pending invite associated with this member by memberDocId
+      final invitesSnap =
+          await firestore
+              .collection('organisations')
+              .doc(widget.organisationId)
+              .collection('invites')
+              .where('memberDocId', isEqualTo: member['id'])
+              .where('status', isEqualTo: 'pending')
+              .limit(1)
+              .get();
+
+      if (invitesSnap.docs.isNotEmpty) {
+        await invitesSnap.docs.first.reference.delete();
+      } else {
+        // Fallback: attempt to find by toEmail if member was created with email docId
+        final email = (member['email'] as String?)?.toLowerCase();
+        if (email != null && email.isNotEmpty) {
+          final byEmailSnap =
+              await firestore
+                  .collection('organisations')
+                  .doc(widget.organisationId)
+                  .collection('invites')
+                  .where('toEmail', isEqualTo: email)
+                  .where('status', isEqualTo: 'pending')
+                  .limit(1)
+                  .get();
+          if (byEmailSnap.docs.isNotEmpty) {
+            await byEmailSnap.docs.first.reference.delete();
+          }
+        }
+      }
+
+      // Remove the pending member document
+      await firestore
+          .collection('organisations')
+          .doc(widget.organisationId)
+          .collection('members')
+          .doc(member['id'])
+          .delete();
+
+      await fetchMembers();
+
+      if (mounted) {
+        SnackBarHelper.showSuccess(context, message: 'Invite retracted');
+      }
+    } catch (e) {
+      // Log for debugging
+      // ignore: avoid_print
+      print('Error retracting invite for member ${member['id']}: $e');
+      if (mounted) {
+        SnackBarHelper.showError(
+          context,
+          message: 'Error retracting invite: $e',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isRetractingInvite = false;
+          currentOperationId = null;
+        });
+      }
+    }
   }
 
   Widget _buildRoleChip(BuildContext context, String role) {

@@ -13,7 +13,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:provider/provider.dart';
-import 'package:accelerator_squared/theme.dart';
 import 'dart:html' as html; // For user agent detection
 import 'package:accelerator_squared/util/page_title.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -41,20 +40,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final invitesPageProvider = Provider.of<InvitesPageProvider>(context);
-    final showInvitesPage = invitesPageProvider.showInvitesPage;
-    // If invites page is hidden and _selectedIndex is now out of range, set to settings page
-    final maxIndex = showInvitesPage ? 2 : 1;
-    if (_selectedIndex > maxIndex) {
-      setState(() {
-        _selectedIndex = maxIndex; // Always go to settings page
-      });
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showMobileAlertIfNeeded();
-      setPageTitle('${_getPageTitle(showInvitesPage)}');
+      setPageTitle('${_getPageTitle()}');
     });
-    // If toggled ON, do not change the index (user remains on settings)
   }
 
   void showMobileAlertIfNeeded() {
@@ -94,8 +83,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final invitesPageProvider = Provider.of<InvitesPageProvider>(context);
-    final showInvitesPage = invitesPageProvider.showInvitesPage;
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: Stack(
@@ -207,7 +194,7 @@ class _HomePageState extends State<HomePage> {
       ),
       appBar: AppBar(
         title: Text(
-          _getPageTitle(showInvitesPage),
+          _getPageTitle(),
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
@@ -238,7 +225,7 @@ class _HomePageState extends State<HomePage> {
                   setState(() {
                     _selectedIndex = value;
                   });
-                  setPageTitle('${_getPageTitle(showInvitesPage)}');
+                  setPageTitle('${_getPageTitle()}');
                 },
                 labelType: NavigationRailLabelType.all,
                 destinations: [
@@ -247,12 +234,11 @@ class _HomePageState extends State<HomePage> {
                     selectedIcon: Icon(Icons.business),
                     label: Text("Organisations"),
                   ),
-                  if (showInvitesPage)
-                    NavigationRailDestination(
-                      icon: Icon(Icons.mail_outline),
-                      selectedIcon: Icon(Icons.mail),
-                      label: Text("Invites"),
-                    ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.mail_outline),
+                    selectedIcon: Icon(Icons.mail),
+                    label: Text("Inbox"),
+                  ),
                   NavigationRailDestination(
                     icon: Icon(Icons.settings_outlined),
                     selectedIcon: Icon(Icons.settings),
@@ -265,7 +251,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Container(
                 color: Theme.of(context).colorScheme.surfaceDim,
-                child: _buildContent(showInvitesPage),
+                child: _buildContent(),
               ),
             ),
           ],
@@ -274,15 +260,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String _getPageTitle(bool showInvitesPage) {
+  String _getPageTitle() {
     if (_selectedIndex == 0) return "Organisations";
-    if (showInvitesPage && _selectedIndex == 1) return "Invites";
+    if (_selectedIndex == 1) return "Invites";
     return "Settings";
   }
 
-  Widget _buildContent(bool showInvitesPage) {
+  Widget _buildContent() {
     if (_selectedIndex == 0) return _buildOrganisationsContent();
-    if (showInvitesPage && _selectedIndex == 1) return OrgInvitesPage();
+    if (_selectedIndex == 1) return OrgInvitesPage();
     return SettingsPage();
   }
 
@@ -415,12 +401,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final showInvites =
-                        Provider.of<InvitesPageProvider>(
-                          context,
-                          listen: false,
-                        ).showInvitesPage;
-                    final baseTitle = _getPageTitle(showInvites);
+                    final baseTitle = _getPageTitle();
                     setPageTitle('Organisations - Create Organisation');
                     showDialog(
                       context: context,
@@ -444,12 +425,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(width: 16),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final showInvites =
-                        Provider.of<InvitesPageProvider>(
-                          context,
-                          listen: false,
-                        ).showInvitesPage;
-                    final baseTitle = _getPageTitle(showInvites);
+                    final baseTitle = _getPageTitle();
                     setPageTitle('Organisations - Join Organisation');
                     showDialog(
                       context: context,
