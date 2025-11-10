@@ -142,3 +142,12 @@ class FetchOrganisationEvent extends OrganisationEvent {
     // {required this.organisationId}
   });
 }
+
+class UpdateUserRoleEvent extends OrganisationEvent {
+  final String newRole;
+
+  const UpdateUserRoleEvent({required this.newRole});
+}
+
+// Internal-only event to signal deletion from stream
+class _OrganisationDeletedInternalEvent extends OrganisationEvent {}

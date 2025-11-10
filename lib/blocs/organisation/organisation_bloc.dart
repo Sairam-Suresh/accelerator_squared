@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:accelerator_squared/models/organisation.dart';
 import 'package:accelerator_squared/models/projects.dart';
 import 'package:accelerator_squared/util/util.dart';
@@ -15,18 +17,29 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   final String _organisationId;
   final Organisation? _initialState;
+  StreamSubscription<DocumentSnapshot>? _memberRoleSubscription;
+  String? _currentMemberDocId;
+  StreamSubscription<DocumentSnapshot>? _orgDocSubscription;
 
   OrganisationBloc({required String organisationId, Organisation? initialState})
     : _organisationId = organisationId,
       _initialState = initialState,
       super(OrganisationInitial()) {
     on<FetchOrganisationEvent>((event, emit) async {
-      emit(OrganisationLoading());
-
+      // If we have initial data, use it directly without showing loading state
       if (event.initialData != null) {
         emit(OrganisationLoaded.fromOrganisationObject(event.initialData!));
+        // Set up stream subscription for role changes even with initial data
+        // Schedule it as a microtask to avoid blocking the emit
+        Future.microtask(() {
+          _setupMemberRoleStreamIfNeeded();
+          _setupOrganisationDeletionStream();
+        });
         return;
       }
+
+      // Only show loading state if we don't have initial data
+      emit(OrganisationLoading());
 
       try {
         String uid = auth.currentUser?.uid ?? '';
@@ -72,16 +85,33 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           return;
         }
 
+        // Find the member document ID for this organisation
+        QueryDocumentSnapshot? memberDoc;
+        for (var doc in allMemberships) {
+          final docPath = doc.reference.path;
+          if (docPath.contains('/organisations/$_organisationId/members/')) {
+            memberDoc = doc;
+            break;
+          }
+        }
+
+        final organisation = (await loadOrganisationDataById(
+          firestore,
+          organisationId,
+          uid,
+          userEmail,
+        ))!;
+
         emit(
-          OrganisationLoaded.fromOrganisationObject(
-            (await loadOrganisationDataById(
-              firestore,
-              organisationId,
-              uid,
-              userEmail,
-            ))!,
-          ),
+          OrganisationLoaded.fromOrganisationObject(organisation),
         );
+
+        // Set up stream subscriptions
+        if (memberDoc != null) {
+          _currentMemberDocId = memberDoc.id;
+          _setupMemberRoleStream();
+        }
+        _setupOrganisationDeletionStream();
       } catch (e) {
         if (e.toString().contains('timeout')) {
           emit(
@@ -93,6 +123,10 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           emit(OrganisationError(e.toString()));
         }
       }
+    });
+
+    on<_OrganisationDeletedInternalEvent>((event, emit) async {
+      emit(OrganisationDeleted());
     });
 
     on<CreateProjectEvent>((event, emit) async {
@@ -196,6 +230,50 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           'status': 'active',
           'addedAt': FieldValue.serverTimestamp(),
         });
+
+        // Add all teachers and student_teachers from the organisation to the project
+        QuerySnapshot allTeachersSnapshot = await firestore
+            .collection('organisations')
+            .doc(_organisationId)
+            .collection('members')
+            .where('role', whereIn: ['teacher', 'student_teacher'])
+            .get();
+
+        // Track added identifiers (UIDs and emails) to avoid duplicates
+        Set<String> addedUids = {uid}; // Creator is already added
+        Set<String> addedEmails = {auth.currentUser?.email ?? ''}; // Creator's email
+
+        for (var teacherDoc in allTeachersSnapshot.docs) {
+          final teacherData = teacherDoc.data() as Map<String, dynamic>;
+          final teacherRole = teacherData['role'] ?? 'member';
+          final teacherEmail = teacherData['email'] ?? '';
+          final teacherUid = teacherData['uid'] as String?;
+
+          // Skip if already added (creator) - check by UID or email
+          if ((teacherUid != null && teacherUid.isNotEmpty && addedUids.contains(teacherUid)) ||
+              (teacherEmail.isNotEmpty && addedEmails.contains(teacherEmail))) {
+            continue;
+          }
+
+          // Use UID as document ID if available, otherwise use email
+          String docId = (teacherUid != null && teacherUid.isNotEmpty) ? teacherUid : teacherEmail;
+
+          await projectRef.collection('members').doc(docId).set({
+            'role': teacherRole, // Preserve the role (teacher or student_teacher)
+            'email': teacherEmail,
+            'status': 'active',
+            'addedAt': FieldValue.serverTimestamp(),
+            if (teacherUid != null && teacherUid.isNotEmpty) 'uid': teacherUid,
+          });
+
+          // Track added identifiers
+          if (teacherUid != null && teacherUid.isNotEmpty) {
+            addedUids.add(teacherUid);
+          }
+          if (teacherEmail.isNotEmpty) {
+            addedEmails.add(teacherEmail);
+          }
+        }
 
         // Add the verified member emails to the project
         for (String email in verifiedMemberEmails) {
@@ -356,13 +434,57 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           'createdBy': uid,
         });
 
-        await projectRef.collection('members').doc().set({
+        await projectRef.collection('members').doc(uid).set({
           'role': 'teacher',
           'email': auth.currentUser?.email ?? '',
           'uid': uid,
           'status': 'active',
           'addedAt': FieldValue.serverTimestamp(),
         });
+
+        // Add all teachers and student_teachers from the organisation to the project
+        QuerySnapshot allTeachersSnapshot = await firestore
+            .collection('organisations')
+            .doc(_organisationId)
+            .collection('members')
+            .where('role', whereIn: ['teacher', 'student_teacher'])
+            .get();
+
+        // Track added identifiers (UIDs and emails) to avoid duplicates
+        Set<String> addedUids = {uid}; // Approving teacher is already added
+        Set<String> addedEmails = {auth.currentUser?.email ?? ''}; // Approving teacher's email
+
+        for (var teacherDoc in allTeachersSnapshot.docs) {
+          final teacherData = teacherDoc.data() as Map<String, dynamic>;
+          final teacherRole = teacherData['role'] ?? 'member';
+          final teacherEmail = teacherData['email'] ?? '';
+          final teacherUid = teacherData['uid'] as String?;
+
+          // Skip if already added (approving teacher) - check by UID or email
+          if ((teacherUid != null && teacherUid.isNotEmpty && addedUids.contains(teacherUid)) ||
+              (teacherEmail.isNotEmpty && addedEmails.contains(teacherEmail))) {
+            continue;
+          }
+
+          // Use UID as document ID if available, otherwise use email
+          String docId = (teacherUid != null && teacherUid.isNotEmpty) ? teacherUid : teacherEmail;
+
+          await projectRef.collection('members').doc(docId).set({
+            'role': teacherRole, // Preserve the role (teacher or student_teacher)
+            'email': teacherEmail,
+            'status': 'active',
+            'addedAt': FieldValue.serverTimestamp(),
+            if (teacherUid != null && teacherUid.isNotEmpty) 'uid': teacherUid,
+          });
+
+          // Track added identifiers
+          if (teacherUid != null && teacherUid.isNotEmpty) {
+            addedUids.add(teacherUid);
+          }
+          if (teacherEmail.isNotEmpty) {
+            addedEmails.add(teacherEmail);
+          }
+        }
 
         await firestore
             .collection('organisations')
@@ -757,11 +879,154 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
       }
     });
 
+    on<UpdateUserRoleEvent>((event, emit) {
+      final currentState = state;
+      if (currentState is OrganisationLoaded && currentState.userRole != event.newRole) {
+        // Create a new state with updated role
+        final updatedState = OrganisationLoaded(
+          id: currentState.id,
+          name: currentState.name,
+          description: currentState.description,
+          students: currentState.students,
+          projects: currentState.projects,
+          projectRequests: currentState.projectRequests,
+          milestoneReviewRequests: currentState.milestoneReviewRequests,
+          memberCount: currentState.memberCount,
+          userRole: event.newRole,
+          joinCode: currentState.joinCode,
+        );
+        emit(updatedState);
+      }
+    });
+
     if (_initialState != null) {
       add(FetchOrganisationEvent(initialData: _initialState));
     } else {
       add(FetchOrganisationEvent());
     }
+  }
+
+  /// Sets up a stream subscription if the member document ID is not yet known
+  Future<void> _setupMemberRoleStreamIfNeeded() async {
+    if (_currentMemberDocId != null) {
+      _setupMemberRoleStream();
+      return;
+    }
+
+    // Try to find the member document ID
+    try {
+      String uid = auth.currentUser?.uid ?? '';
+      String userEmail = auth.currentUser?.email ?? '';
+
+      if (uid.isEmpty) return;
+
+      QuerySnapshot uidMembersSnapshot = await firestore
+          .collection('organisations')
+          .doc(_organisationId)
+          .collection('members')
+          .where('uid', isEqualTo: uid)
+          .get()
+          .timeout(const Duration(seconds: 5));
+
+      QuerySnapshot emailMembersSnapshot;
+      if (userEmail.isNotEmpty) {
+        emailMembersSnapshot = await firestore
+            .collection('organisations')
+            .doc(_organisationId)
+            .collection('members')
+            .where('email', isEqualTo: userEmail)
+            .get()
+            .timeout(const Duration(seconds: 5));
+      } else {
+        emailMembersSnapshot = uidMembersSnapshot;
+      }
+
+      QuerySnapshot membersSnapshot = uidMembersSnapshot.docs.isNotEmpty
+          ? uidMembersSnapshot
+          : emailMembersSnapshot;
+
+      if (membersSnapshot.docs.isNotEmpty) {
+        _currentMemberDocId = membersSnapshot.docs.first.id;
+        _setupMemberRoleStream();
+      }
+    } catch (e) {
+      // Silently handle errors
+      print('Error setting up member role stream: $e');
+    }
+  }
+
+  /// Sets up a stream subscription to listen for changes to the user's member role
+  void _setupMemberRoleStream() {
+    // Cancel existing subscription if any
+    _memberRoleSubscription?.cancel();
+
+    if (_currentMemberDocId == null) return;
+
+    final memberDocRef = firestore
+        .collection('organisations')
+        .doc(_organisationId)
+        .collection('members')
+        .doc(_currentMemberDocId);
+
+    // Track if this is the first snapshot to skip it (initial state already loaded)
+    bool isFirstSnapshot = true;
+
+    _memberRoleSubscription = memberDocRef.snapshots().listen(
+      (snapshot) {
+        if (!snapshot.exists) return;
+
+        final memberData = snapshot.data();
+        if (memberData == null) return;
+
+        final newRole = memberData['role'] ?? 'member';
+
+        // Skip the first snapshot since we already have the initial data
+        // This prevents the stream from triggering an update on the initial load
+        if (isFirstSnapshot) {
+          isFirstSnapshot = false;
+          return;
+        }
+
+        // Compare against the current state's role to avoid unnecessary updates
+        final currentState = state;
+        if (currentState is OrganisationLoaded) {
+          // Only update if the role actually changed
+          if (currentState.userRole != newRole) {
+            // Dispatch an event to update the role
+            add(UpdateUserRoleEvent(newRole: newRole));
+          }
+        }
+      },
+      onError: (error) {
+        // Silently handle stream errors to prevent crashes
+        print('Error in member role stream: $error');
+      },
+    );
+  }
+
+  /// Listens to the organisation document and emits OrganisationDeleted if removed
+  void _setupOrganisationDeletionStream() {
+    _orgDocSubscription?.cancel();
+    _orgDocSubscription = firestore
+        .collection('organisations')
+        .doc(_organisationId)
+        .snapshots()
+        .listen(
+      (snapshot) {
+        if (!snapshot.exists) {
+          // Organisation document deleted; inform UI to navigate away
+          add(_OrganisationDeletedInternalEvent());
+        }
+      },
+      onError: (_) {},
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _memberRoleSubscription?.cancel();
+    _orgDocSubscription?.cancel();
+    return super.close();
   }
 
   /// Copies existing organisation-wide milestones to a new project
@@ -861,6 +1126,9 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
         final milestoneData = Map<String, dynamic>.from(milestone);
         // Remove projectId as it's not part of the milestone document
         milestoneData.remove('projectId');
+        // Ensure new project's milestones start as incomplete and not pending review
+        milestoneData['isCompleted'] = false;
+        milestoneData['pendingReview'] = false;
 
         print(
           '[OrganisationBloc] Copying milestone: ${milestone['name']} with sharedId: ${milestone['sharedId']}',
@@ -893,6 +1161,9 @@ class OrganisationBloc extends Bloc<OrganisationEvent, OrganisationState> {
           // Generate a new sharedId for these milestones
           final newSharedId = const Uuid().v4();
           milestoneData['sharedId'] = newSharedId;
+          // Ensure new project's milestones start as incomplete and not pending review
+          milestoneData['isCompleted'] = false;
+          milestoneData['pendingReview'] = false;
 
           print(
             '[OrganisationBloc] Copying fallback milestone: ${milestone['name']} with new sharedId: $newSharedId',

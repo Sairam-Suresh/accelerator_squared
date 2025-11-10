@@ -15,7 +15,9 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, state) {
         if (state is UserLoading) {
           return LoadingScreen();
-        } else if (state is UserInitial) {
+        } else if (state is UserInitial || state is UserError) {
+          // Show login page for both initial and error states
+          // UserError will be handled by the login page to show error messages
           return ResponsiveBreakpoints.builder(
             breakpoints: [
               const Breakpoint(start: 0, end: 450, name: MOBILE),
@@ -36,6 +38,7 @@ class AuthWrapper extends StatelessWidget {
             child: HomePage(),
           );
         } else {
+          // Fallback to loading screen for any unknown state
           return LoadingScreen();
         }
       },

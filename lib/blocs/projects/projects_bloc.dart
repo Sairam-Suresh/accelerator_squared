@@ -230,6 +230,59 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
         'createdBy': uid,
       });
 
+      // Add the creator as a teacher
+      await projectRef.collection('members').doc(uid).set({
+        'role': 'teacher',
+        'email': auth.currentUser?.email ?? '',
+        'uid': uid,
+        'status': 'active',
+        'addedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Add all teachers and student_teachers from the organisation to the project
+      QuerySnapshot allTeachersSnapshot = await firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('members')
+          .where('role', whereIn: ['teacher', 'student_teacher'])
+          .get();
+
+      // Track added identifiers (UIDs and emails) to avoid duplicates
+      Set<String> addedUids = {uid}; // Creator is already added
+      Set<String> addedEmails = {auth.currentUser?.email ?? ''}; // Creator's email
+
+      for (var teacherDoc in allTeachersSnapshot.docs) {
+        final teacherData = teacherDoc.data() as Map<String, dynamic>;
+        final teacherRole = teacherData['role'] ?? 'member';
+        final teacherEmail = teacherData['email'] ?? '';
+        final teacherUid = teacherData['uid'] as String?;
+
+        // Skip if already added (creator) - check by UID or email
+        if ((teacherUid != null && teacherUid.isNotEmpty && addedUids.contains(teacherUid)) ||
+            (teacherEmail.isNotEmpty && addedEmails.contains(teacherEmail))) {
+          continue;
+        }
+
+        // Use UID as document ID if available, otherwise use email
+        String docId = (teacherUid != null && teacherUid.isNotEmpty) ? teacherUid : teacherEmail;
+
+        await projectRef.collection('members').doc(docId).set({
+          'role': teacherRole, // Preserve the role (teacher or student_teacher)
+          'email': teacherEmail,
+          'status': 'active',
+          'addedAt': FieldValue.serverTimestamp(),
+          if (teacherUid != null && teacherUid.isNotEmpty) 'uid': teacherUid,
+        });
+
+        // Track added identifiers
+        if (teacherUid != null && teacherUid.isNotEmpty) {
+          addedUids.add(teacherUid);
+        }
+        if (teacherEmail.isNotEmpty) {
+          addedEmails.add(teacherEmail);
+        }
+      }
+
       // Copy existing organisation-wide milestones to the new project
       // Add a small delay to ensure the project document is fully written
       await Future.delayed(Duration(milliseconds: 100));

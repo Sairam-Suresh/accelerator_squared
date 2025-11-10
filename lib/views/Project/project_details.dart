@@ -36,7 +36,7 @@ class ProjectDetails extends StatefulWidget {
 class _ProjectDetailsState extends State<ProjectDetails> {
   final Set<String> _deletingMilestoneIds = {};
   String? _pendingDeleteMilestoneId;
-  bool showingCompletedMilestones = false;
+  bool showingCompletedMilestones = true;
 
   @override
   void initState() {
@@ -63,6 +63,24 @@ class _ProjectDetailsState extends State<ProjectDetails> {
             _deletingMilestoneIds.remove(_pendingDeleteMilestoneId);
             _pendingDeleteMilestoneId = null;
           });
+        }
+        // If the project is deleted, the ProjectsBloc emits ProjectsError('Project not found.')
+        if (state is ProjectsError &&
+            state.message.toLowerCase().contains('project not found')) {
+          if (mounted) {
+            // Refresh parent lists and go back to projects page
+            context.read<ProjectsBloc>().add(
+              FetchProjectsEvent(widget.organisationId),
+            );
+            context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Project was deleted'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         }
       },
       child: Scaffold(
@@ -253,19 +271,6 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                               m['pendingReview'] != true,
                         )
                         .toList();
-
-                // If there are no incomplete milestones, default to showing completed ones
-                if (!showingCompletedMilestones &&
-                    incompleteMilestones.isEmpty &&
-                    completedMilestones.isNotEmpty) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      setState(() {
-                        showingCompletedMilestones = true;
-                      });
-                    }
-                  });
-                }
 
                 // Sort by due date ascending (earliest first). Leave pendingReview as-is.
                 int compareByDueDateAsc(
@@ -761,7 +766,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               20,
                                             ),
                                             onTap: () async {
-                                              setPageTitle('Project - Milestone');
+                                              setPageTitle(
+                                                'Project - Milestone',
+                                              );
                                               await aweSideSheet(
                                                 footer: SizedBox(height: 10),
                                                 sheetWidth:
@@ -923,7 +930,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               20,
                                             ),
                                             onTap: () async {
-                                              setPageTitle('Project - Milestone');
+                                              setPageTitle(
+                                                'Project - Milestone',
+                                              );
                                               await aweSideSheet(
                                                 footer: SizedBox(height: 10),
                                                 sheetWidth:
@@ -1260,7 +1269,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                               10,
                                             ),
                                             onTap: () async {
-                                              setPageTitle('Project - Milestone');
+                                              setPageTitle(
+                                                'Project - Milestone',
+                                              );
                                               await aweSideSheet(
                                                 footer: SizedBox(height: 10),
                                                 sheetWidth:

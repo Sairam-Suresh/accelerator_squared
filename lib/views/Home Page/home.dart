@@ -26,7 +26,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Organisation> organisations = [];
   bool _dialogShown = false;
 
   @override
@@ -250,7 +249,7 @@ class _HomePageState extends State<HomePage> {
 
             Expanded(
               child: Container(
-                color: Theme.of(context).colorScheme.surfaceDim,
+                color: Theme.of(context).colorScheme.surface,
                 child: _buildContent(),
               ),
             ),
@@ -346,11 +345,11 @@ class _HomePageState extends State<HomePage> {
               ),
             );
           } else if (state is OrganisationsLoaded) {
-            organisations = state.organisations;
+            final organisations = state.organisations;
             if (organisations.isEmpty) {
               return _buildEmptyState();
             }
-            return _buildOrganisationsGrid();
+            return _buildOrganisationsGrid(organisations);
           } else {
             return _buildEmptyState();
           }
@@ -456,7 +455,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildOrganisationsGrid() {
+  Widget _buildOrganisationsGrid(List<Organisation> organisations) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(

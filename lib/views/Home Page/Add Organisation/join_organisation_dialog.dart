@@ -44,29 +44,41 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
           setState(() {
             isJoining = false;
           });
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Successfully joined organisation with code "${widget.orgcodecontroller.text.trim().toUpperCase()}"'),
-              backgroundColor: Colors.green,
-            ),
-          );
+
+          final notificationType = state.notificationType;
+          final notificationMessage = state.notificationMessage;
+
+          if (notificationType == OrganisationsNotificationType.info &&
+              notificationMessage != null) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(notificationMessage),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          } else {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Successfully joined organisation with code "${widget.orgcodecontroller.text.trim().toUpperCase()}"',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         } else if (state is OrganisationsError && isJoining) {
           setState(() {
             isJoining = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         }
       },
       child: AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Container(
           width: MediaQuery.of(context).size.width / 3,
           padding: EdgeInsets.all(24),
@@ -87,7 +99,7 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                 ),
               ),
               SizedBox(height: 24),
-              
+
               // Title
               Text(
                 "Join Organisation",
@@ -98,7 +110,7 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                 ),
               ),
               SizedBox(height: 8),
-              
+
               // Subtitle
               Text(
                 "Enter the organisation code to join",
@@ -109,7 +121,7 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 32),
-              
+
               // Join code input
               TextField(
                 controller: widget.orgcodecontroller,
@@ -137,7 +149,9 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                     ),
                   ),
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 ),
                 textCapitalization: TextCapitalization.characters,
                 style: TextStyle(
@@ -147,7 +161,7 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                 ),
               ),
               SizedBox(height: 32),
-              
+
               // Join button
               SizedBox(
                 width: double.infinity,
@@ -162,33 +176,36 @@ class _JoinOrganisationDialogState extends State<JoinOrganisationDialog> {
                     elevation: 2,
                   ),
                   onPressed: isJoining ? null : _joinOrganisation,
-                  child: isJoining
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.login_rounded, size: 20),
-                          SizedBox(width: 12),
-                          Text(
-                            "Join Organisation",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                  child:
+                      isJoining
+                          ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.onPrimary,
+                              ),
                             ),
+                          )
+                          : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.login_rounded, size: 20),
+                              SizedBox(width: 12),
+                              Text(
+                                "Join Organisation",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
                 ),
               ),
               SizedBox(height: 16),
-              
+
               // Cancel button
               TextButton(
                 onPressed: () {

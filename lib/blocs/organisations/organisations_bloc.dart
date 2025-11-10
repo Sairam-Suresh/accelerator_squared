@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:accelerator_squared/util/util.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,10 +14,22 @@ part 'organisations_state.dart';
 class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
   FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
+  StreamSubscription<QuerySnapshot>? _uidMembershipsSubscription;
+  StreamSubscription<QuerySnapshot>? _emailMembershipsSubscription;
+  Map<String, StreamSubscription<DocumentSnapshot>> _orgDocumentSubscriptions =
+      {};
+  Set<String> _currentOrgIds = {};
+  bool _isInitialMembershipStream = true;
+  bool _isInitialEmailMembershipStream = true;
+  Map<String, bool> _isInitialOrgDocumentStream = {};
 
   OrganisationsBloc() : super(OrganisationsInitial()) {
     on<FetchOrganisationsEvent>((event, emit) async {
-      emit(OrganisationsLoading());
+      final previousState = state;
+      final shouldShowLoading = previousState is! OrganisationsLoaded;
+      if (shouldShowLoading) {
+        emit(OrganisationsLoading());
+      }
 
       try {
         String uid = auth.currentUser?.uid ?? '';
@@ -60,17 +74,19 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         // Filter memberships to only active status (default to active if missing)
-        final activeMemberships = allMemberships.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final status = (data['status'] ?? 'active') as String;
-          return status == 'active';
-        }).toList();
+        final activeMemberships =
+            allMemberships.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final status = (data['status'] ?? 'active') as String;
+              return status == 'active';
+            }).toList();
 
-        Set<String> orgIds = activeMemberships
-            .map((doc) => doc.reference.parent.parent?.id)
-            .where((id) => id != null)
-            .cast<String>()
-            .toSet();
+        Set<String> orgIds =
+            activeMemberships
+                .map((doc) => doc.reference.parent.parent?.id)
+                .where((id) => id != null)
+                .cast<String>()
+                .toSet();
 
         for (String orgId in orgIds) {
           var data = await loadOrganisationDataById(
@@ -84,6 +100,13 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         emit(OrganisationsLoaded(organisations));
+
+        // Set up streams for dynamic updates after a microtask delay
+        // This ensures the loaded state is emitted first before streams are set up
+        Future.microtask(() {
+          _setupMembershipStreams(uid, userEmail);
+          _setupOrganisationDocumentStreams(orgIds, uid, userEmail);
+        });
       } catch (e) {
         if (e.toString().contains('timeout')) {
           emit(
@@ -140,6 +163,9 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           });
         }
 
+        // Wait for the member document to be readable to ensure it's fully written
+        await orgRef.collection('members').doc(uid).get();
+
         add(FetchOrganisationsEvent());
       } catch (e) {
         emit(OrganisationsError(e.toString()));
@@ -175,6 +201,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
     });
 
     on<JoinOrganisationByCodeEvent>((event, emit) async {
+      final previousState = state;
       emit(OrganisationsLoading());
       try {
         String uid = auth.currentUser?.uid ?? '';
@@ -220,9 +247,26 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         if (memberSnapshot.docs.isNotEmpty) {
-          emit(
-            OrganisationsError("You are already a member of this organisation"),
-          );
+          if (previousState is OrganisationsLoaded) {
+            emit(
+              OrganisationsLoaded(
+                previousState.organisations,
+                notificationType: OrganisationsNotificationType.info,
+                notificationMessage:
+                    "You are already a member of this organisation",
+              ),
+            );
+          } else {
+            emit(
+              OrganisationsLoaded(
+                [],
+                notificationType: OrganisationsNotificationType.info,
+                notificationMessage:
+                    "You are already a member of this organisation",
+              ),
+            );
+            add(FetchOrganisationsEvent());
+          }
           return;
         }
 
@@ -388,5 +432,128 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         emit(OrganisationsError(e.toString()));
       }
     });
+  }
+
+  /// Sets up stream subscriptions to listen for membership changes
+  void _setupMembershipStreams(String uid, String userEmail) {
+    // Cancel existing subscriptions
+    _uidMembershipsSubscription?.cancel();
+    _emailMembershipsSubscription?.cancel();
+
+    // Reset flags when setting up new streams
+    _isInitialMembershipStream = true;
+    _isInitialEmailMembershipStream = true;
+
+    // Listen to UID-based memberships
+    _uidMembershipsSubscription = firestore
+        .collectionGroup('members')
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .listen(
+          (snapshot) {
+            // Skip the first snapshot since we already have the initial data
+            if (_isInitialMembershipStream) {
+              _isInitialMembershipStream = false;
+              return;
+            }
+            // When memberships change, reload organizations
+            add(FetchOrganisationsEvent());
+          },
+          onError: (error) {
+            print('Error in UID memberships stream: $error');
+          },
+        );
+
+    // Listen to email-based memberships if email is available
+    if (userEmail.isNotEmpty) {
+      _emailMembershipsSubscription = firestore
+          .collectionGroup('members')
+          .where('email', isEqualTo: userEmail)
+          .snapshots()
+          .listen(
+            (snapshot) {
+              // Skip the first snapshot since we already have the initial data
+              if (_isInitialEmailMembershipStream) {
+                _isInitialEmailMembershipStream = false;
+                return;
+              }
+              // When memberships change, reload organizations
+              add(FetchOrganisationsEvent());
+            },
+            onError: (error) {
+              print('Error in email memberships stream: $error');
+            },
+          );
+    }
+  }
+
+  /// Sets up stream subscriptions to listen for organization document changes
+  void _setupOrganisationDocumentStreams(
+    Set<String> orgIds,
+    String uid,
+    String userEmail,
+  ) {
+    // Cancel subscriptions for organizations that are no longer in the list
+    final orgIdsToRemove = _currentOrgIds.difference(orgIds);
+    for (String orgId in orgIdsToRemove) {
+      _orgDocumentSubscriptions[orgId]?.cancel();
+      _orgDocumentSubscriptions.remove(orgId);
+      _isInitialOrgDocumentStream.remove(orgId);
+    }
+
+    // Add subscriptions for new organizations
+    for (String orgId in orgIds) {
+      if (!_orgDocumentSubscriptions.containsKey(orgId)) {
+        // Mark this as an initial stream for this org
+        _isInitialOrgDocumentStream[orgId] = true;
+
+        _orgDocumentSubscriptions[orgId] = firestore
+            .collection('organisations')
+            .doc(orgId)
+            .snapshots()
+            .listen(
+              (snapshot) {
+                if (!snapshot.exists) {
+                  // Organisation deleted: refresh organisations and clean up
+                  add(FetchOrganisationsEvent());
+                  _orgDocumentSubscriptions[orgId]?.cancel();
+                  _orgDocumentSubscriptions.remove(orgId);
+                  _isInitialOrgDocumentStream.remove(orgId);
+                  return;
+                }
+
+                // Skip the first snapshot since we already have the initial data
+                if (_isInitialOrgDocumentStream[orgId] == true) {
+                  _isInitialOrgDocumentStream[orgId] = false;
+                  return;
+                }
+
+                // When an organization document changes, reload organizations
+                add(FetchOrganisationsEvent());
+              },
+              onError: (error) {
+                print(
+                  'Error in organisation document stream for $orgId: $error',
+                );
+              },
+            );
+      } else {
+        // Organization already has a subscription, make sure it's not marked as initial
+        _isInitialOrgDocumentStream[orgId] = false;
+      }
+    }
+
+    _currentOrgIds = orgIds;
+  }
+
+  @override
+  Future<void> close() {
+    _uidMembershipsSubscription?.cancel();
+    _emailMembershipsSubscription?.cancel();
+    for (var subscription in _orgDocumentSubscriptions.values) {
+      subscription.cancel();
+    }
+    _orgDocumentSubscriptions.clear();
+    return super.close();
   }
 }

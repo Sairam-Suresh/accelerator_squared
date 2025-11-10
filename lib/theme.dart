@@ -117,6 +117,9 @@ class AppTheme {
     fontFamily: _fontFamily,
     colorScheme: lightColorScheme,
     brightness: Brightness.light,
+    // Make page backgrounds match the NavigationRail background color
+    scaffoldBackgroundColor: lightColorScheme.surface,
+    canvasColor: lightColorScheme.surface,
 
     // App bar theme
     appBarTheme: AppBarTheme(
@@ -304,6 +307,9 @@ class AppTheme {
     fontFamily: _fontFamily,
     colorScheme: darkColorScheme,
     brightness: Brightness.dark,
+    // Keep parity in dark mode
+    scaffoldBackgroundColor: darkColorScheme.surface,
+    canvasColor: darkColorScheme.surface,
 
     // App bar theme
     appBarTheme: AppBarTheme(

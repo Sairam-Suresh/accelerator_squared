@@ -71,3 +71,5 @@ class OrganisationLoaded extends OrganisationState {
     joinCode,
   ];
 }
+
+class OrganisationDeleted extends OrganisationState {}

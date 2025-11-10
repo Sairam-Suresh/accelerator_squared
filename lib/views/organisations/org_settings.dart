@@ -57,89 +57,139 @@ class _OrganisationSettingsDialogState
     final OrganisationsBloc organisationsBloc =
         widget.organisationsBloc ?? context.read<OrganisationsBloc>();
 
-    final Widget dialog = BlocListener<OrganisationsBloc, OrganisationsState>(
-      listener: (context, state) {
-        if (state is OrganisationsLoaded) {
-          if (isSaving) {
-            setState(() {
-              isSaving = false;
-              editing = false;
-            });
-            SnackBarHelper.showSuccess(
-              context,
-              message: 'Organisation "${nameFieldController.text}" updated successfully',
-            );
-          } else if (isRefreshingJoinCode) {
-            setState(() {
-              isRefreshingJoinCode = false;
-            });
-            SnackBarHelper.showSuccess(
-              context,
-              message: 'Join code refreshed!',
-            );
-          } else if (isLeaving) {
-            setState(() {
-              isLeaving = false;
-            });
-            Navigator.of(context).pop();
+    final Widget dialog = MultiBlocListener(
+      listeners: [
+        BlocListener<OrganisationsBloc, OrganisationsState>(
+          listener: (context, state) {
+            if (state is OrganisationsLoaded) {
+              if (isSaving) {
+                setState(() {
+                  isSaving = false;
+                  editing = false;
+                });
+                SnackBarHelper.showSuccess(
+                  context,
+                  message: 'Organisation "${nameFieldController.text}" updated successfully',
+                );
+              } else if (isLeaving) {
+                setState(() {
+                  isLeaving = false;
+                });
+                Navigator.of(context).pop();
 
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/', (route) => false);
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/', (route) => false);
 
-            SnackBarHelper.showSuccess(
-              context,
-              message: 'Successfully left organisation "${widget.orgName}"',
-            );
-          } else if (isDeleting) {
-            setState(() {
-              isDeleting = false;
-            });
-            Navigator.of(context).pop();
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/', (route) => false);
-            SnackBarHelper.showSuccess(
-              context,
-              message: 'Organisation "${widget.orgName}" deleted successfully',
-            );
-          }
-        } else if (state is OrganisationsError) {
-          if (isSaving) {
-            setState(() {
-              isSaving = false;
-            });
-            SnackBarHelper.showError(
-              context,
-              message: state.message,
-            );
-          } else if (isRefreshingJoinCode) {
-            setState(() {
-              isRefreshingJoinCode = false;
-            });
-            SnackBarHelper.showError(
-              context,
-              message: state.message,
-            );
-          } else if (isLeaving) {
-            setState(() {
-              isLeaving = false;
-            });
-            SnackBarHelper.showError(
-              context,
-              message: state.message,
-            );
-          } else if (isDeleting) {
-            setState(() {
-              isDeleting = false;
-            });
-            SnackBarHelper.showError(
-              context,
-              message: state.message,
-            );
-          }
-        }
-      },
+                SnackBarHelper.showSuccess(
+                  context,
+                  message: 'Successfully left organisation "${widget.orgName}"',
+                );
+              } else if (isDeleting) {
+                setState(() {
+                  isDeleting = false;
+                });
+                Navigator.of(context).pop();
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/', (route) => false);
+                SnackBarHelper.showSuccess(
+                  context,
+                  message: 'Organisation "${widget.orgName}" deleted successfully',
+                );
+              }
+            } else if (state is OrganisationsError) {
+              if (isSaving) {
+                setState(() {
+                  isSaving = false;
+                });
+                SnackBarHelper.showError(
+                  context,
+                  message: state.message,
+                );
+              } else if (isLeaving) {
+                setState(() {
+                  isLeaving = false;
+                });
+                SnackBarHelper.showError(
+                  context,
+                  message: state.message,
+                );
+              } else if (isDeleting) {
+                setState(() {
+                  isDeleting = false;
+                });
+                SnackBarHelper.showError(
+                  context,
+                  message: state.message,
+                );
+              }
+            }
+          },
+        ),
+        BlocListener<OrganisationBloc, OrganisationState>(
+          listener: (context, state) {
+            if (state is OrganisationLoaded) {
+              // Update the join code when it's refreshed
+              if (isRefreshingJoinCode) {
+                setState(() {
+                  isRefreshingJoinCode = false;
+                  currentJoinCode = state.joinCode;
+                });
+                SnackBarHelper.showSuccess(
+                  context,
+                  message: 'Join code refreshed!',
+                );
+              }
+              // Handle organisation info save completion
+              if (isSaving) {
+                setState(() {
+                  isSaving = false;
+                  editing = false;
+                });
+                SnackBarHelper.showSuccess(
+                  context,
+                  message: 'Organisation "${nameFieldController.text}" updated successfully',
+                );
+              }
+              // Update text controllers when not editing (to reflect external changes)
+              if (!editing && mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && !editing) {
+                    final updatedName = state.name;
+                    final updatedDescription = state.description;
+                    if (updatedName != nameFieldController.text) {
+                      nameFieldController.text = updatedName;
+                    }
+                    if (updatedDescription != descriptionFieldController.text) {
+                      descriptionFieldController.text = updatedDescription;
+                    }
+                  }
+                });
+              }
+            } else if (state is OrganisationError) {
+              if (isRefreshingJoinCode) {
+                setState(() {
+                  isRefreshingJoinCode = false;
+                });
+                SnackBarHelper.showError(
+                  context,
+                  message: state.message,
+                );
+              }
+              if (isSaving) {
+                setState(() {
+                  isSaving = false;
+                });
+                SnackBarHelper.showError(
+                  context,
+                  message: state.message,
+                );
+              }
+            }
+          },
+        ),
+      ],
       child: AlertDialog(
         title: Row(
           children: [
@@ -250,13 +300,29 @@ class _OrganisationSettingsDialogState
                                 ),
                               ],
                             )
-                            : Text(
-                              widget.orgName,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Theme.of(context).colorScheme.onSurface,
+                            : BlocBuilder<OrganisationBloc, OrganisationState>(
+                                builder: (context, state) {
+                                  String displayName = widget.orgName;
+                                  if (state is OrganisationLoaded) {
+                                    displayName = state.name;
+                                    // Update controller when not editing
+                                    if (!editing && displayName != nameFieldController.text) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted && !editing) {
+                                          nameFieldController.text = displayName;
+                                        }
+                                      });
+                                    }
+                                  }
+                                  return Text(
+                                    displayName,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
                       ],
                     ),
                   ),
@@ -318,23 +384,39 @@ class _OrganisationSettingsDialogState
                                 ),
                               ],
                             )
-                            : Text(
-                              widget.orgDescription.isEmpty
-                                  ? "No description provided"
-                                  : widget.orgDescription,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color:
-                                    widget.orgDescription.isEmpty
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.6)
-                                        : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
+                            : BlocBuilder<OrganisationBloc, OrganisationState>(
+                                builder: (context, state) {
+                                  String displayDescription = widget.orgDescription;
+                                  if (state is OrganisationLoaded) {
+                                    displayDescription = state.description;
+                                    // Update controller when not editing
+                                    if (!editing && displayDescription != descriptionFieldController.text) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted && !editing) {
+                                          descriptionFieldController.text = displayDescription;
+                                        }
+                                      });
+                                    }
+                                  }
+                                  return Text(
+                                    displayDescription.isEmpty
+                                        ? "No description provided"
+                                        : displayDescription,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color:
+                                          displayDescription.isEmpty
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.6)
+                                              : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
                       ],
                     ),
                   ),
@@ -427,29 +509,49 @@ class _OrganisationSettingsDialogState
                                 }
                               },
                               borderRadius: BorderRadius.circular(8),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    currentJoinCode.isNotEmpty
-                                        ? currentJoinCode
-                                        : 'No join code',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'monospace',
-                                      letterSpacing: 2,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Icon(
-                                    Icons.copy,
-                                    size: 20,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                ],
+                              child: BlocBuilder<OrganisationBloc, OrganisationState>(
+                                builder: (context, state) {
+                                  // Get the latest join code from the bloc state
+                                  String displayJoinCode = currentJoinCode;
+                                  if (state is OrganisationLoaded) {
+                                    displayJoinCode = state.joinCode;
+                                    // Update local state to keep it in sync
+                                    if (displayJoinCode != currentJoinCode) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted) {
+                                          setState(() {
+                                            currentJoinCode = displayJoinCode;
+                                          });
+                                        }
+                                      });
+                                    }
+                                  }
+                                  
+                                  return Row(
+                                    children: [
+                                      Text(
+                                        displayJoinCode.isNotEmpty
+                                            ? displayJoinCode
+                                            : 'No join code',
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'monospace',
+                                          letterSpacing: 2,
+                                          color:
+                                              Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Icon(
+                                        Icons.copy,
+                                        size: 20,
+                                        color:
+                                            Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ),
                           ),

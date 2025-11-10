@@ -95,199 +95,217 @@ class _OrganisationCardState extends State<OrganisationCard> {
           }
         }
       },
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Transform.scale(
-          scale: 1.02,
-          child: Card(
-            elevation: 8.0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: InkWell(
-              onTap: widget.onTap,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+      child: BlocBuilder<OrganisationsBloc, OrganisationsState>(
+        builder: (context, state) {
+          // Get the latest organization data from the bloc
+          Organisation currentOrg = widget.organisation;
+          if (state is OrganisationsLoaded) {
+            final updatedOrg = state.organisations
+                .where((org) => org.id == widget.organisation.id)
+                .firstOrNull;
+            if (updatedOrg != null) {
+              currentOrg = updatedOrg;
+            } else {
+              // Organization is no longer in the list, return empty container
+              return SizedBox.shrink();
+            }
+          }
+
+          return MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Transform.scale(
+              scale: 1.02,
+              child: Card(
+                elevation: 8.0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: InkWell(
+                  onTap: widget.onTap,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.business,
-                            color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.organisation.name,
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(context).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${widget.organisation.memberCount} members',
-                                style: Theme.of(
+                              child: Icon(
+                                Icons.business,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    currentOrg.name,
+                                    style: Theme.of(context).textTheme.titleLarge
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${currentOrg.memberCount} members',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            PopupMenuButton<String>(
+                              icon: Icon(
+                                Icons.more_vert,
+                                color: Theme.of(
                                   context,
-                                ).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                                size: 20,
+                              ),
+                              tooltip: 'More options',
+                              onSelected: (value) {
+                                if (value == 'info') {
+                                  _showOrgInfoDialog(context, currentOrg);
+                                } else if (value == 'leave') {
+                                  _showLeaveConfirmation(context, currentOrg);
+                                }
+                              },
+                              itemBuilder:
+                                  (context) => [
+                                    PopupMenuItem<String>(
+                                      value: 'info',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.info_outline,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                            size: 20,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Information',
+                                            style: TextStyle(
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'leave',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.exit_to_app_rounded,
+                                            color: Colors.orange,
+                                            size: 20,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Leave Organisation',
+                                            style: TextStyle(
+                                              color: Colors.orange,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                            ),
+                          ],
+                        ),
+                        if (currentOrg.description.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            currentOrg.description,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getRoleColor(currentOrg.userRole).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _getRoleColor(currentOrg.userRole).withValues(alpha: 0.3),
+                                  width: 1,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            Icons.more_vert,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.6),
-                            size: 20,
-                          ),
-                          tooltip: 'More options',
-                          onSelected: (value) {
-                            if (value == 'info') {
-                              _showOrgInfoDialog(context);
-                            } else if (value == 'leave') {
-                              _showLeaveConfirmation(context);
-                            }
-                          },
-                          itemBuilder:
-                              (context) => [
-                                PopupMenuItem<String>(
-                                  value: 'info',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.info_outline,
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Information',
-                                        style: TextStyle(
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              child: Text(
+                                _getRoleDisplayText(currentOrg.userRole),
+                                style: TextStyle(
+                                  color: _getRoleColor(currentOrg.userRole),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                PopupMenuItem<String>(
-                                  value: 'leave',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.exit_to_app_rounded,
-                                        color: Colors.orange,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Leave Organisation',
-                                        style: TextStyle(
-                                          color: Colors.orange,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${currentOrg.projects.length} projects',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    if (widget.organisation.description.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        widget.organisation.description,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getRoleColor().withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _getRoleColor().withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            _getRoleDisplayText(),
-                            style: TextStyle(
-                              color: _getRoleColor(),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '${widget.organisation.projects.length} projects',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  Color _getRoleColor() {
-    switch (widget.organisation.userRole.toLowerCase()) {
+  Color _getRoleColor(String userRole) {
+    switch (userRole.toLowerCase()) {
       case 'teacher':
         return Colors.blue;
       case 'student_teacher':
@@ -298,8 +316,8 @@ class _OrganisationCardState extends State<OrganisationCard> {
     }
   }
 
-  String _getRoleDisplayText() {
-    switch (widget.organisation.userRole.toLowerCase()) {
+  String _getRoleDisplayText(String userRole) {
+    switch (userRole.toLowerCase()) {
       case 'teacher':
         return 'Teacher';
       case 'student_teacher':
@@ -310,29 +328,30 @@ class _OrganisationCardState extends State<OrganisationCard> {
     }
   }
 
-  void _showOrgInfoDialog(BuildContext context) {
+  void _showOrgInfoDialog(BuildContext context, Organisation organisation) {
     showDialog(
       context: context,
       builder: (context) {
         return BlocProvider<OrganisationBloc>(
           create:
               (_) => OrganisationBloc(
-                organisationId: widget.organisation.id,
-                initialState: widget.organisation,
+                organisationId: organisation.id,
+                initialState: organisation,
               ),
           child: OrganisationSettingsDialog(
-            orgDescription: widget.organisation.description,
-            orgName: widget.organisation.name,
-            isTeacher: widget.organisation.userRole == 'teacher',
-            organisationId: widget.organisation.id,
-            joinCode: widget.organisation.joinCode,
+            orgDescription: organisation.description,
+            orgName: organisation.name,
+            isTeacher: organisation.userRole == 'teacher' ||
+                organisation.userRole == 'student_teacher',
+            organisationId: organisation.id,
+            joinCode: organisation.joinCode,
           ),
         );
       },
     );
   }
 
-  void _showLeaveConfirmation(BuildContext context) {
+  void _showLeaveConfirmation(BuildContext context, Organisation organisation) {
     showDialog(
       context: context,
       builder:
@@ -349,7 +368,7 @@ class _OrganisationCardState extends State<OrganisationCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Are you sure you want to leave "${widget.organisation.name}"?',
+                  'Are you sure you want to leave "${organisation.name}"?',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
@@ -389,7 +408,7 @@ class _OrganisationCardState extends State<OrganisationCard> {
                           ).pop(); // Close confirmation dialog
                           context.read<OrganisationsBloc>().add(
                             LeaveOrganisationEvent(
-                              organisationId: widget.organisation.id,
+                              organisationId: organisation.id,
                             ),
                           );
                         },

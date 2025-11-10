@@ -82,6 +82,15 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               curve: Curves.easeInOut,
             ),
           );
+        } else if (state is UserError) {
+          // Show error message to user
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
         }
       },
       child: Scaffold(

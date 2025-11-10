@@ -55,84 +55,87 @@ Future<Organisation?> loadOrganisationDataById(
         ? uidMembersSnapshot
         : emailMembersSnapshot;
 
-    if (membersSnapshot.docs.isNotEmpty) {
-      Map<String, dynamic> data = orgDoc.data() as Map<String, dynamic>;
-      Map<String, dynamic> memberData =
-          membersSnapshot.docs.first.data() as Map<String, dynamic>;
-      String userRole = memberData['role'] ?? 'member';
+    if (membersSnapshot.docs.isEmpty) {
+      // User is not a member of this organization, return null
+      return null;
+    }
 
-      List<Future<QuerySnapshot>> subcollectionQueries = [
-        firestore
+    Map<String, dynamic> data = orgDoc.data() as Map<String, dynamic>;
+    Map<String, dynamic> memberData =
+        membersSnapshot.docs.first.data() as Map<String, dynamic>;
+    String userRole = memberData['role'] ?? 'member';
+
+    List<Future<QuerySnapshot>> subcollectionQueries = [
+      firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('projects')
+          .get(),
+      firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('projectRequests')
+          .get(),
+      firestore
+          .collection('organisations')
+          .doc(orgId)
+          .collection('members')
+          .get(),
+    ];
+
+    List<QuerySnapshot> results = await Future.wait(
+      subcollectionQueries,
+    ).timeout(const Duration(seconds: 10));
+    QuerySnapshot projectsSnapshot = results[0];
+    QuerySnapshot projectRequestsSnapshot = results[1];
+    QuerySnapshot membersCountSnapshot = results[2];
+
+    List<Project> projects =
+        projectsSnapshot.docs.map((projectDoc) {
+          final projectData = projectDoc.data() as Map<String, dynamic>;
+          projectData['id'] =
+              projectDoc.id; // Add the document ID to the data
+          return Project.fromJson(projectData);
+        }).toList();
+
+    List<ProjectRequest> projectRequests =
+        projectRequestsSnapshot.docs.map((requestDoc) {
+          final requestData = requestDoc.data() as Map<String, dynamic>;
+          requestData['id'] =
+              requestDoc.id; // Add the document ID to the data
+          return ProjectRequest.fromJson(requestData);
+        }).toList();
+
+    List<MilestoneReviewRequest> milestoneReviewRequests = [];
+    QuerySnapshot milestoneReviewRequestsSnapshot =
+        await firestore
             .collection('organisations')
             .doc(orgId)
-            .collection('projects')
-            .get(),
-        firestore
-            .collection('organisations')
-            .doc(orgId)
-            .collection('projectRequests')
-            .get(),
-        firestore
-            .collection('organisations')
-            .doc(orgId)
-            .collection('members')
-            .get(),
-      ];
-
-      List<QuerySnapshot> results = await Future.wait(
-        subcollectionQueries,
-      ).timeout(const Duration(seconds: 10));
-      QuerySnapshot projectsSnapshot = results[0];
-      QuerySnapshot projectRequestsSnapshot = results[1];
-      QuerySnapshot membersCountSnapshot = results[2];
-
-      List<Project> projects =
-          projectsSnapshot.docs.map((projectDoc) {
-            final projectData = projectDoc.data() as Map<String, dynamic>;
-            projectData['id'] =
-                projectDoc.id; // Add the document ID to the data
-            return Project.fromJson(projectData);
-          }).toList();
-
-      List<ProjectRequest> projectRequests =
-          projectRequestsSnapshot.docs.map((requestDoc) {
-            final requestData = requestDoc.data() as Map<String, dynamic>;
-            requestData['id'] =
-                requestDoc.id; // Add the document ID to the data
-            return ProjectRequest.fromJson(requestData);
-          }).toList();
-
-      List<MilestoneReviewRequest> milestoneReviewRequests = [];
-      QuerySnapshot milestoneReviewRequestsSnapshot =
-          await firestore
-              .collection('organisations')
-              .doc(orgId)
-              .collection('milestoneReviewRequests')
-              .get();
-      for (var requestDoc in milestoneReviewRequestsSnapshot.docs) {
-        final requestData = requestDoc.data() as Map<String, dynamic>;
-        requestData['id'] = requestDoc.id; // Add the document ID to the data
-        milestoneReviewRequests.add(
-          MilestoneReviewRequest.fromJson(requestData),
-        );
-      }
-
-      return Organisation(
-        id: orgId,
-        name: data['name'] ?? '',
-        description: data['description'] ?? '',
-        students: [],
-        projects: projects,
-        projectRequests: projectRequests,
-        memberCount: membersCountSnapshot.docs.length,
-        userRole: userRole,
-        joinCode: data['joinCode'] ?? '',
-        milestoneReviewRequests: milestoneReviewRequests,
+            .collection('milestoneReviewRequests')
+            .get();
+    for (var requestDoc in milestoneReviewRequestsSnapshot.docs) {
+      final requestData = requestDoc.data() as Map<String, dynamic>;
+      requestData['id'] = requestDoc.id; // Add the document ID to the data
+      milestoneReviewRequests.add(
+        MilestoneReviewRequest.fromJson(requestData),
       );
     }
+
+    return Organisation(
+      id: orgId,
+      name: data['name'] ?? '',
+      description: data['description'] ?? '',
+      students: [],
+      projects: projects,
+      projectRequests: projectRequests,
+      memberCount: membersCountSnapshot.docs.length,
+      userRole: userRole,
+      joinCode: data['joinCode'] ?? '',
+      milestoneReviewRequests: milestoneReviewRequests,
+    );
   } catch (e) {
     // Silently handle individual organisation loading errors to prevent one bad org from breaking the entire list
+    print('Error loading organisation $orgId: $e');
+    return null;
   }
-
-  throw "";
 }
