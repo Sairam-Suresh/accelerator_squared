@@ -232,7 +232,7 @@ class _HomePageState extends State<HomePage> {
 
   void createTeacherTutorial() {
     teacherTutorialCoachMark = TutorialCoachMark(
-      targets: _createStudentTargets(),
+      targets: _createTeacherTargets(),
       colorShadow: Theme.of(context).colorScheme.primary,
       textSkip: "Skip tutorial",
       paddingFocus: 24,
