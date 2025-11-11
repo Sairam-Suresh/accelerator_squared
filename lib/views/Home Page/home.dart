@@ -2,7 +2,6 @@ import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/models/organisation.dart';
 import 'package:accelerator_squared/views/Home%20Page/invites.dart';
 import 'package:accelerator_squared/views/Home%20Page/settings.dart';
-import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/add_organisation_button.dart';
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/create_organisation_dialog.dart';
 import 'package:accelerator_squared/views/Home%20Page/Add%20Organisation/join_organisation_dialog.dart';
 import 'package:accelerator_squared/widgets/organisation_card.dart';
@@ -16,7 +15,9 @@ import 'package:provider/provider.dart';
 import 'dart:html' as html; // For user agent detection
 import 'package:accelerator_squared/util/page_title.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,14 +28,560 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool _dialogShown = false;
+  bool _tutorialChecked = false;
+
+  late TutorialCoachMark studentTutorialCoachMark;
+  late TutorialCoachMark teacherTutorialCoachMark;
+  final GlobalKey expandableFabKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      createStudentTutorial();
+      createTeacherTutorial();
+    });
   }
 
   int _selectedIndex = 0;
+
+  GlobalKey orgButtonKey = GlobalKey();
+  GlobalKey createOrgButtonKey = GlobalKey();
+  GlobalKey JoinOrgButtonKey = GlobalKey();
+  GlobalKey orgNavKey = GlobalKey();
+  GlobalKey inboxNavKey = GlobalKey();
+  GlobalKey settingsNavKey = GlobalKey();
+
+  Future<void> _handleCreateOrganisationPressed() async {
+    setPageTitle('Organisations - Create Organisation');
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, StateSetter setState) {
+            return CreateOrganisationDialog();
+          },
+        );
+      },
+    );
+    setPageTitle('Organisations');
+  }
+
+  Future<void> _handleJoinOrganisationPressed() async {
+    setPageTitle('Organisations - Join Organisation');
+    await showDialog(
+      context: context,
+      builder: (context) {
+        TextEditingController orgcodecontroller = TextEditingController();
+        return JoinOrganisationDialog(orgcodecontroller: orgcodecontroller);
+      },
+    );
+    setPageTitle('Organisations');
+  }
+
+  void showTutorial() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text("Welcome to Accelerator^2"),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width / 2.5,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Are you a student or a teacher?"),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              studentTutorialCoachMark.show(context: context);
+                            });
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            child: Text(
+                              "Student",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              teacherTutorialCoachMark.show(context: context);
+                            });
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            child: Text(
+                              "Teacher",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void createStudentTutorial() {
+    studentTutorialCoachMark = TutorialCoachMark(
+      targets: _createStudentTargets(),
+      colorShadow: Theme.of(context).colorScheme.primary,
+      textSkip: "Skip tutorial",
+      paddingFocus: 24,
+      alignSkip: Alignment.topRight,
+      opacityShadow: 0.5,
+      onFinish: () {
+        print("finish");
+      },
+      onClickTarget: (target) async {
+        final id = target.identify;
+        if (id == 'orgButton') {
+          final ctx = expandableFabKey.currentContext;
+          if (ctx != null) {
+            ExpandableFab.of(ctx)?.toggle();
+          }
+        } else if (id == 'navOrganisations') {
+          setState(() {
+            _selectedIndex = 0;
+          });
+          setPageTitle('${_getPageTitle()}');
+        } else if (id == 'navInbox') {
+          setState(() {
+            _selectedIndex = 1;
+          });
+          setPageTitle('${_getPageTitle()}');
+        } else if (id == 'navSettings') {
+          setState(() {
+            _selectedIndex = 2;
+          });
+          setPageTitle('${_getPageTitle()}');
+        } else if (id == 'joinOrgButton') {
+          // Dismiss tutorial before opening dialog
+          studentTutorialCoachMark.skip();
+          await _handleJoinOrganisationPressed();
+        } else if (id == 'createOrgButton') {
+          // Dismiss tutorial before opening dialog
+          studentTutorialCoachMark.skip();
+          await _handleCreateOrganisationPressed();
+        }
+      },
+      onClickTargetWithTapPosition: (target, tapDetails) {
+        print("target: $target");
+        print(
+          "clicked at position local: ${tapDetails.localPosition} - global: ${tapDetails.globalPosition}",
+        );
+      },
+      onClickOverlay: (target) {
+        print('onClickOverlay: $target');
+      },
+      onSkip: () {
+        print("skip");
+        return true;
+      },
+    );
+  }
+
+  void createTeacherTutorial() {
+    teacherTutorialCoachMark = TutorialCoachMark(
+      targets: _createStudentTargets(),
+      colorShadow: Theme.of(context).colorScheme.primary,
+      textSkip: "Skip tutorial",
+      paddingFocus: 24,
+      alignSkip: Alignment.topRight,
+      opacityShadow: 0.5,
+      onFinish: () {
+        print("finish");
+      },
+      onClickTarget: (target) async {
+        final id = target.identify;
+        if (id == 'orgButton') {
+          final ctx = expandableFabKey.currentContext;
+          if (ctx != null) {
+            ExpandableFab.of(ctx)?.toggle();
+          }
+        } else if (id == 'navOrganisations') {
+          setState(() {
+            _selectedIndex = 0;
+          });
+          setPageTitle('${_getPageTitle()}');
+        } else if (id == 'navInbox') {
+          setState(() {
+            _selectedIndex = 1;
+          });
+          setPageTitle('${_getPageTitle()}');
+        } else if (id == 'navSettings') {
+          setState(() {
+            _selectedIndex = 2;
+          });
+          setPageTitle('${_getPageTitle()}');
+        } else if (id == 'joinOrgButton') {
+          // Dismiss tutorial before opening dialog
+          teacherTutorialCoachMark.skip();
+          await _handleJoinOrganisationPressed();
+        } else if (id == 'createOrgButton') {
+          // Dismiss tutorial before opening dialog
+          teacherTutorialCoachMark.skip();
+          await _handleCreateOrganisationPressed();
+        }
+      },
+      onClickTargetWithTapPosition: (target, tapDetails) {
+        print("target: $target");
+        print(
+          "clicked at position local: ${tapDetails.localPosition} - global: ${tapDetails.globalPosition}",
+        );
+      },
+      onClickOverlay: (target) {
+        print('onClickOverlay: $target');
+      },
+      onSkip: () {
+        print("skip");
+        return true;
+      },
+    );
+  }
+
+  List<TargetFocus> _createStudentTargets() {
+    List<TargetFocus> targets = [];
+    // NavigationRail items first in sequence
+    targets.addAll([
+      TargetFocus(
+        identify: "navOrganisations",
+        keyTarget: orgNavKey,
+        enableOverlayTab: true,
+        paddingFocus: 16,
+        shape: ShapeLightFocus.RRect,
+        radius: 14,
+        contents: [
+          TargetContent(
+            align: ContentAlign.right,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 280),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "This takes you to Organisations",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navInbox",
+        keyTarget: inboxNavKey,
+        enableOverlayTab: true,
+        paddingFocus: 16,
+        shape: ShapeLightFocus.RRect,
+        radius: 14,
+        contents: [
+          TargetContent(
+            align: ContentAlign.right,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 280),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Your Inbox for invites and notifications",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navSettings",
+        keyTarget: settingsNavKey,
+        enableOverlayTab: true,
+        paddingFocus: 16,
+        shape: ShapeLightFocus.RRect,
+        radius: 14,
+        contents: [
+          TargetContent(
+            align: ContentAlign.right,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 280),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Manage your app settings here",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+    ]);
+    targets.add(
+      TargetFocus(
+        identify: "orgButton",
+        keyTarget: orgButtonKey,
+        enableOverlayTab: true,
+        paddingFocus: 24,
+        shape: ShapeLightFocus.RRect,
+        radius: 28,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 260),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Click here to open the organisations menu",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+    );
+    targets.add(
+      TargetFocus(
+        identify: "joinOrgButton",
+        keyTarget: JoinOrgButtonKey,
+        enableOverlayTab: true,
+        paddingFocus: 24,
+        shape: ShapeLightFocus.RRect,
+        radius: 28,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 260),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Click here to join an organisation",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+    );
+    return targets;
+  }
+
+  List<TargetFocus> _createTeacherTargets() {
+    List<TargetFocus> targets = [];
+    // NavigationRail items first in sequence
+    targets.addAll([
+      TargetFocus(
+        identify: "navOrganisations",
+        keyTarget: orgNavKey,
+        enableOverlayTab: true,
+        paddingFocus: 16,
+        shape: ShapeLightFocus.RRect,
+        radius: 14,
+        contents: [
+          TargetContent(
+            align: ContentAlign.right,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 280),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "This takes you to Organisations",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navInbox",
+        keyTarget: inboxNavKey,
+        enableOverlayTab: true,
+        paddingFocus: 16,
+        shape: ShapeLightFocus.RRect,
+        radius: 14,
+        contents: [
+          TargetContent(
+            align: ContentAlign.right,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 280),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Your Inbox for invites and notifications",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navSettings",
+        keyTarget: settingsNavKey,
+        enableOverlayTab: true,
+        paddingFocus: 16,
+        shape: ShapeLightFocus.RRect,
+        radius: 14,
+        contents: [
+          TargetContent(
+            align: ContentAlign.right,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 280),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Manage your app settings here",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+    ]);
+    targets.add(
+      TargetFocus(
+        identify: "orgButton",
+        keyTarget: orgButtonKey,
+        enableOverlayTab: true,
+        paddingFocus: 24,
+        shape: ShapeLightFocus.RRect,
+        radius: 28,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 260),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Click here to open the organisations menu",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+    );
+    targets.add(
+      TargetFocus(
+        identify: "createOrgButton",
+        keyTarget: createOrgButtonKey,
+        enableOverlayTab: true,
+        paddingFocus: 24,
+        shape: ShapeLightFocus.RRect,
+        radius: 28,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder:
+                (context, controller) => Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 260),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        "Click here to create an organisation",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        ],
+      ),
+    );
+    return targets;
+  }
 
   @override
   void didChangeDependencies() {
@@ -42,6 +589,18 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showMobileAlertIfNeeded();
       setPageTitle('${_getPageTitle()}');
+      // Show tutorial only on first visit (web) and only check once per session
+      if (!_tutorialChecked) {
+        _tutorialChecked = true;
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          final hasSeen = prefs.getBool('has_seen_tutorial') ?? false;
+          if (!hasSeen) {
+            showTutorial();
+            await prefs.setBool('has_seen_tutorial', true);
+          }
+        }();
+      }
     });
   }
 
@@ -188,7 +747,45 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(width: 70),
             ],
           ),
-          const AddOrganisationButton(),
+          // Invisible keyed overlay to reference the unexpanded FAB position for tutorials
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: IgnorePointer(
+                child: SizedBox(key: orgButtonKey, width: 56, height: 56),
+              ),
+            ),
+          ),
+          ExpandableFab(
+            distance: 70,
+            type: ExpandableFabType.up,
+            onOpen: () {},
+            key: expandableFabKey,
+            children: [
+              Row(
+                children: [
+                  Text("Create organisation"),
+                  SizedBox(width: 20),
+                  FloatingActionButton(
+                    key: createOrgButtonKey,
+                    onPressed: _handleCreateOrganisationPressed,
+                    child: Icon(Icons.add),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text("Join organisation"),
+                  SizedBox(width: 20),
+                  FloatingActionButton(
+                    key: JoinOrgButtonKey,
+                    onPressed: _handleJoinOrganisationPressed,
+                    child: Icon(Icons.arrow_upward),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
       appBar: AppBar(
@@ -231,17 +828,17 @@ class _HomePageState extends State<HomePage> {
                   NavigationRailDestination(
                     icon: Icon(Icons.business_outlined),
                     selectedIcon: Icon(Icons.business),
-                    label: Text("Organisations"),
+                    label: Text("Organisations", key: orgNavKey),
                   ),
                   NavigationRailDestination(
                     icon: Icon(Icons.mail_outline),
                     selectedIcon: Icon(Icons.mail),
-                    label: Text("Inbox"),
+                    label: Text("Inbox", key: inboxNavKey),
                   ),
                   NavigationRailDestination(
                     icon: Icon(Icons.settings_outlined),
                     selectedIcon: Icon(Icons.settings),
-                    label: Text("Settings"),
+                    label: Text("Settings", key: settingsNavKey),
                   ),
                 ],
               ),

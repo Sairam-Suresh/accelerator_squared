@@ -17,6 +17,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
 import 'package:accelerator_squared/util/page_title.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProjectDetails extends StatefulWidget {
   final String organisationId;
@@ -37,6 +39,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
   final Set<String> _deletingMilestoneIds = {};
   String? _pendingDeleteMilestoneId;
   bool showingCompletedMilestones = true;
+  bool _projectTutorialChecked = false;
+  late TutorialCoachMark _projectTutorial;
 
   @override
   void initState() {
@@ -50,6 +54,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setPageTitle('Project');
+      _maybeShowProjectTutorial();
     });
   }
 
@@ -1385,6 +1390,95 @@ class _ProjectDetailsState extends State<ProjectDetails> {
         ),
       ),
     );
+  }
+
+  Future<void> _maybeShowProjectTutorial() async {
+    if (_projectTutorialChecked) return;
+    _projectTutorialChecked = true;
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeen = prefs.getBool('has_seen_project_tutorial') ?? false;
+    if (hasSeen) return;
+
+    final size = MediaQuery.of(context).size;
+    final leftMidY = size.height / 2;
+
+    final addLinksFocus = TargetFocus(
+      identify: 'proj_add_links',
+      targetPosition: TargetPosition(
+        const Size(220, 60),
+        Offset(60, leftMidY + 180),
+      ),
+      shape: ShapeLightFocus.RRect,
+      radius: 12,
+      paddingFocus: 16,
+      contents: [
+        TargetContent(
+          align: ContentAlign.top,
+          builder:
+              (context, controller) => Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 260),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(
+                      'Add links and resources to your project here.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                ),
+              ),
+        ),
+      ],
+    );
+
+    final milestonesFocus = TargetFocus(
+      identify: 'proj_milestones',
+      targetPosition: TargetPosition(
+        const Size(200, 60),
+        Offset(size.width / 2 + 40, 120),
+      ),
+      shape: ShapeLightFocus.RRect,
+      radius: 12,
+      paddingFocus: 16,
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          builder:
+              (context, controller) => Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 280),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(
+                      'Track milestones and progress on the right.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                ),
+              ),
+        ),
+      ],
+    );
+
+    _projectTutorial = TutorialCoachMark(
+      targets: [addLinksFocus, milestonesFocus],
+      colorShadow: Theme.of(context).colorScheme.primary,
+      opacityShadow: 0.5,
+      paddingFocus: 16,
+      alignSkip: Alignment.topRight,
+      textSkip: 'Skip tutorial',
+      onFinish: () async {
+        await prefs.setBool('has_seen_project_tutorial', true);
+      },
+      onSkip: () {
+        prefs.setBool('has_seen_project_tutorial', true);
+        return true;
+      },
+    );
+
+    _projectTutorial.show(context: context);
   }
 
   String _formatDueDate(dynamic dueDateRaw) {

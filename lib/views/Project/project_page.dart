@@ -17,6 +17,8 @@ import 'package:accelerator_squared/util/page_title.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:accelerator_squared/models/projects.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProjectsPage extends StatefulWidget {
   const ProjectsPage({super.key});
@@ -32,6 +34,98 @@ class _ProjectsPageState extends State<ProjectsPage>
   bool isRefreshing = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _orgTutorialChecked = false;
+  late TutorialCoachMark _orgTutorial;
+
+  Future<void> _maybeShowOrganisationTutorial() async {
+    if (_orgTutorialChecked) return;
+    _orgTutorialChecked = true;
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeen = prefs.getBool('has_seen_org_tutorial') ?? false;
+    if (hasSeen) return;
+
+    final size = MediaQuery.of(context).size;
+    final appBarHeight = Scaffold.maybeOf(context)?.appBarMaxHeight ?? 64.0;
+    final railFocus = TargetFocus(
+      identify: 'org_nav',
+      targetPosition: TargetPosition(
+        const Size(140, 280),
+        Offset(0, appBarHeight + 80),
+      ),
+      shape: ShapeLightFocus.RRect,
+      radius: 16,
+      paddingFocus: 16,
+      contents: [
+        TargetContent(
+          align: ContentAlign.bottom,
+          builder:
+              (context, controller) => Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 260,
+                    maxHeight: 100,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(
+                      'Use these tabs to navigate organisation sections.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                ),
+              ),
+        ),
+      ],
+    );
+
+    final fabFocus = TargetFocus(
+      identify: 'org_fab',
+      targetPosition: TargetPosition(
+        const Size(64, 64),
+        Offset(size.width - 90, size.height - 140),
+      ),
+      shape: ShapeLightFocus.Circle,
+      paddingFocus: 16,
+      contents: [
+        TargetContent(
+          align: ContentAlign.top,
+          builder:
+              (context, controller) => Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 260),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(
+                      'Create a new project here.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                ),
+              ),
+        ),
+      ],
+    );
+
+    _orgTutorial = TutorialCoachMark(
+      targets: [railFocus, fabFocus],
+      colorShadow: Theme.of(context).colorScheme.primary,
+      opacityShadow: 0.5,
+      paddingFocus: 16,
+      alignSkip: Alignment.topRight,
+      textSkip: 'Skip tutorial',
+      onFinish: () async {
+        await prefs.setBool('has_seen_org_tutorial', true);
+      },
+      onSkip: () {
+        prefs.setBool('has_seen_org_tutorial', true);
+        return true;
+      },
+    );
+
+    _orgTutorial.show(context: context);
+  }
 
   /// Creates a stream of filtered projects based on user role and membership
   /// Members can only see projects they're part of
@@ -232,6 +326,7 @@ class _ProjectsPageState extends State<ProjectsPage>
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final section = _sectionTitleForIndex(organisationStateLoaded!);
               setPageTitle('Organisation - $section');
+              _maybeShowOrganisationTutorial();
             });
 
             return Scaffold(
