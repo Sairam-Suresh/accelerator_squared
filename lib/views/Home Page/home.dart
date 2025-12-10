@@ -54,6 +54,32 @@ class _HomePageState extends State<HomePage> {
   GlobalKey inboxNavKey = GlobalKey();
   GlobalKey settingsNavKey = GlobalKey();
 
+  Widget _coachText(String text) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 260),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.start,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleCreateOrganisationPressed() async {
     setPageTitle('Organisations - Create Organisation');
     await showDialog(
@@ -301,19 +327,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.right,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 280),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "This takes you to Organisations",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("This takes you to Organisations"),
           ),
         ],
       ),
@@ -328,19 +343,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.right,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 280),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Your Inbox for invites and notifications",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Your Inbox for invites and notifications"),
           ),
         ],
       ),
@@ -355,19 +359,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.right,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 280),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Manage your app settings here",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Manage your app settings here"),
           ),
         ],
       ),
@@ -384,19 +377,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.top,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 260),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Click here to open the organisations menu",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Click here to open the organisations menu"),
           ),
         ],
       ),
@@ -413,19 +395,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.top,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 260),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Click here to join an organisation",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Click here to join an organisation"),
           ),
         ],
       ),
@@ -448,19 +419,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.right,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 280),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "This takes you to Organisations",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("This takes you to Organisations"),
           ),
         ],
       ),
@@ -475,19 +435,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.right,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 280),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Your Inbox for invites and notifications",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Your Inbox for invites and notifications"),
           ),
         ],
       ),
@@ -502,19 +451,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.right,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 280),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Manage your app settings here",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Manage your app settings here"),
           ),
         ],
       ),
@@ -531,19 +469,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.top,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 260),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Click here to open the organisations menu",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Click here to open the organisations menu"),
           ),
         ],
       ),
@@ -560,19 +487,8 @@ class _HomePageState extends State<HomePage> {
           TargetContent(
             align: ContentAlign.top,
             builder:
-                (context, controller) => Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: 260),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Text(
-                        "Click here to create an organisation",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ),
-                ),
+                (context, controller) =>
+                    _coachText("Click here to create an organisation"),
           ),
         ],
       ),

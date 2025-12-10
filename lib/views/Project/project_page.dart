@@ -36,6 +36,33 @@ class _ProjectsPageState extends State<ProjectsPage>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _orgTutorialChecked = false;
   late TutorialCoachMark _orgTutorial;
+  final GlobalKey _createProjectFabKey = GlobalKey();
+
+  Widget _coachText(String text) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 260),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.start,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      ),
+    );
+  }
 
   Future<void> _maybeShowOrganisationTutorial() async {
     if (_orgTutorialChecked) return;
@@ -78,29 +105,14 @@ class _ProjectsPageState extends State<ProjectsPage>
 
     final fabFocus = TargetFocus(
       identify: 'org_fab',
-      targetPosition: TargetPosition(
-        const Size(64, 64),
-        Offset(size.width - 90, size.height - 140),
-      ),
+      keyTarget: _createProjectFabKey,
       shape: ShapeLightFocus.Circle,
       paddingFocus: 16,
       contents: [
         TargetContent(
-          align: ContentAlign.top,
+          align: ContentAlign.left,
           builder:
-              (context, controller) => Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 260),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: Text(
-                      'Create a new project here.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                ),
-              ),
+              (context, controller) => _coachText('Create a new project here.'),
         ),
       ],
     );
@@ -328,6 +340,7 @@ class _ProjectsPageState extends State<ProjectsPage>
 
             return Scaffold(
               floatingActionButton: FloatingActionButton(
+                key: _createProjectFabKey,
                 onPressed: () {
                   final section = _sectionTitleForIndex(
                     organisationStateLoaded!,
