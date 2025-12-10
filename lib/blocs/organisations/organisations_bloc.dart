@@ -359,13 +359,24 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
     });
 
     on<LeaveOrganisationEvent>((event, emit) async {
-      emit(OrganisationsLoading());
+      // Preserve previous state to restore on error
+      final previousState = state;
+      final shouldShowLoading = previousState is! OrganisationsLoaded;
+      if (shouldShowLoading) {
+        emit(OrganisationsLoading());
+      }
+
       try {
         String uid = auth.currentUser?.uid ?? '';
         String userEmail = auth.currentUser?.email ?? '';
 
         if (uid.isEmpty) {
-          emit(OrganisationsError("User not authenticated"));
+          // Restore previous state on error
+          if (previousState is OrganisationsLoaded) {
+            emit(previousState);
+          } else {
+            emit(OrganisationsError("User not authenticated"));
+          }
           return;
         }
 
@@ -390,7 +401,12 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         }
 
         if (userSnapshot.docs.isEmpty) {
-          emit(OrganisationsError("User not found in organisation"));
+          // Restore previous state on error
+          if (previousState is OrganisationsLoaded) {
+            emit(previousState);
+          } else {
+            emit(OrganisationsError("User not found in organisation"));
+          }
           return;
         }
 
@@ -410,11 +426,20 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
                   .get();
 
           if (teachersSnapshot.docs.length <= 1) {
-            emit(
-              OrganisationsError(
-                "Cannot leave organisation. You are the last teacher. Please assign another teacher before leaving.",
-              ),
-            );
+            // Emit special state with previous organisations so UI stays intact
+            if (previousState is OrganisationsLoaded) {
+              emit(
+                OrganisationsLeaveBlockedLastTeacher(
+                  previousState.organisations,
+                ),
+              );
+            } else {
+              emit(
+                OrganisationsError(
+                  "Cannot leave organisation. You are the last teacher. Please assign another teacher before leaving.",
+                ),
+              );
+            }
             return;
           }
         }
@@ -429,7 +454,12 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
 
         add(FetchOrganisationsEvent());
       } catch (e) {
-        emit(OrganisationsError(e.toString()));
+        // Restore previous state on error
+        if (previousState is OrganisationsLoaded) {
+          emit(previousState);
+        } else {
+          emit(OrganisationsError(e.toString()));
+        }
       }
     });
   }

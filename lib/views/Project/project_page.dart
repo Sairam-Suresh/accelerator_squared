@@ -61,10 +61,7 @@ class _ProjectsPageState extends State<ProjectsPage>
           builder:
               (context, controller) => Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 260,
-                    maxHeight: 100,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: 260),
                   child: Material(
                     color: Colors.transparent,
                     child: Text(

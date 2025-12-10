@@ -29,6 +29,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _dialogShown = false;
   bool _tutorialChecked = false;
+  final Set<String> _shownErrorMessages = {};
 
   late TutorialCoachMark studentTutorialCoachMark;
   late TutorialCoachMark teacherTutorialCoachMark;
@@ -263,10 +264,6 @@ class _HomePageState extends State<HomePage> {
             _selectedIndex = 2;
           });
           setPageTitle('${_getPageTitle()}');
-        } else if (id == 'joinOrgButton') {
-          // Dismiss tutorial before opening dialog
-          teacherTutorialCoachMark.skip();
-          await _handleJoinOrganisationPressed();
         } else if (id == 'createOrgButton') {
           // Dismiss tutorial before opening dialog
           teacherTutorialCoachMark.skip();
@@ -871,47 +868,59 @@ class _HomePageState extends State<HomePage> {
   Widget _buildOrganisationsContent() {
     return BlocListener<OrganisationsBloc, OrganisationsState>(
       listener: (context, state) {
-        if (state is OrganisationsError) {
-          // Check if this is the "last teacher" error
-          if (state.message.contains("last teacher")) {
-            showDialog(
-              context: context,
-              builder:
-                  (context) => AlertDialog(
-                    title: Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                        SizedBox(width: 8),
-                        Text('Cannot Leave Organisation'),
-                      ],
-                    ),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'You are the last teacher in this organisation.',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'To leave the organisation, you must first assign another member as a teacher.',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text('OK'),
+        // Clear shown errors when organisations load
+        if (state is OrganisationsLoaded) {
+          _shownErrorMessages.clear();
+        }
+
+        // Handle last-teacher block state (shown once)
+        if (state is OrganisationsLeaveBlockedLastTeacher) {
+          const msg =
+              "Cannot leave organisation. You are the last teacher. Please assign another teacher before leaving.";
+          if (_shownErrorMessages.contains(msg)) return;
+          _shownErrorMessages.add(msg);
+
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder:
+                (context) => AlertDialog(
+                  title: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Text('Cannot Leave Organisation'),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'You are the last teacher in this organisation.',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'To leave the organisation, you must first assign another member as a teacher.',
+                        style: TextStyle(fontSize: 14),
                       ),
                     ],
                   ),
-            );
-          } else {
-            // Show other errors as snackbar
-            SnackBarHelper.showError(context, message: state.message);
-          }
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _shownErrorMessages.remove(msg);
+                      },
+                      child: Text('OK'),
+                    ),
+                  ],
+                ),
+          );
+        } else if (state is OrganisationsError) {
+          // Show other errors as snackbar
+          SnackBarHelper.showError(context, message: state.message);
         }
       },
       child: BlocBuilder<OrganisationsBloc, OrganisationsState>(

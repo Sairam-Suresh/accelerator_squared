@@ -339,17 +339,35 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           try {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.remove('has_seen_tutorial');
-                            await prefs.remove('has_seen_org_tutorial');
-                            await prefs.remove('has_seen_project_tutorial');
+                            // Try SharedPreferences first
+                            try {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.remove('has_seen_tutorial');
+                              await prefs.remove('has_seen_org_tutorial');
+                              await prefs.remove('has_seen_project_tutorial');
+                            } catch (_) {
+                              // If SharedPreferences fails, use localStorage directly (web fallback)
+                              // SharedPreferences on web stores keys with "flutter." prefix
+                              html.window.localStorage.remove(
+                                'flutter.has_seen_tutorial',
+                              );
+                              html.window.localStorage.remove(
+                                'flutter.has_seen_org_tutorial',
+                              );
+                              html.window.localStorage.remove(
+                                'flutter.has_seen_project_tutorial',
+                              );
+                            }
+
                             // Force reload back to home (web)
                             html.window.location.assign('/');
                           } catch (e) {
                             if (mounted) {
                               SnackBarHelper.showError(
                                 context,
-                                message: 'Error resetting tutorial: ${e.toString()}',
+                                message:
+                                    'Error resetting tutorial: ${e.toString()}',
                               );
                             }
                           }

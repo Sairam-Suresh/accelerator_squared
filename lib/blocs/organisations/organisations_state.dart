@@ -26,3 +26,18 @@ class OrganisationsError extends OrganisationsState {
 
   OrganisationsError(this.message);
 }
+
+/// Special state to indicate leaving is blocked because user is last teacher.
+/// Extends OrganisationsLoaded so the UI can continue to render the list.
+class OrganisationsLeaveBlockedLastTeacher extends OrganisationsLoaded {
+  OrganisationsLeaveBlockedLastTeacher(
+    List<Organisation> organisations, {
+    OrganisationsNotificationType notificationType =
+        OrganisationsNotificationType.none,
+    String? notificationMessage,
+  }) : super(
+          organisations,
+          notificationType: notificationType,
+          notificationMessage: notificationMessage,
+        );
+}

@@ -13,6 +13,8 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // SharedPreferences.setMockInitialValues({});
   runApp(const MyApp());
 }
 
