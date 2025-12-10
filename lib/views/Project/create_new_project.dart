@@ -1,10 +1,10 @@
 import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
-import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/util/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math' as math;
 
 class NewProjectDialog extends StatefulWidget {
   const NewProjectDialog({
@@ -29,6 +29,17 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
   List<String> memberEmailsList = [];
   List<Map<String, dynamic>> organisationMembers = [];
   bool isCreating = false;
+  final LayerLink _emailFieldLink = LayerLink();
+  final FocusNode _emailFieldFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    projectNameController.dispose();
+    descriptionController.dispose();
+    emailAddingController.dispose();
+    _emailFieldFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -75,6 +86,145 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
     return member['role'] == 'teacher';
   }
 
+  void _handleAddEmail(String email, String selfEmail, StateSetter setState) {
+    final trimmed = email.trim();
+    if (trimmed.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.red, size: 24),
+                SizedBox(width: 8),
+                Text("Invalid Email"),
+              ],
+            ),
+            content: Text(
+              "Email field cannot be empty when adding a new member.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    if (trimmed == selfEmail) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.red, size: 24),
+                SizedBox(width: 8),
+                Text(
+                  "You will automatically be added as the creator. Please do not add your own email.",
+                ),
+              ],
+            ),
+            content: Text("You cannot add yourself as a project member."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    if (memberEmailsList.contains(trimmed)) {
+      return;
+    }
+
+    if (isTeacher(trimmed)) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.red, size: 24),
+                SizedBox(width: 8),
+                Text("Cannot Add Teacher"),
+              ],
+            ),
+            content: Text(
+              "Teachers cannot be added to projects. Please add student teachers or members only.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    final found = organisationMembers.any((m) => (m['email'] ?? '') == trimmed);
+    if (!found) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.red, size: 24),
+                SizedBox(width: 8),
+                Text("User Not Found"),
+              ],
+            ),
+            content: Text("This email is not a member of the organisation."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    setState(() {
+      memberEmailsList.add(trimmed);
+      emailAddingController.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     var userState = context.read<UserBloc>().state as UserLoggedIn;
@@ -88,18 +238,16 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
           Navigator.of(context).pop();
           SnackBarHelper.showSuccess(
             context,
-            message: widget.isTeacher
-                ? 'Project created successfully'
-                : 'Project request submitted successfully',
+            message:
+                widget.isTeacher
+                    ? 'Project created successfully'
+                    : 'Project request submitted successfully',
           );
         } else if (state is OrganisationError && isCreating) {
           setState(() {
             isCreating = false;
           });
-          SnackBarHelper.showError(
-            context,
-            message: state.message,
-          );
+          SnackBarHelper.showError(context, message: state.message);
         }
       },
       child: StatefulBuilder(
@@ -289,35 +437,158 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: TextField(
-                              controller: emailAddingController,
-                              decoration: InputDecoration(
-                                hintText: "Enter member's email",
-                                label: Text("Member Email"),
-                                prefixIcon: Icon(Icons.email_rounded),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color:
-                                        Theme.of(context).colorScheme.outline,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    width: 2,
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withValues(alpha: 0.3),
+                            child: CompositedTransformTarget(
+                              link: _emailFieldLink,
+                              child: RawAutocomplete<String>(
+                                textEditingController: emailAddingController,
+                                focusNode: _emailFieldFocusNode,
+                                optionsBuilder: (TextEditingValue value) {
+                                  final query = value.text.toLowerCase();
+                                  final emails =
+                                      organisationMembers
+                                          .where(
+                                            (m) =>
+                                                (m['role'] ?? '') != 'teacher',
+                                          )
+                                          .map(
+                                            (m) =>
+                                                (m['email'] ?? '').toString(),
+                                          )
+                                          .where((e) => e.isNotEmpty)
+                                          .toList();
+                                  if (query.isEmpty) return emails;
+                                  return emails.where(
+                                    (e) => e.toLowerCase().contains(query),
+                                  );
+                                },
+                                displayStringForOption: (opt) => opt,
+                                optionsViewBuilder: (
+                                  context,
+                                  onSelected,
+                                  options,
+                                ) {
+                                  final tileHeight = 80.0;
+                                  final listHeight = math.min(
+                                    options.length * tileHeight,
+                                    240.0,
+                                  );
+                                  return CompositedTransformFollower(
+                                    link: _emailFieldLink,
+                                    showWhenUnlinked: false,
+                                    offset: const Offset(0, 56),
+                                    child: Material(
+                                      elevation: 4,
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: SizedBox(
+                                        height: listHeight,
+                                        child: ListView.separated(
+                                          separatorBuilder:
+                                              (context, index) =>
+                                                  Divider(thickness: 1),
+                                          padding: EdgeInsets.zero,
+                                          itemCount: options.length,
+                                          itemBuilder: (context, index) {
+                                            final opt = options.elementAt(
+                                              index,
+                                            );
+                                            final role =
+                                                organisationMembers
+                                                    .firstWhere(
+                                                      (m) =>
+                                                          (m['email'] ?? '')
+                                                              .toString() ==
+                                                          opt,
+                                                      orElse:
+                                                          () => {'role': ''},
+                                                    )['role']
+                                                    ?.toString() ??
+                                                '';
+                                            return Padding(
+                                              padding: EdgeInsets.all(10),
+                                              child: ListTile(
+                                                dense: true,
+                                                title: Text(
+                                                  opt,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                subtitle:
+                                                    role.isNotEmpty
+                                                        ? Text(
+                                                          role,
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            color:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .colorScheme
+                                                                    .onSurfaceVariant,
+                                                          ),
+                                                        )
+                                                        : null,
+                                                onTap: () => onSelected(opt),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onSelected: (opt) {
+                                  _handleAddEmail(
+                                    opt,
+                                    userState.email,
+                                    setState,
+                                  );
+                                  _emailFieldFocusNode.unfocus();
+                                  emailAddingController.clear();
+                                },
+                                fieldViewBuilder: (
+                                  context,
+                                  textController,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  return TextField(
+                                    controller: textController,
+                                    focusNode: focusNode,
+                                    decoration: InputDecoration(
+                                      hintText: "Enter member's email",
+                                      label: Text("Member Email"),
+                                      prefixIcon: Icon(Icons.email_rounded),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.outline,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest
+                                          .withValues(alpha: 0.3),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ),
@@ -337,165 +608,11 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                               ),
                             ),
                             onPressed: () {
-                              final email = emailAddingController.text.trim();
-                              if (email.isNotEmpty) {
-                                // Prevent adding self
-                                if (email == userState.email) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.error_outline_rounded,
-                                              color: Colors.red,
-                                              size: 24,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              "You will automatically be added as the creator. Please do not add your own email.",
-                                            ),
-                                          ],
-                                        ),
-                                        content: Text(
-                                          "You cannot add yourself as a project member.",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: Text("OK"),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  return;
-                                }
-                                // Check if the email belongs to a teacher
-                                if (isTeacher(email)) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.error_outline_rounded,
-                                              color: Colors.red,
-                                              size: 24,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text("Cannot Add Teacher"),
-                                          ],
-                                        ),
-                                        content: Text(
-                                          "Teachers cannot be added to projects. Please add student teachers or members only.",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: Text("OK"),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  return;
-                                }
-                                // Check if the email exists in the organisation
-                                final found = organisationMembers.any(
-                                  (m) => m['email'] == email,
-                                );
-                                if (!found) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.error_outline_rounded,
-                                              color: Colors.red,
-                                              size: 24,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text("User Not Found"),
-                                          ],
-                                        ),
-                                        content: Text(
-                                          "This email is not a member of the organisation.",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: Text("OK"),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  return;
-                                }
-                                setState(() {
-                                  memberEmailsList.add(email);
-                                  emailAddingController.clear();
-                                });
-                              } else {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      title: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.error_outline_rounded,
-                                            color: Colors.red,
-                                            size: 24,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text("Invalid Email"),
-                                        ],
-                                      ),
-                                      content: Text(
-                                        "Email field cannot be empty when adding a new member.",
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: Text("OK"),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              }
+                              _handleAddEmail(
+                                emailAddingController.text,
+                                userState.email,
+                                setState,
+                              );
                             },
                             icon: Icon(Icons.add_rounded, size: 20),
                             label: Text("Add"),

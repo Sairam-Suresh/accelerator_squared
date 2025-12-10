@@ -214,7 +214,7 @@ class _HomePageState extends State<HomePage> {
         if (id == 'orgButton') {
           final ctx = expandableFabKey.currentContext;
           if (ctx != null) {
-            ExpandableFab.of(ctx)?.toggle();
+            ExpandableFab.of(ctx).toggle();
           }
         } else if (id == 'navOrganisations') {
           setState(() {
@@ -273,7 +273,7 @@ class _HomePageState extends State<HomePage> {
         if (id == 'orgButton') {
           final ctx = expandableFabKey.currentContext;
           if (ctx != null) {
-            ExpandableFab.of(ctx)?.toggle();
+            ExpandableFab.of(ctx).toggle();
           }
         } else if (id == 'navOrganisations') {
           setState(() {
@@ -714,20 +714,12 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border(
-                  right: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: NavigationRail(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              NavigationRail(
                 backgroundColor: Colors.transparent,
                 selectedIndex: _selectedIndex,
                 onDestinationSelected: (value) {
@@ -755,15 +747,18 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
-            ),
-
-            Expanded(
-              child: Container(
-                color: Theme.of(context).colorScheme.surface,
-                child: _buildContent(),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  // color: Theme.of(context).colorScheme.surface,
+                  child: Card(
+                    child: _buildContent(),
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

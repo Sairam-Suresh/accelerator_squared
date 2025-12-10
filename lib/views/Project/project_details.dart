@@ -89,6 +89,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
         }
       },
       child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
           title: BlocBuilder<ProjectsBloc, ProjectsState>(
             key: ValueKey(widget.project.id),
@@ -228,7 +229,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                 )
                 : null,
         body: SafeArea(
-          child: Padding(
+          child: Container(
+            color: Theme.of(context).colorScheme.surface,
             padding: EdgeInsets.fromLTRB(30, 10, 30, 10),
             child: BlocBuilder<ProjectsBloc, ProjectsState>(
               key: ValueKey(widget.project.id),
@@ -299,7 +301,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Left column: project info, files, etc. (unchanged)
-                        SizedBox(
+                        Container(
+                          color: Theme.of(context).colorScheme.surface,
                           width: MediaQuery.of(context).size.width / 2 - 50,
                           height: MediaQuery.of(context).size.height - 85,
                           child: Column(
@@ -851,6 +854,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                         style: TextStyle(
                                                           fontSize: 20,
                                                         ),
+                                                        maxLines: 1,
                                                       ),
                                                     ),
                                                     Container(
@@ -891,7 +895,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                     Text(
                                                       milestone['description'] ??
                                                           '',
-                                                      maxLines: 3,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                     if (milestone['dueDate'] !=
                                                         null)
@@ -1065,7 +1071,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                     Text(
                                                       milestone['description'] ??
                                                           '',
-                                                      maxLines: 3,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                     if (milestone['dueDate'] !=
                                                         null)
@@ -1356,13 +1364,36 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                                     style: TextStyle(
                                                       fontSize: 20,
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                                 subtitle: Opacity(
                                                   opacity: 0.5,
-                                                  child: Text(
-                                                    milestone['description'] ??
-                                                        '',
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        milestone['description'] ??
+                                                            '',
+                                                        maxLines: 1,
+                                                        overflow:
+                                                            TextOverflow
+                                                                .ellipsis,
+                                                      ),
+                                                      SizedBox(height: 2),
+                                                      Text(
+                                                        'Due: Completed',
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          color:
+                                                              Colors.grey[600],
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
