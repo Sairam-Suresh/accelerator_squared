@@ -412,97 +412,104 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.teacherView) ...[
-            Card(
-              elevation: 0,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: memberEmailController,
-                        decoration: InputDecoration(
-                          label: Text("Add user to organisation"),
-                          hintText: "Enter email to add",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.teacherView) ...[
+              Card(
+                elevation: 0,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: memberEmailController,
+                          decoration: InputDecoration(
+                            label: Text("Add user to organisation"),
+                            hintText: "Enter email to add",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: isAddingMember ? null : addMember,
-                      icon:
-                          isAddingMember
-                              ? SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Theme.of(context).colorScheme.onPrimary,
-                                  ),
-                                ),
-                              )
-                              : Icon(Icons.add),
-                      label: Padding(
-                        padding: EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 8,
-                        ),
-                        child:
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: isAddingMember ? null : addMember,
+                        icon:
                             isAddingMember
-                                ? Text(
-                                  "Adding...",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Theme.of(context).colorScheme.onPrimary,
+                                    ),
+                                  ),
                                 )
-                                : Text(
-                                  "Add member",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                                : Icon(Icons.add),
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 8,
+                          ),
+                          child:
+                              isAddingMember
+                                  ? Text(
+                                    "Adding...",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                  : Text(
+                                    "Add member",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                         ),
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        elevation: 0,
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          elevation: 0,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+            ],
+            _buildSectionHeader(context, "Teachers", teachers.length),
+            _buildMemberList(context, teachers, "Teacher"),
             const SizedBox(height: 16),
+            Divider(),
+            SizedBox(height: 5),
+            _buildSectionHeader(
+              context,
+              "Student Teachers",
+              studentTeachers.length,
+            ),
+            _buildMemberList(context, studentTeachers, "Student Teacher"),
+            const SizedBox(height: 16),
+            Divider(),
+            SizedBox(height: 5),
+            _buildSectionHeader(context, "Members", regularMembers.length),
+            _buildMemberList(context, regularMembers, "Member"),
           ],
-          _buildSectionHeader(context, "Teachers", teachers.length),
-          _buildMemberList(context, teachers, "Teacher"),
-          const SizedBox(height: 16),
-          Divider(),
-          SizedBox(height: 5),
-          _buildSectionHeader(
-            context,
-            "Student Teachers",
-            studentTeachers.length,
-          ),
-          _buildMemberList(context, studentTeachers, "Student Teacher"),
-          const SizedBox(height: 16),
-          Divider(),
-          SizedBox(height: 5),
-          _buildSectionHeader(context, "Members", regularMembers.length),
-          _buildMemberList(context, regularMembers, "Member"),
-        ],
+        ),
       ),
     );
   }
