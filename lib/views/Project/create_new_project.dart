@@ -1,6 +1,7 @@
 import 'package:accelerator_squared/blocs/organisation/organisation_bloc.dart';
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:accelerator_squared/util/snackbar_helper.dart';
+import 'package:accelerator_squared/util/util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,11 +27,12 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
   TextEditingController emailAddingController = TextEditingController();
 
   bool? backupFileHistory = false;
-  List<String> memberEmailsList = [];
+  List<Map<String, dynamic>> memberEmailsList = []; // Changed to store email and displayName
   List<Map<String, dynamic>> organisationMembers = [];
   bool isCreating = false;
   final LayerLink _emailFieldLink = LayerLink();
   final FocusNode _emailFieldFocusNode = FocusNode();
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   @override
   void dispose() {
@@ -50,19 +52,44 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
   Future<void> fetchOrganisationMembers() async {
     try {
       QuerySnapshot membersSnapshot =
-          await FirebaseFirestore.instance
+          await firestore
               .collection('organisations')
               .doc(widget.organisationId)
               .collection('members')
               .get();
 
       List<Map<String, dynamic>> members = [];
+      List<String> uidsToFetch = [];
+      
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
+        final uid = memberData['uid'] as String? ?? '';
         members.add({
           'email': memberData['email'] ?? '',
           'role': memberData['role'] ?? 'member',
+          'uid': uid,
+          'displayName': null, // Will be fetched below
         });
+
+        if (uid.isNotEmpty) {
+          uidsToFetch.add(uid);
+        }
+      }
+
+      // Batch fetch display names
+      if (uidsToFetch.isNotEmpty) {
+        final displayNames = await batchFetchUserDisplayNamesByUids(
+          firestore,
+          uidsToFetch,
+        );
+        
+        // Update members list with display names
+        for (var member in members) {
+          final uid = member['uid'] as String? ?? '';
+          if (uid.isNotEmpty && displayNames.containsKey(uid)) {
+            member['displayName'] = displayNames[uid];
+          }
+        }
       }
 
       setState(() {
@@ -84,6 +111,33 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
       orElse: () => {'role': 'member'},
     );
     return member['role'] == 'teacher';
+  }
+
+  String _getDisplayName(Map<String, dynamic> member) {
+    final displayName = member['displayName'] as String?;
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return member['email'] as String? ?? 'Unknown';
+  }
+
+  String _getInitials(Map<String, dynamic> member) {
+    final displayName = member['displayName'] as String?;
+    final email = member['email'] as String? ?? '';
+    
+    if (displayName != null && displayName.isNotEmpty) {
+      final parts = displayName.trim().split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else if (parts.isNotEmpty) {
+        return parts[0][0].toUpperCase();
+      }
+    }
+    
+    if (email.isNotEmpty) {
+      return email[0].toUpperCase();
+    }
+    return '?';
   }
 
   void _handleAddEmail(String email, String selfEmail, StateSetter setState) {
@@ -152,7 +206,7 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
       return;
     }
 
-    if (memberEmailsList.contains(trimmed)) {
+    if (memberEmailsList.any((m) => (m['email'] as String).toLowerCase() == trimmed.toLowerCase())) {
       return;
     }
 
@@ -219,8 +273,17 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
       return;
     }
 
+    // Find the member data to get display name
+    final memberData = organisationMembers.firstWhere(
+      (m) => (m['email'] as String).toLowerCase() == trimmed.toLowerCase(),
+      orElse: () => {'email': trimmed, 'displayName': null},
+    );
+
     setState(() {
-      memberEmailsList.add(trimmed);
+      memberEmailsList.add({
+        'email': trimmed,
+        'displayName': memberData['displayName'],
+      });
       emailAddingController.clear();
     });
   }
@@ -444,24 +507,43 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                 focusNode: _emailFieldFocusNode,
                                 optionsBuilder: (TextEditingValue value) {
                                   final query = value.text.toLowerCase();
-                                  final emails =
+                                  final filteredMembers =
                                       organisationMembers
                                           .where(
                                             (m) =>
-                                                (m['role'] ?? '') != 'teacher',
+                                                (m['role'] ?? '') != 'teacher' &&
+                                                !memberEmailsList.any(
+                                                  (added) => 
+                                                      (added['email'] as String).toLowerCase() == 
+                                                      (m['email'] as String).toLowerCase(),
+                                                ),
                                           )
-                                          .map(
-                                            (m) =>
-                                                (m['email'] ?? '').toString(),
-                                          )
-                                          .where((e) => e.isNotEmpty)
                                           .toList();
-                                  if (query.isEmpty) return emails;
-                                  return emails.where(
-                                    (e) => e.toLowerCase().contains(query),
-                                  );
+                                  
+                                  if (query.isEmpty) {
+                                    return filteredMembers.map((m) => m['email'] as String).toList();
+                                  }
+                                  
+                                  return filteredMembers
+                                      .where((m) {
+                                        final email = (m['email'] ?? '').toString().toLowerCase();
+                                        final displayName = (m['displayName'] ?? '').toString().toLowerCase();
+                                        return email.contains(query) || displayName.contains(query);
+                                      })
+                                      .map((m) => m['email'] as String)
+                                      .toList();
                                 },
-                                displayStringForOption: (opt) => opt,
+                                displayStringForOption: (opt) {
+                                  final member = organisationMembers.firstWhere(
+                                    (m) => (m['email'] ?? '').toString() == opt,
+                                    orElse: () => {'email': opt, 'displayName': null},
+                                  );
+                                  final displayName = member['displayName'] as String?;
+                                  if (displayName != null && displayName.isNotEmpty) {
+                                    return '$displayName ($opt)';
+                                  }
+                                  return opt;
+                                },
                                 optionsViewBuilder: (
                                   context,
                                   onSelected,
@@ -491,7 +573,7 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                             final opt = options.elementAt(
                                               index,
                                             );
-                                            final role =
+                                            final member =
                                                 organisationMembers
                                                     .firstWhere(
                                                       (m) =>
@@ -499,35 +581,58 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                                               .toString() ==
                                                           opt,
                                                       orElse:
-                                                          () => {'role': ''},
-                                                    )['role']
-                                                    ?.toString() ??
-                                                '';
+                                                          () => {'role': '', 'displayName': null},
+                                                    );
+                                            final displayName = member['displayName'] as String?;
+                                            final role = member['role']?.toString() ?? '';
+                                            
                                             return Padding(
                                               padding: EdgeInsets.all(10),
                                               child: ListTile(
                                                 dense: true,
-                                                title: Text(
-                                                  opt,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
+                                                leading: CircleAvatar(
+                                                  backgroundColor: Theme.of(context)
+                                                      .colorScheme.primaryContainer,
+                                                  child: Text(
+                                                    _getInitials(member),
+                                                    style: TextStyle(
+                                                      color: Theme.of(context).colorScheme.primary,
+                                                      fontSize: 12,
+                                                    ),
                                                   ),
                                                 ),
-                                                subtitle:
-                                                    role.isNotEmpty
-                                                        ? Text(
-                                                          role,
-                                                          style: TextStyle(
-                                                            fontSize: 13,
-                                                            color:
-                                                                Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .colorScheme
-                                                                    .onSurfaceVariant,
-                                                          ),
-                                                        )
-                                                        : null,
+                                                title: Text(
+                                                  displayName != null && displayName.isNotEmpty
+                                                      ? displayName
+                                                      : opt,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                subtitle: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    if (displayName != null && displayName.isNotEmpty)
+                                                      Text(
+                                                        opt,
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Theme.of(context)
+                                                              .colorScheme.onSurfaceVariant,
+                                                        ),
+                                                      ),
+                                                    if (role.isNotEmpty)
+                                                      Text(
+                                                        role,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: Theme.of(context)
+                                                              .colorScheme.onSurfaceVariant,
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
                                                 onTap: () => onSelected(opt),
                                               ),
                                             );
@@ -650,32 +755,50 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                               Theme.of(
                                                 context,
                                               ).colorScheme.primaryContainer,
-                                          child: Icon(
-                                            Icons.person_rounded,
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
+                                          child: Text(
+                                            _getInitials(memberEmailsList[index]),
+                                            style: TextStyle(
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                         title: Text(
-                                          memberEmailsList[index],
+                                          _getDisplayName(memberEmailsList[index]),
                                           style: TextStyle(
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
-                                        subtitle: Text(
-                                          isTeacher(memberEmailsList[index])
-                                              ? "Teacher (cannot be added)"
-                                              : "Member",
-                                          style: TextStyle(
-                                            color:
-                                                isTeacher(
-                                                      memberEmailsList[index],
-                                                    )
-                                                    ? Colors.red
-                                                    : Colors.grey,
-                                          ),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if ((memberEmailsList[index]['displayName'] as String?) != null &&
+                                                (memberEmailsList[index]['displayName'] as String).isNotEmpty)
+                                              Text(
+                                                memberEmailsList[index]['email'],
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Theme.of(context)
+                                                      .colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            Text(
+                                              isTeacher(memberEmailsList[index]['email'] as String)
+                                                  ? "Teacher (cannot be added)"
+                                                  : "Member",
+                                              style: TextStyle(
+                                                color:
+                                                    isTeacher(
+                                                          memberEmailsList[index]['email'] as String,
+                                                        )
+                                                        ? Colors.red
+                                                        : Colors.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         trailing: IconButton(
                                           onPressed: () {
@@ -959,8 +1082,18 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                   );
                                   return;
                                 }
+                                
+                                // Find the member data to get display name
+                                final memberData = organisationMembers.firstWhere(
+                                  (m) => (m['email'] as String).toLowerCase() == email.toLowerCase(),
+                                  orElse: () => {'email': email, 'displayName': null},
+                                );
+
                                 setState(() {
-                                  memberEmailsList.add(email);
+                                  memberEmailsList.add({
+                                    'email': email,
+                                    'displayName': memberData['displayName'],
+                                  });
                                   emailAddingController.clear();
                                 });
                               } else {
@@ -1034,32 +1167,50 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                               Theme.of(
                                                 context,
                                               ).colorScheme.primaryContainer,
-                                          child: Icon(
-                                            Icons.person_rounded,
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
+                                          child: Text(
+                                            _getInitials(memberEmailsList[index]),
+                                            style: TextStyle(
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                         title: Text(
-                                          memberEmailsList[index],
+                                          _getDisplayName(memberEmailsList[index]),
                                           style: TextStyle(
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
-                                        subtitle: Text(
-                                          isTeacher(memberEmailsList[index])
-                                              ? "Teacher (cannot be added)"
-                                              : "Member",
-                                          style: TextStyle(
-                                            color:
-                                                isTeacher(
-                                                      memberEmailsList[index],
-                                                    )
-                                                    ? Colors.red
-                                                    : Colors.grey,
-                                          ),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if ((memberEmailsList[index]['displayName'] as String?) != null &&
+                                                (memberEmailsList[index]['displayName'] as String).isNotEmpty)
+                                              Text(
+                                                memberEmailsList[index]['email'],
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Theme.of(context)
+                                                      .colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            Text(
+                                              isTeacher(memberEmailsList[index]['email'] as String)
+                                                  ? "Teacher (cannot be added)"
+                                                  : "Member",
+                                              style: TextStyle(
+                                                color:
+                                                    isTeacher(
+                                                          memberEmailsList[index]['email'] as String,
+                                                        )
+                                                        ? Colors.red
+                                                        : Colors.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         trailing: IconButton(
                                           onPressed: () {
@@ -1165,7 +1316,7 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                         if (widget.isTeacher) {
                                           bool hasNonTeacherMember =
                                               memberEmailsList.any(
-                                                (email) => !isTeacher(email),
+                                                (m) => !isTeacher(m['email'] as String),
                                               );
                                           if (!hasNonTeacherMember) {
                                             ScaffoldMessenger.of(
@@ -1191,9 +1342,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                               title: projectNameController.text,
                                               description:
                                                   descriptionController.text,
-                                              memberEmails: List<String>.from(
-                                                memberEmailsList,
-                                              ),
+                                              memberEmails: memberEmailsList
+                                                  .map((m) => m['email'] as String)
+                                                  .toList(),
                                             ),
                                           );
                                         } else {
@@ -1202,9 +1353,9 @@ class _NewProjectDialogState extends State<NewProjectDialog> {
                                               title: projectNameController.text,
                                               description:
                                                   descriptionController.text,
-                                              memberEmails: List<String>.from(
-                                                memberEmailsList,
-                                              ),
+                                              memberEmails: memberEmailsList
+                                                  .map((m) => m['email'] as String)
+                                                  .toList(),
                                             ),
                                           );
                                         }

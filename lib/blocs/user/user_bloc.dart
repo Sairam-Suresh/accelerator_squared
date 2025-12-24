@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:meta/meta.dart';
 import 'dart:async';
 
@@ -8,6 +9,22 @@ part 'user_state.dart';
 
 class UserBloc extends Bloc<UserEvent, UserState> {
   FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  /// Saves or updates user data in Firestore users collection
+  Future<void> _saveUserToFirestore(User user) async {
+    try {
+      await firestore.collection('users').doc(user.uid).set({
+        'email': user.email ?? '',
+        'displayName': user.displayName,
+        'photoUrl': user.photoURL,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      // Log error but don't fail the login process
+      print('Error saving user to Firestore: $e');
+    }
+  }
 
   UserBloc() : super(UserLoading()) {
     on<UserRegisterEvent>(_onUserRegisterEvent);
@@ -36,12 +53,16 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       return;
     }
 
+    final user = credential.user!;
+    // Save user data to Firestore
+    await _saveUserToFirestore(user);
+
     emit(
       UserLoggedIn(
-        userId: credential.user!.uid,
-        email: credential.user!.email!,
-        displayName: credential.user!.displayName,
-        photoUrl: credential.user!.photoURL,
+        userId: user.uid,
+        email: user.email!,
+        displayName: user.displayName,
+        photoUrl: user.photoURL,
       ),
     );
   }
@@ -54,12 +75,16 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       final credential = await firebaseAuth.signInWithPopup(GoogleAuthProvider());
       
       if (credential.user != null) {
+        final user = credential.user!;
+        // Save user data to Firestore
+        await _saveUserToFirestore(user);
+
         emit(
           UserLoggedIn(
-            userId: credential.user!.uid,
-            email: credential.user!.email!,
-            displayName: credential.user!.displayName,
-            photoUrl: credential.user!.photoURL,
+            userId: user.uid,
+            email: user.email!,
+            displayName: user.displayName,
+            photoUrl: user.photoURL,
           ),
         );
       } else {
@@ -110,6 +135,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         } else {
           // Unexpected state - user is logged in but we got an error
           // This shouldn't happen, but handle it gracefully
+          // Save user data to Firestore
+          await _saveUserToFirestore(currentUser);
+
           emit(
             UserLoggedIn(
               userId: currentUser.uid,
@@ -129,6 +157,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   ) async {
     User? user = firebaseAuth.currentUser;
     if (user != null) {
+      // Save user data to Firestore (in case it wasn't saved before)
+      await _saveUserToFirestore(user);
+
       emit(
         UserLoggedIn(
           userId: user.uid,

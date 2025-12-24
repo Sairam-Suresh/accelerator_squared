@@ -557,229 +557,254 @@ class _ProjectsPageState extends State<ProjectsPage>
                                     child: Container(
                                       color:
                                           Theme.of(context).colorScheme.surface,
-                                      child:
-                                          _selectedIndex == 0
-                                              ? SafeArea(
-                                                child: Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                  ),
-                                                  child: StreamBuilder<
-                                                    List<Project>
-                                                  >(
-                                                    stream: _getFilteredProjectsStream(
-                                                      organisationStateLoaded!
-                                                          .id,
-                                                      organisationStateLoaded!
-                                                          .userRole,
-                                                    ),
-                                                    builder: (
-                                                      context,
-                                                      snapshot,
-                                                    ) {
-                                                      if (snapshot
-                                                              .connectionState ==
-                                                          ConnectionState
-                                                              .waiting) {
-                                                        return Center(
-                                                          child:
-                                                              CircularProgressIndicator(),
-                                                        );
-                                                      }
+                                      child: Align(
+                                        alignment: Alignment.topCenter,
+                                        child:
+                                            _selectedIndex == 0
+                                                ? SafeArea(
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                        ),
+                                                    child: StreamBuilder<
+                                                      List<Project>
+                                                    >(
+                                                      stream: _getFilteredProjectsStream(
+                                                        organisationStateLoaded!
+                                                            .id,
+                                                        organisationStateLoaded!
+                                                            .userRole,
+                                                      ),
+                                                      builder: (
+                                                        context,
+                                                        snapshot,
+                                                      ) {
+                                                        if (snapshot
+                                                                .connectionState ==
+                                                            ConnectionState
+                                                                .waiting) {
+                                                          return Center(
+                                                            child:
+                                                                CircularProgressIndicator(),
+                                                          );
+                                                        }
 
-                                                      if (snapshot.hasError) {
-                                                        return Center(
-                                                          child: Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .center,
-                                                            children: [
-                                                              Icon(
-                                                                Icons
-                                                                    .error_outline,
-                                                                size: 64,
-                                                                color:
-                                                                    Colors.red,
-                                                              ),
-                                                              SizedBox(
-                                                                height: 16,
-                                                              ),
-                                                              Text(
-                                                                'Error loading projects',
-                                                                style: TextStyle(
-                                                                  fontSize: 18,
+                                                        if (snapshot.hasError) {
+                                                          return Center(
+                                                            child: Column(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .error_outline,
+                                                                  size: 64,
                                                                   color:
                                                                       Colors
                                                                           .red,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
                                                                 ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      }
+                                                                SizedBox(
+                                                                  height: 16,
+                                                                ),
+                                                                Text(
+                                                                  'Error loading projects',
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        18,
+                                                                    color:
+                                                                        Colors
+                                                                            .red,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          );
+                                                        }
 
-                                                      final filteredProjects =
-                                                          snapshot.data ?? [];
+                                                        final filteredProjects =
+                                                            snapshot.data ?? [];
 
-                                                      if (filteredProjects
-                                                          .isEmpty) {
-                                                        return Center(
-                                                          child: Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .center,
-                                                            children: [
-                                                              Icon(
-                                                                Icons
-                                                                    .folder_off,
-                                                                size: 64,
-                                                                color:
-                                                                    Colors.grey,
-                                                              ),
-                                                              SizedBox(
-                                                                height: 16,
-                                                              ),
-                                                              Text(
-                                                                'No projects found',
-                                                                style: TextStyle(
-                                                                  fontSize: 18,
+                                                        if (filteredProjects
+                                                            .isEmpty) {
+                                                          return Center(
+                                                            child: Column(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .folder_off,
+                                                                  size: 64,
                                                                   color:
                                                                       Colors
                                                                           .grey,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
                                                                 ),
-                                                              ),
-                                                              SizedBox(
-                                                                height: 8,
-                                                              ),
-                                                              Text(
-                                                                organisationStateLoaded!
-                                                                            .userRole ==
-                                                                        'member'
-                                                                    ? 'You are not part of any projects yet.'
-                                                                    : 'There are no projects in this organisation yet.',
-                                                                style: TextStyle(
-                                                                  fontSize: 14,
-                                                                  color:
-                                                                      Colors
-                                                                          .grey
-                                                                          .shade600,
+                                                                SizedBox(
+                                                                  height: 16,
                                                                 ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      }
+                                                                Text(
+                                                                  'No projects found',
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        18,
+                                                                    color:
+                                                                        Colors
+                                                                            .grey,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                  height: 8,
+                                                                ),
+                                                                Text(
+                                                                  organisationStateLoaded!
+                                                                              .userRole ==
+                                                                          'member'
+                                                                      ? 'You are not part of any projects yet.'
+                                                                      : 'There are no projects in this organisation yet.',
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    color:
+                                                                        Colors
+                                                                            .grey
+                                                                            .shade600,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          );
+                                                        }
 
-                                                      return Column(
-                                                        children: [
-                                                          Expanded(
-                                                            child: GridView.count(
-                                                              childAspectRatio:
-                                                                  1.5,
-                                                              crossAxisCount: 3,
-                                                              crossAxisSpacing:
-                                                                  10,
-                                                              mainAxisSpacing:
-                                                                  10,
-                                                              children:
-                                                                  filteredProjects.map((
-                                                                    project,
-                                                                  ) {
-                                                                    return ProjectCard(
-                                                                      project:
-                                                                          project,
-                                                                      organisationId:
-                                                                          organisationStateLoaded!
-                                                                              .id,
-                                                                      isTeacher:
-                                                                          organisationStateLoaded!.userRole ==
-                                                                              'teacher' ||
-                                                                          organisationStateLoaded!.userRole ==
-                                                                              'student_teacher',
-                                                                      onTap: () {
-                                                                        Navigator.of(
-                                                                              context,
-                                                                            )
-                                                                            .push(
-                                                                              MaterialPageRoute(
-                                                                                builder:
-                                                                                    (
-                                                                                      context,
-                                                                                    ) => BlocProvider(
-                                                                                      create:
-                                                                                          (
-                                                                                            _,
-                                                                                          ) =>
-                                                                                              ProjectsBloc(),
-                                                                                      child: ProjectDetails(
-                                                                                        organisationId:
-                                                                                            organisationStateLoaded!.id,
-                                                                                        project:
-                                                                                            project,
-                                                                                        isTeacher:
-                                                                                            organisationStateLoaded!.userRole !=
-                                                                                            "member",
-                                                                                        key: ValueKey(
-                                                                                          project.id,
+                                                        return Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Expanded(
+                                                              child: GridView.count(
+                                                                childAspectRatio:
+                                                                    1.5,
+                                                                crossAxisCount:
+                                                                    3,
+                                                                crossAxisSpacing:
+                                                                    10,
+                                                                mainAxisSpacing:
+                                                                    10,
+                                                                children:
+                                                                    filteredProjects.map((
+                                                                      project,
+                                                                    ) {
+                                                                      return ProjectCard(
+                                                                        project:
+                                                                            project,
+                                                                        organisationId:
+                                                                            organisationStateLoaded!.id,
+                                                                        isTeacher:
+                                                                            organisationStateLoaded!.userRole ==
+                                                                                'teacher' ||
+                                                                            organisationStateLoaded!.userRole ==
+                                                                                'student_teacher',
+                                                                        onTap: () {
+                                                                          Navigator.of(
+                                                                                context,
+                                                                              )
+                                                                              .push(
+                                                                                MaterialPageRoute(
+                                                                                  builder:
+                                                                                      (
+                                                                                        context,
+                                                                                      ) => BlocProvider(
+                                                                                        create:
+                                                                                            (
+                                                                                              _,
+                                                                                            ) =>
+                                                                                                ProjectsBloc(),
+                                                                                        child: ProjectDetails(
+                                                                                          organisationId:
+                                                                                              organisationStateLoaded!.id,
+                                                                                          project:
+                                                                                              project,
+                                                                                          isTeacher:
+                                                                                              organisationStateLoaded!.userRole !=
+                                                                                              "member",
+                                                                                          key: ValueKey(
+                                                                                            project.id,
+                                                                                          ),
                                                                                         ),
                                                                                       ),
-                                                                                    ),
-                                                                              ),
-                                                                            )
-                                                                            .then((
-                                                                              _,
-                                                                            ) {
-                                                                              context
-                                                                                  .read<
-                                                                                    ProjectsBloc
-                                                                                  >()
-                                                                                  .add(
-                                                                                    FetchProjectsEvent(
-                                                                                      organisationStateLoaded!.id,
-                                                                                    ),
-                                                                                  );
-                                                                              context
-                                                                                  .read<
-                                                                                    OrganisationsBloc
-                                                                                  >()
-                                                                                  .add(
-                                                                                    FetchOrganisationsEvent(),
-                                                                                  );
-                                                                            });
-                                                                      },
-                                                                    );
-                                                                  }).toList(),
+                                                                                ),
+                                                                              )
+                                                                              .then((
+                                                                                _,
+                                                                              ) {
+                                                                                context
+                                                                                    .read<
+                                                                                      ProjectsBloc
+                                                                                    >()
+                                                                                    .add(
+                                                                                      FetchProjectsEvent(
+                                                                                        organisationStateLoaded!.id,
+                                                                                      ),
+                                                                                    );
+                                                                                context
+                                                                                    .read<
+                                                                                      OrganisationsBloc
+                                                                                    >()
+                                                                                    .add(
+                                                                                      FetchOrganisationsEvent(),
+                                                                                    );
+                                                                              });
+                                                                        },
+                                                                      );
+                                                                    }).toList(),
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    },
+                                                          ],
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                )
+                                                : _selectedIndex == 1
+                                                ? Align(
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: OrgMilestones(
+                                                    isTeacher:
+                                                        organisationStateLoaded!
+                                                            .userRole !=
+                                                        'member',
+                                                    organisationId:
+                                                        organisationStateLoaded!
+                                                            .id,
+                                                  ),
+                                                )
+                                                : Align(
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: OrgMembers(
+                                                    teacherView: false,
+                                                    organisationId:
+                                                        organisationStateLoaded!
+                                                            .id,
+                                                    organisationName:
+                                                        organisationStateLoaded!
+                                                            .name,
                                                   ),
                                                 ),
-                                              )
-                                              : _selectedIndex == 1
-                                              ? OrgMilestones(
-                                                isTeacher:
-                                                    organisationStateLoaded!
-                                                        .userRole !=
-                                                    'member',
-                                                organisationId:
-                                                    organisationStateLoaded!.id,
-                                              )
-                                              : OrgMembers(
-                                                teacherView: false,
-                                                organisationId:
-                                                    organisationStateLoaded!.id,
-                                                organisationName:
-                                                    organisationStateLoaded!
-                                                        .name,
-                                              ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -835,257 +860,309 @@ class _ProjectsPageState extends State<ProjectsPage>
                                   child: Card(
                                     color:
                                         Theme.of(context).colorScheme.surface,
-                                    child: Builder(
-                                      builder: (context) {
-                                        switch (_selectedIndex) {
-                                          case 0:
-                                            return Padding(
-                                              padding: EdgeInsets.all(24),
-                                              child: StreamBuilder<
-                                                List<Project>
-                                              >(
-                                                stream:
-                                                    _getFilteredProjectsStream(
-                                                      organisationStateLoaded!
-                                                          .id,
-                                                      organisationStateLoaded!
-                                                          .userRole,
-                                                    ),
-                                                builder: (context, snapshot) {
-                                                  if (snapshot
-                                                          .connectionState ==
-                                                      ConnectionState.waiting) {
-                                                    return Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    );
-                                                  }
-
-                                                  if (snapshot.hasError) {
-                                                    return Center(
-                                                      child: Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          Icon(
-                                                            Icons.error_outline,
-                                                            size: 64,
-                                                            color: Colors.red,
-                                                          ),
-                                                          SizedBox(height: 16),
-                                                          Text(
-                                                            'Error loading projects',
-                                                            style: TextStyle(
-                                                              fontSize: 18,
-                                                              color: Colors.red,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
-                                                            ),
-                                                          ),
-                                                        ],
+                                    child: Align(
+                                      alignment: Alignment.topCenter,
+                                      child: Builder(
+                                        builder: (context) {
+                                          switch (_selectedIndex) {
+                                            case 0:
+                                              return Padding(
+                                                padding: EdgeInsets.all(24),
+                                                child: StreamBuilder<
+                                                  List<Project>
+                                                >(
+                                                  stream:
+                                                      _getFilteredProjectsStream(
+                                                        organisationStateLoaded!
+                                                            .id,
+                                                        organisationStateLoaded!
+                                                            .userRole,
                                                       ),
-                                                    );
-                                                  }
+                                                  builder: (context, snapshot) {
+                                                    if (snapshot
+                                                            .connectionState ==
+                                                        ConnectionState
+                                                            .waiting) {
+                                                      return Center(
+                                                        child:
+                                                            CircularProgressIndicator(),
+                                                      );
+                                                    }
 
-                                                  final filteredProjects =
-                                                      snapshot.data ?? [];
+                                                    if (snapshot.hasError) {
+                                                      return Center(
+                                                        child: Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            Icon(
+                                                              Icons
+                                                                  .error_outline,
+                                                              size: 64,
+                                                              color: Colors.red,
+                                                            ),
+                                                            SizedBox(
+                                                              height: 16,
+                                                            ),
+                                                            Text(
+                                                              'Error loading projects',
+                                                              style: TextStyle(
+                                                                fontSize: 18,
+                                                                color:
+                                                                    Colors.red,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    }
 
-                                                  if (filteredProjects
-                                                      .isEmpty) {
-                                                    return Center(
-                                                      child: Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          Icon(
-                                                            Icons.folder_off,
-                                                            size: 64,
-                                                            color: Colors.grey,
-                                                          ),
-                                                          SizedBox(height: 16),
-                                                          Text(
-                                                            'No projects found',
-                                                            style: TextStyle(
-                                                              fontSize: 18,
+                                                    final filteredProjects =
+                                                        snapshot.data ?? [];
+
+                                                    if (filteredProjects
+                                                        .isEmpty) {
+                                                      return Center(
+                                                        child: Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.folder_off,
+                                                              size: 64,
                                                               color:
                                                                   Colors.grey,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
                                                             ),
-                                                          ),
-                                                          SizedBox(height: 8),
-                                                          Text(
-                                                            organisationStateLoaded!
-                                                                        .userRole ==
-                                                                    'member'
-                                                                ? 'You are not part of any projects yet.'
-                                                                : 'There are no projects in this organisation yet.',
-                                                            style: TextStyle(
-                                                              fontSize: 14,
-                                                              color:
-                                                                  Colors
-                                                                      .grey
-                                                                      .shade600,
+                                                            SizedBox(
+                                                              height: 16,
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  }
+                                                            Text(
+                                                              'No projects found',
+                                                              style: TextStyle(
+                                                                fontSize: 18,
+                                                                color:
+                                                                    Colors.grey,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                            ),
+                                                            SizedBox(height: 8),
+                                                            Text(
+                                                              organisationStateLoaded!
+                                                                          .userRole ==
+                                                                      'member'
+                                                                  ? 'You are not part of any projects yet.'
+                                                                  : 'There are no projects in this organisation yet.',
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                                color:
+                                                                    Colors
+                                                                        .grey
+                                                                        .shade600,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    }
 
-                                                  return Column(
-                                                    children: [
-                                                      Expanded(
-                                                        child: GridView.count(
-                                                          childAspectRatio: 1.5,
-                                                          crossAxisCount: 3,
-                                                          crossAxisSpacing: 10,
-                                                          mainAxisSpacing: 10,
-                                                          children:
-                                                              filteredProjects.map((
-                                                                project,
-                                                              ) {
-                                                                return ProjectCard(
-                                                                  project:
-                                                                      project,
-                                                                  organisationId:
-                                                                      organisationStateLoaded!
-                                                                          .id,
-                                                                  isTeacher:
-                                                                      organisationStateLoaded!
-                                                                              .userRole ==
-                                                                          'teacher' ||
-                                                                      organisationStateLoaded!
-                                                                              .userRole ==
-                                                                          'student_teacher',
-                                                                  onTap: () {
-                                                                    Navigator.of(
-                                                                          context,
-                                                                        )
-                                                                        .push(
-                                                                          MaterialPageRoute(
-                                                                            builder:
-                                                                                (
-                                                                                  context,
-                                                                                ) => BlocProvider(
-                                                                                  create:
-                                                                                      (
-                                                                                        _,
-                                                                                      ) =>
-                                                                                          ProjectsBloc(),
-                                                                                  child: ProjectDetails(
-                                                                                    organisationId:
-                                                                                        organisationStateLoaded!.id,
-                                                                                    project:
-                                                                                        project,
-                                                                                    isTeacher:
-                                                                                        organisationStateLoaded!.userRole !=
-                                                                                        "member",
-                                                                                    key: ValueKey(
-                                                                                      project.id,
+                                                    return Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Expanded(
+                                                          child: GridView.count(
+                                                            childAspectRatio:
+                                                                1.5,
+                                                            crossAxisCount: 3,
+                                                            crossAxisSpacing:
+                                                                10,
+                                                            mainAxisSpacing: 10,
+                                                            children:
+                                                                filteredProjects.map((
+                                                                  project,
+                                                                ) {
+                                                                  return ProjectCard(
+                                                                    project:
+                                                                        project,
+                                                                    organisationId:
+                                                                        organisationStateLoaded!
+                                                                            .id,
+                                                                    isTeacher:
+                                                                        organisationStateLoaded!.userRole ==
+                                                                            'teacher' ||
+                                                                        organisationStateLoaded!.userRole ==
+                                                                            'student_teacher',
+                                                                    onTap: () {
+                                                                      Navigator.of(
+                                                                            context,
+                                                                          )
+                                                                          .push(
+                                                                            MaterialPageRoute(
+                                                                              builder:
+                                                                                  (
+                                                                                    context,
+                                                                                  ) => BlocProvider(
+                                                                                    create:
+                                                                                        (
+                                                                                          _,
+                                                                                        ) =>
+                                                                                            ProjectsBloc(),
+                                                                                    child: ProjectDetails(
+                                                                                      organisationId:
+                                                                                          organisationStateLoaded!.id,
+                                                                                      project:
+                                                                                          project,
+                                                                                      isTeacher:
+                                                                                          organisationStateLoaded!.userRole !=
+                                                                                          "member",
+                                                                                      key: ValueKey(
+                                                                                        project.id,
+                                                                                      ),
                                                                                     ),
                                                                                   ),
-                                                                                ),
-                                                                          ),
-                                                                        )
-                                                                        .then((
-                                                                          _,
-                                                                        ) {
-                                                                          context
-                                                                              .read<
-                                                                                ProjectsBloc
-                                                                              >()
-                                                                              .add(
-                                                                                FetchProjectsEvent(
-                                                                                  organisationStateLoaded!.id,
-                                                                                ),
-                                                                              );
-                                                                          context
-                                                                              .read<
-                                                                                OrganisationsBloc
-                                                                              >()
-                                                                              .add(
-                                                                                FetchOrganisationsEvent(),
-                                                                              );
-                                                                        });
-                                                                  },
-                                                                );
-                                                              }).toList(),
+                                                                            ),
+                                                                          )
+                                                                          .then((
+                                                                            _,
+                                                                          ) {
+                                                                            context
+                                                                                .read<
+                                                                                  ProjectsBloc
+                                                                                >()
+                                                                                .add(
+                                                                                  FetchProjectsEvent(
+                                                                                    organisationStateLoaded!.id,
+                                                                                  ),
+                                                                                );
+                                                                            context
+                                                                                .read<
+                                                                                  OrganisationsBloc
+                                                                                >()
+                                                                                .add(
+                                                                                  FetchOrganisationsEvent(),
+                                                                                );
+                                                                          });
+                                                                    },
+                                                                  );
+                                                                }).toList(),
+                                                          ),
                                                         ),
-                                                      ),
-                                                    ],
-                                                  );
-                                                },
-                                              ),
-                                            );
-                                          case 1:
-                                            // For member: Milestones, for teacher/student_teacher: Statistics
-                                            if (organisationStateLoaded!
-                                                    .userRole ==
-                                                'member') {
-                                              return OrgMilestones(
-                                                isTeacher: false,
-                                                organisationId:
-                                                    organisationStateLoaded!.id,
+                                                      ],
+                                                    );
+                                                  },
+                                                ),
                                               );
-                                            } else {
-                                              return OrgStatistics(
-                                                organisationId:
-                                                    organisationStateLoaded!.id,
-                                                projects:
-                                                    organisationStateLoaded!
-                                                        .projects,
+                                            case 1:
+                                              // For member: Milestones, for teacher/student_teacher: Statistics
+                                              if (organisationStateLoaded!
+                                                      .userRole ==
+                                                  'member') {
+                                                return Align(
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: OrgMilestones(
+                                                    isTeacher: false,
+                                                    organisationId:
+                                                        organisationStateLoaded!
+                                                            .id,
+                                                  ),
+                                                );
+                                              } else {
+                                                return Align(
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: OrgStatistics(
+                                                    organisationId:
+                                                        organisationStateLoaded!
+                                                            .id,
+                                                    projects:
+                                                        organisationStateLoaded!
+                                                            .projects,
+                                                  ),
+                                                );
+                                              }
+                                            case 2:
+                                              // For member: Members, for teacher/student_teacher: Requests
+                                              if (organisationStateLoaded!
+                                                      .userRole ==
+                                                  'member') {
+                                                return Align(
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: OrgMembers(
+                                                    teacherView: false,
+                                                    organisationId:
+                                                        organisationStateLoaded!
+                                                            .id,
+                                                    organisationName:
+                                                        organisationStateLoaded!
+                                                            .name,
+                                                  ),
+                                                );
+                                              } else {
+                                                return Align(
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                        ),
+                                                    child: ProjectRequests(
+                                                      organisationId:
+                                                          organisationStateLoaded!
+                                                              .id,
+                                                      projectRequests:
+                                                          organisationStateLoaded!
+                                                              .projectRequests,
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            case 3:
+                                              // Only for teacher/student_teacher: Milestones
+                                              return Align(
+                                                alignment: Alignment.topCenter,
+                                                child: OrgMilestones(
+                                                  isTeacher:
+                                                      organisationStateLoaded!
+                                                          .userRole !=
+                                                      'member',
+                                                  organisationId:
+                                                      organisationStateLoaded!
+                                                          .id,
+                                                ),
                                               );
-                                            }
-                                          case 2:
-                                            // For member: Members, for teacher/student_teacher: Requests
-                                            if (organisationStateLoaded!
-                                                    .userRole ==
-                                                'member') {
-                                              return OrgMembers(
-                                                teacherView: false,
-                                                organisationId:
-                                                    organisationStateLoaded!.id,
-                                                organisationName:
-                                                    organisationStateLoaded!
-                                                        .name,
+                                            case 4:
+                                              // Only for teacher/student_teacher: Members
+                                              return Align(
+                                                alignment: Alignment.topCenter,
+                                                child: OrgMembers(
+                                                  teacherView: true,
+                                                  organisationId:
+                                                      organisationStateLoaded!
+                                                          .id,
+                                                  organisationName:
+                                                      organisationStateLoaded!
+                                                          .name,
+                                                ),
                                               );
-                                            } else {
-                                              return ProjectRequests(
-                                                organisationId:
-                                                    organisationStateLoaded!.id,
-                                                projectRequests:
-                                                    organisationStateLoaded!
-                                                        .projectRequests,
-                                              );
-                                            }
-                                          case 3:
-                                            // Only for teacher/student_teacher: Milestones
-                                            return OrgMilestones(
-                                              isTeacher:
-                                                  organisationStateLoaded!
-                                                      .userRole !=
-                                                  'member',
-                                              organisationId:
-                                                  organisationStateLoaded!.id,
-                                            );
-                                          case 4:
-                                            // Only for teacher/student_teacher: Members
-                                            return OrgMembers(
-                                              teacherView: true,
-                                              organisationId:
-                                                  organisationStateLoaded!.id,
-                                              organisationName:
-                                                  organisationStateLoaded!.name,
-                                            );
-                                          default:
-                                            return SizedBox.shrink();
-                                        }
-                                      },
+                                            default:
+                                              return SizedBox.shrink();
+                                          }
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),

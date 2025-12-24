@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:accelerator_squared/util/snackbar_helper.dart';
+import 'package:accelerator_squared/util/util.dart';
+import 'dart:math' as math;
 
 class ProjectMembersDialog extends StatefulWidget {
   final String organisationId;
@@ -17,7 +19,6 @@ class ProjectMembersDialog extends StatefulWidget {
 }
 
 class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
-  TextEditingController memberEmailController = TextEditingController();
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   FirebaseAuth auth = FirebaseAuth.instance;
 
@@ -29,12 +30,22 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
   List<Map<String, dynamic>> organisationMembers = [];
   bool isRemovingMember = false;
   String? currentOperationId;
+  final TextEditingController _searchController = TextEditingController();
+  final LayerLink _emailFieldLink = LayerLink();
+  final FocusNode _emailFieldFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     fetchMembers();
     fetchOrganisationMembers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _emailFieldFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> fetchMembers() async {
@@ -51,20 +62,66 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
               .collection('members')
               .get();
       List<Map<String, dynamic>> membersList = [];
+      List<String> uidsToFetch = [];
+      
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
+        final uid = memberData['uid'] as String? ?? '';
         membersList.add({
           'id': doc.id,
           'email': memberData['email'] ?? 'Unknown',
           'role': memberData['role'] ?? 'member',
-          'uid': memberData['uid'] ?? '',
+          'uid': uid,
+          'displayName': null, // Will be fetched below
         });
 
         if (memberData['uid'] == auth.currentUser?.uid ||
             memberData['email'] == auth.currentUser?.email) {
           currentUserRole = memberData['role'] ?? 'member';
         }
+
+        if (uid.isNotEmpty) {
+          uidsToFetch.add(uid);
+        }
       }
+
+      // Batch fetch display names by UID
+      if (uidsToFetch.isNotEmpty) {
+        final displayNames = await batchFetchUserDisplayNamesByUids(
+          firestore,
+          uidsToFetch,
+        );
+        
+        // Update members list with display names from UID lookup
+        for (var member in membersList) {
+          final uid = member['uid'] as String? ?? '';
+          if (uid.isNotEmpty && displayNames.containsKey(uid)) {
+            member['displayName'] = displayNames[uid];
+          }
+        }
+      }
+
+      // Fetch display names by email for members without display names (fallback)
+      for (var member in membersList) {
+        final email = member['email'] as String? ?? '';
+        final currentDisplayName = member['displayName'] as String?;
+        
+        // Fetch by email if no display name found yet (either no UID or UID lookup failed)
+        if (email.isNotEmpty && (currentDisplayName == null || currentDisplayName.isEmpty)) {
+          try {
+            final displayName = await fetchUserDisplayNameByEmail(
+              firestore,
+              email,
+            );
+            if (displayName != null && displayName.isNotEmpty) {
+              member['displayName'] = displayName;
+            }
+          } catch (e) {
+            // Ignore errors, continue with email fallback
+          }
+        }
+      }
+
       setState(() {
         members = membersList;
         isLoading = false;
@@ -92,12 +149,37 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
               .get();
 
       List<Map<String, dynamic>> orgMembers = [];
+      List<String> uidsToFetch = [];
+      
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
+        final uid = memberData['uid'] as String? ?? '';
         orgMembers.add({
           'email': memberData['email'] ?? '',
           'role': memberData['role'] ?? 'member',
+          'uid': uid,
+          'displayName': null, // Will be fetched below
         });
+
+        if (uid.isNotEmpty) {
+          uidsToFetch.add(uid);
+        }
+      }
+
+      // Batch fetch display names
+      if (uidsToFetch.isNotEmpty) {
+        final displayNames = await batchFetchUserDisplayNamesByUids(
+          firestore,
+          uidsToFetch,
+        );
+        
+        // Update org members list with display names
+        for (var member in orgMembers) {
+          final uid = member['uid'] as String? ?? '';
+          if (uid.isNotEmpty && displayNames.containsKey(uid)) {
+            member['displayName'] = displayNames[uid];
+          }
+        }
       }
 
       if (mounted) {
@@ -115,19 +197,8 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
     }
   }
 
-  Future<void> addMember() async {
-    if (memberEmailController.text.isEmpty) return;
-
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(memberEmailController.text)) {
-      SnackBarHelper.showError(
-        context,
-        message: 'Please enter a valid email address',
-      );
-      return;
-    }
-
-    final email = memberEmailController.text.trim();
+  Future<void> addMemberFromEmail(String email) async {
+    if (email.isEmpty) return;
 
     // Ensure email is in organisation
     final orgMember = organisationMembers.firstWhere(
@@ -204,7 +275,6 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
             if (uid != null) 'uid': uid,
           });
 
-      memberEmailController.clear();
       await fetchMembers();
 
       if (mounted) {
@@ -214,6 +284,8 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
       setState(() {
         memberOperationInProgress = false;
         isAddingMember = false;
+        _searchController.clear();
+        _emailFieldFocusNode.unfocus();
       });
     } catch (e) {
       setState(() {
@@ -224,6 +296,42 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
         SnackBarHelper.showError(context, message: 'Error adding member: $e');
       }
     }
+  }
+
+  bool _hasDisplayName(Map<String, dynamic> member) {
+    final displayName = member['displayName'];
+    if (displayName == null) return false;
+    if (displayName is String) {
+      return displayName.isNotEmpty;
+    }
+    return false;
+  }
+
+  String _getDisplayName(Map<String, dynamic> member) {
+    final displayName = member['displayName'];
+    if (displayName != null && displayName is String && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return member['email'] as String? ?? 'Unknown';
+  }
+
+  String _getInitials(Map<String, dynamic> member) {
+    final displayName = member['displayName'];
+    final email = member['email'] as String? ?? '';
+    
+    if (displayName != null && displayName is String && displayName.isNotEmpty) {
+      final parts = displayName.trim().split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else if (parts.isNotEmpty) {
+        return parts[0][0].toUpperCase();
+      }
+    }
+    
+    if (email.isNotEmpty) {
+      return email[0].toUpperCase();
+    }
+    return '?';
   }
 
   bool isCurrentUser(Map<String, dynamic> member) {
@@ -285,7 +393,7 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
           (context) => AlertDialog(
             title: Text('Remove Member'),
             content: Text(
-              'Are you sure you want to remove ${member['email']} from the project?',
+              'Are you sure you want to remove ${_getDisplayName(member)} from the project?',
             ),
             actions: [
               TextButton(
@@ -365,63 +473,223 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: memberEmailController,
-                          decoration: InputDecoration(
-                            label: Text("Add user to project"),
-                            hintText: "Enter email to add",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                        child: CompositedTransformTarget(
+                          link: _emailFieldLink,
+                          child: RawAutocomplete<String>(
+                            textEditingController: _searchController,
+                            focusNode: _emailFieldFocusNode,
+                            optionsBuilder: (TextEditingValue value) {
+                              final query = value.text.toLowerCase();
+                              final filteredMembers =
+                                  organisationMembers
+                                      .where(
+                                        (m) =>
+                                            (m['role'] ?? '') != 'teacher' &&
+                                            !members.any(
+                                              (added) => 
+                                                  (added['email'] as String).toLowerCase() == 
+                                                  (m['email'] as String).toLowerCase(),
+                                            ),
+                                      )
+                                      .toList();
+                              
+                              if (query.isEmpty) {
+                                return filteredMembers.map((m) => m['email'] as String).toList();
+                              }
+                              
+                              return filteredMembers
+                                  .where((m) {
+                                    final email = (m['email'] ?? '').toString().toLowerCase();
+                                    final displayName = (m['displayName'] ?? '').toString().toLowerCase();
+                                    return email.contains(query) || displayName.contains(query);
+                                  })
+                                  .map((m) => m['email'] as String)
+                                  .toList();
+                            },
+                            displayStringForOption: (opt) {
+                              final member = organisationMembers.firstWhere(
+                                (m) => (m['email'] ?? '').toString() == opt,
+                                orElse: () => {'email': opt, 'displayName': null},
+                              );
+                              final displayName = member['displayName'] as String?;
+                              if (displayName != null && displayName.isNotEmpty) {
+                                return '$displayName ($opt)';
+                              }
+                              return opt;
+                            },
+                            optionsViewBuilder: (
+                              context,
+                              onSelected,
+                              options,
+                            ) {
+                              final tileHeight = 80.0;
+                              final listHeight = math.min(
+                                options.length * tileHeight,
+                                240.0,
+                              );
+                              return CompositedTransformFollower(
+                                link: _emailFieldLink,
+                                showWhenUnlinked: false,
+                                offset: const Offset(0, 56),
+                                child: Material(
+                                  elevation: 4,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: SizedBox(
+                                    height: listHeight,
+                                    child: ListView.separated(
+                                      separatorBuilder:
+                                          (context, index) =>
+                                              Divider(thickness: 1),
+                                      padding: EdgeInsets.zero,
+                                      itemCount: options.length,
+                                      itemBuilder: (context, index) {
+                                        final opt = options.elementAt(
+                                          index,
+                                        );
+                                        final member =
+                                            organisationMembers
+                                                .firstWhere(
+                                                  (m) =>
+                                                      (m['email'] ?? '')
+                                                          .toString() ==
+                                                      opt,
+                                                  orElse:
+                                                      () => {'role': '', 'displayName': null},
+                                                );
+                                        final displayName = member['displayName'] as String?;
+                                        final role = member['role']?.toString() ?? '';
+                                        
+                                        return Padding(
+                                          padding: EdgeInsets.all(10),
+                                          child: ListTile(
+                                            dense: true,
+                                            leading: CircleAvatar(
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme.primaryContainer,
+                                              child: Text(
+                                                _getInitials(member),
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                            title: Text(
+                                              displayName != null && displayName.isNotEmpty
+                                                  ? displayName
+                                                  : opt,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            subtitle: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                if (displayName != null && displayName.isNotEmpty)
+                                                  Text(
+                                                    opt,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Theme.of(context)
+                                                          .colorScheme.onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                if (role.isNotEmpty)
+                                                  Text(
+                                                    role,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: Theme.of(context)
+                                                          .colorScheme.onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                            onTap: () => onSelected(opt),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            onSelected: (opt) {
+                              addMemberFromEmail(opt);
+                              _emailFieldFocusNode.unfocus();
+                              _searchController.clear();
+                            },
+                            fieldViewBuilder: (
+                              context,
+                              textController,
+                              focusNode,
+                              onFieldSubmitted,
+                            ) {
+                              return TextField(
+                                controller: textController,
+                                focusNode: focusNode,
+                                decoration: InputDecoration(
+                                  hintText: "Enter member's email",
+                                  label: Text("Member Email"),
+                                  prefixIcon: Icon(Icons.email_rounded),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.outline,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.3),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
-                        onPressed: isAddingMember ? null : addMember,
-                        icon:
-                            isAddingMember
-                                ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Theme.of(context).colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                )
-                                : Icon(Icons.add),
-                        label: Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 8,
-                          ),
-                          child:
-                              isAddingMember
-                                  ? Text(
-                                    "Adding...",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                  : Text(
-                                    "Add member",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                        ),
                         style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
                           backgroundColor:
                               Theme.of(context).colorScheme.primary,
                           foregroundColor:
                               Theme.of(context).colorScheme.onPrimary,
-                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                         ),
+                        onPressed: isAddingMember
+                            ? null
+                            : () {
+                                if (_searchController.text.isNotEmpty) {
+                                  addMemberFromEmail(_searchController.text.trim());
+                                }
+                              },
+                        icon: Icon(Icons.add_rounded, size: 20),
+                        label: Text("Add"),
                       ),
                     ],
                   ),
@@ -515,9 +783,7 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
                 context,
               ).colorScheme.primary.withAlpha(25),
               child: Text(
-                (member['email'] as String).isNotEmpty
-                    ? member['email'][0].toUpperCase()
-                    : '?',
+                _getInitials(member),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -525,9 +791,18 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
               ),
             ),
             title: Text(
-              member['email'],
+              _getDisplayName(member),
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            subtitle: _hasDisplayName(member)
+                ? Text(
+                    member['email'],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : null,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -640,3 +915,4 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
     );
   }
 }
+

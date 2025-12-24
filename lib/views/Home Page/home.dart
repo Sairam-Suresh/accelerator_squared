@@ -805,7 +805,10 @@ class _HomePageState extends State<HomePage> {
                 child: Container(
                   // color: Theme.of(context).colorScheme.surface,
                   child: Card(
-                    child: _buildContent(),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: _buildContent(),
+                    ),
                     color: Theme.of(context).colorScheme.surface,
                   ),
                 ),

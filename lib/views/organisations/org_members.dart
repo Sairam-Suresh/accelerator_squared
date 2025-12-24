@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart';
 import 'package:accelerator_squared/util/snackbar_helper.dart';
+import 'package:accelerator_squared/util/util.dart';
 
 class OrgMembers extends StatefulWidget {
   const OrgMembers({
@@ -48,23 +49,48 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         .doc(widget.organisationId)
         .collection('members')
         .snapshots()
-        .listen((snapshot) {
+        .listen((snapshot) async {
           List<Map<String, dynamic>> membersList = [];
+          List<String> uidsToFetch = [];
+
           for (final doc in snapshot.docs) {
             final memberData = doc.data();
+            final uid = memberData['uid'] as String? ?? '';
             membersList.add({
               'id': doc.id,
               'email': memberData['email'] ?? 'Unknown',
               'role': memberData['role'] ?? 'member',
-              'uid': memberData['uid'] ?? '',
+              'uid': uid,
               'status': memberData['status'] ?? 'active',
+              'displayName': null, // Will be fetched below
             });
 
             if (memberData['uid'] == auth.currentUser?.uid ||
                 memberData['email'] == auth.currentUser?.email) {
               currentUserRole = memberData['role'] ?? 'member';
             }
+
+            if (uid.isNotEmpty) {
+              uidsToFetch.add(uid);
+            }
           }
+
+          // Batch fetch display names
+          if (uidsToFetch.isNotEmpty) {
+            final displayNames = await batchFetchUserDisplayNamesByUids(
+              firestore,
+              uidsToFetch,
+            );
+
+            // Update members list with display names
+            for (var member in membersList) {
+              final uid = member['uid'] as String? ?? '';
+              if (uid.isNotEmpty && displayNames.containsKey(uid)) {
+                member['displayName'] = displayNames[uid];
+              }
+            }
+          }
+
           if (mounted) {
             setState(() {
               members = membersList;
@@ -88,19 +114,43 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
               .get();
 
       List<Map<String, dynamic>> membersList = [];
+      List<String> uidsToFetch = [];
+
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
+        final uid = memberData['uid'] as String? ?? '';
         membersList.add({
           'id': doc.id,
           'email': memberData['email'] ?? 'Unknown',
           'role': memberData['role'] ?? 'member',
-          'uid': memberData['uid'] ?? '',
+          'uid': uid,
           'status': memberData['status'] ?? 'active',
+          'displayName': null, // Will be fetched below
         });
 
         if (memberData['uid'] == auth.currentUser?.uid ||
             memberData['email'] == auth.currentUser?.email) {
           currentUserRole = memberData['role'] ?? 'member';
+        }
+
+        if (uid.isNotEmpty) {
+          uidsToFetch.add(uid);
+        }
+      }
+
+      // Batch fetch display names
+      if (uidsToFetch.isNotEmpty) {
+        final displayNames = await batchFetchUserDisplayNamesByUids(
+          firestore,
+          uidsToFetch,
+        );
+
+        // Update members list with display names
+        for (var member in membersList) {
+          final uid = member['uid'] as String? ?? '';
+          if (uid.isNotEmpty && displayNames.containsKey(uid)) {
+            member['displayName'] = displayNames[uid];
+          }
         }
       }
 
@@ -263,7 +313,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
           (context) => AlertDialog(
             title: Text('Remove Member'),
             content: Text(
-              'Are you sure you want to remove ${member['email']} from the organisation?',
+              'Are you sure you want to remove ${_getDisplayName(member)} from the organisation?',
             ),
             actions: [
               TextButton(
@@ -578,9 +628,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
                 context,
               ).colorScheme.primary.withValues(alpha: 0.1),
               child: Text(
-                (member['email'] as String).isNotEmpty
-                    ? member['email'][0].toUpperCase()
-                    : '?',
+                _getInitials(member),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -588,9 +636,20 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
               ),
             ),
             title: Text(
-              member['email'],
+              _getDisplayName(member),
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            subtitle:
+                (member['displayName'] != null &&
+                        (member['displayName'] as String).isNotEmpty)
+                    ? Text(
+                      member['email'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                    : null,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -846,6 +905,35 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         });
       }
     }
+  }
+
+  String _getDisplayName(Map<String, dynamic> member) {
+    final displayName = member['displayName'] as String?;
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return member['email'] as String? ?? 'Unknown';
+  }
+
+  String _getInitials(Map<String, dynamic> member) {
+    final displayName = member['displayName'] as String?;
+    final email = member['email'] as String? ?? '';
+
+    if (displayName != null && displayName.isNotEmpty) {
+      // Get first letter of first name and first letter of last name
+      final parts = displayName.trim().split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else if (parts.isNotEmpty) {
+        return parts[0][0].toUpperCase();
+      }
+    }
+
+    // Fallback to email
+    if (email.isNotEmpty) {
+      return email[0].toUpperCase();
+    }
+    return '?';
   }
 
   Widget _buildRoleChip(BuildContext context, String role) {

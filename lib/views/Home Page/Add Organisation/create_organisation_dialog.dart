@@ -2,6 +2,8 @@ import 'package:accelerator_squared/blocs/organisations/organisations_bloc.dart'
 import 'package:accelerator_squared/blocs/user/user_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:accelerator_squared/util/util.dart';
 
 class CreateOrganisationDialog extends StatefulWidget {
   const CreateOrganisationDialog({super.key});
@@ -15,8 +17,9 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
   TextEditingController orgNameController = TextEditingController();
   TextEditingController orgDescController = TextEditingController();
   TextEditingController emailAddingController = TextEditingController();
-  List<String> orgMemberList = [];
+  List<Map<String, dynamic>> orgMemberList = []; // Changed to store email and displayName
   bool isCreating = false;
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +223,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                           vertical: 16,
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         final email = emailAddingController.text.trim();
                         if (email.isNotEmpty) {
                           // Prevent adding self
@@ -259,9 +262,38 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                             );
                             return;
                           }
-                          orgMemberList.add(email);
+
+                          // Check if email is already in list
+                          if (orgMemberList.any((m) => 
+                              (m['email'] as String).toLowerCase() == email.toLowerCase())) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('This email is already in the list'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Look up display name for this email
+                          String? displayName;
+                          try {
+                            displayName = await fetchUserDisplayNameByEmail(
+                              firestore,
+                              email,
+                            );
+                          } catch (e) {
+                            // Continue even if lookup fails
+                            print('Error fetching display name for $email: $e');
+                          }
+
+                          setState(() {
+                            orgMemberList.add({
+                              'email': email,
+                              'displayName': displayName,
+                            });
+                          });
                           emailAddingController.clear();
-                          setState(() {});
                         } else {
                           showDialog(
                             context: context,
@@ -333,18 +365,31 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                                         Theme.of(
                                           context,
                                         ).colorScheme.primaryContainer,
-                                    child: Icon(
-                                      Icons.person_rounded,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
+                                    child: Text(
+                                      _getInitials(orgMemberList[index]),
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                   title: Text(
-                                    orgMemberList[index],
+                                    _getDisplayName(orgMemberList[index]),
                                     style: TextStyle(
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
+                                  subtitle: (orgMemberList[index]['displayName'] != null &&
+                                           (orgMemberList[index]['displayName'] as String).isNotEmpty)
+                                      ? Text(
+                                          orgMemberList[index]['email'],
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                        )
+                                      : null,
                                   trailing: IconButton(
                                     onPressed: () {
                                       setState(() {
@@ -440,9 +485,9 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                                     CreateOrganisationEvent(
                                       name: orgNameController.text,
                                       description: orgDescController.text,
-                                      memberEmails: List<String>.from(
-                                        orgMemberList,
-                                      ),
+                                      memberEmails: orgMemberList
+                                          .map((m) => m['email'] as String)
+                                          .toList(),
                                     ),
                                   );
                                 },
@@ -482,5 +527,32 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
         ),
       ),
     );
+  }
+
+  String _getDisplayName(Map<String, dynamic> member) {
+    final displayName = member['displayName'] as String?;
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return member['email'] as String? ?? 'Unknown';
+  }
+
+  String _getInitials(Map<String, dynamic> member) {
+    final displayName = member['displayName'] as String?;
+    final email = member['email'] as String? ?? '';
+    
+    if (displayName != null && displayName.isNotEmpty) {
+      final parts = displayName.trim().split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      } else if (parts.isNotEmpty) {
+        return parts[0][0].toUpperCase();
+      }
+    }
+    
+    if (email.isNotEmpty) {
+      return email[0].toUpperCase();
+    }
+    return '?';
   }
 }
