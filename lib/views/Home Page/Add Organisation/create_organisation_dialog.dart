@@ -164,7 +164,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                     ),
                     SizedBox(width: 8),
                     Text(
-                      "Add Members",
+                      "Invite Members",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -182,8 +182,8 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                       child: TextField(
                         controller: emailAddingController,
                         decoration: InputDecoration(
-                          hintText: "Enter member's email",
-                          label: Text("Member Email"),
+                          hintText: "Enter member's email to invite",
+                          label: Text("Invite Member"),
                           prefixIcon: Icon(Icons.email_rounded),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -268,7 +268,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                               (m['email'] as String).toLowerCase() == email.toLowerCase())) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('This email is already in the list'),
+                                content: Text('This email is already invited'),
                                 backgroundColor: Colors.orange,
                               ),
                             );
@@ -330,7 +330,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                         }
                       },
                       icon: Icon(Icons.add_rounded, size: 20),
-                      label: Text("Add"),
+                      label: Text("Invite"),
                     ),
                   ],
                 ),
@@ -380,16 +380,28 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  subtitle: (orgMemberList[index]['displayName'] != null &&
-                                           (orgMemberList[index]['displayName'] as String).isNotEmpty)
-                                      ? Text(
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (orgMemberList[index]['displayName'] != null &&
+                                          (orgMemberList[index]['displayName'] as String).isNotEmpty)
+                                        Text(
                                           orgMemberList[index]['email'],
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
-                                        )
-                                      : null,
+                                        ),
+                                      Text(
+                                        "Pending invite",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Theme.of(context).colorScheme.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   trailing: IconButton(
                                     onPressed: () {
                                       setState(() {
@@ -422,7 +434,7 @@ class _CreateOrganisationDialogState extends State<CreateOrganisationDialog> {
                                   ),
                                   SizedBox(height: 8),
                                   Text(
-                                    "No members added yet",
+                                    "No members invited yet",
                                     style: TextStyle(
                                       color:
                                           Theme.of(

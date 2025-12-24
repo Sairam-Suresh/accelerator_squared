@@ -142,10 +142,22 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           'joinCode': joinCode,
         });
 
+        // Get current user's display name
+        String? creatorDisplayName;
+        try {
+          final userDoc = await firestore.collection('users').doc(uid).get();
+          if (userDoc.exists) {
+            creatorDisplayName = userDoc.data()?['displayName'] as String?;
+          }
+        } catch (e) {
+          // Ignore errors, displayName will be null
+        }
+
         await orgRef.collection('members').doc(uid).set({
           'role': 'teacher',
           'email': auth.currentUser?.email ?? '',
           'uid': uid,
+          'displayName': creatorDisplayName,
           'status': 'active',
           'addedAt': FieldValue.serverTimestamp(),
           'addedBy': uid,
@@ -153,13 +165,59 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
 
         for (String email in event.memberEmails) {
           if (email == auth.currentUser?.email) continue;
-          // TODO: Lookup UID by email if possible. For now, use email as fallback for doc ID.
-          await orgRef.collection('members').doc(email).set({
+
+          // Get display name for this email if available
+          String? memberDisplayName;
+          try {
+            memberDisplayName = await fetchUserDisplayNameByEmail(
+              firestore,
+              email,
+            );
+          } catch (e) {
+            // Ignore errors, displayName will be null
+          }
+
+          // Try to find the user's UID by email
+          String? memberUid;
+          try {
+            final userQuery = await firestore
+                .collection('users')
+                .where('email', isEqualTo: email)
+                .limit(1)
+                .get();
+            if (userQuery.docs.isNotEmpty) {
+              memberUid = userQuery.docs.first.id;
+            }
+          } catch (e) {
+            // Ignore errors, memberUid will be null
+          }
+
+          // Use UID if found, otherwise fallback to email as document ID
+          String docId = memberUid ?? email;
+
+          // Create pending member document
+          await orgRef.collection('members').doc(docId).set({
             'role': 'member',
             'email': email,
-            'status': 'active',
+            'displayName': memberDisplayName,
+            'status': 'pending',
             'addedAt': FieldValue.serverTimestamp(),
             'addedBy': uid,
+            if (memberUid != null) 'uid': memberUid,
+          });
+
+          // Create an invite document for this member
+          final inviteRef = orgRef.collection('invites').doc();
+          await inviteRef.set({
+            'orgId': orgId,
+            'orgName': event.name,
+            'toEmail': email.toLowerCase(),
+            'toEmailLower': email.toLowerCase(),
+            if (memberUid != null) 'toUid': memberUid,
+            'fromUid': uid,
+            'status': 'pending',
+            'createdAt': FieldValue.serverTimestamp(),
+            'memberDocId': docId,
           });
         }
 
@@ -270,6 +328,17 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           return;
         }
 
+        // Get current user's display name
+        String? userDisplayName;
+        try {
+          final userDoc = await firestore.collection('users').doc(uid).get();
+          if (userDoc.exists) {
+            userDisplayName = userDoc.data()?['displayName'] as String?;
+          }
+        } catch (e) {
+          // Ignore errors, displayName will be null
+        }
+
         // Add user to organisation
         await firestore
             .collection('organisations')
@@ -280,6 +349,7 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
               'role': 'member',
               'email': auth.currentUser?.email ?? '',
               'uid': uid,
+              'displayName': userDisplayName,
               'status': 'active',
               'addedAt': FieldValue.serverTimestamp(),
               'addedBy': uid,

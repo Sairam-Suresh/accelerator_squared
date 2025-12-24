@@ -257,6 +257,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                     'timestamp': FieldValue.serverTimestamp(),
                                     'mentionedFiles': selectedFileIds,
                                     'authorEmail': user?.email ?? 'Unknown',
+                                    'authorDisplayName': user?.displayName,
                                   };
 
                                   // Add milestone assignment if selected

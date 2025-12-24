@@ -67,12 +67,13 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
         final uid = memberData['uid'] as String? ?? '';
+        final storedDisplayName = memberData['displayName'] as String?;
         membersList.add({
           'id': doc.id,
           'email': memberData['email'] ?? 'Unknown',
           'role': memberData['role'] ?? 'member',
           'uid': uid,
-          'displayName': null, // Will be fetched below
+          'displayName': storedDisplayName, // Use stored displayName first
         });
 
         if (memberData['uid'] == auth.currentUser?.uid ||
@@ -80,22 +81,24 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
           currentUserRole = memberData['role'] ?? 'member';
         }
 
-        if (uid.isNotEmpty) {
+        // Only fetch from users collection if displayName is not stored
+        if (uid.isNotEmpty && (storedDisplayName == null || storedDisplayName.isEmpty)) {
           uidsToFetch.add(uid);
         }
       }
 
-      // Batch fetch display names by UID
+      // Batch fetch display names by UID only for members without stored displayName
       if (uidsToFetch.isNotEmpty) {
         final displayNames = await batchFetchUserDisplayNamesByUids(
           firestore,
           uidsToFetch,
         );
-        
+
         // Update members list with display names from UID lookup
         for (var member in membersList) {
           final uid = member['uid'] as String? ?? '';
-          if (uid.isNotEmpty && displayNames.containsKey(uid)) {
+          if (uid.isNotEmpty && displayNames.containsKey(uid) &&
+              (member['displayName'] == null || member['displayName'].isEmpty)) {
             member['displayName'] = displayNames[uid];
           }
         }
@@ -154,29 +157,32 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
         final uid = memberData['uid'] as String? ?? '';
+        final storedDisplayName = memberData['displayName'] as String?;
         orgMembers.add({
           'email': memberData['email'] ?? '',
           'role': memberData['role'] ?? 'member',
           'uid': uid,
-          'displayName': null, // Will be fetched below
+          'displayName': storedDisplayName, // Use stored displayName first
         });
 
-        if (uid.isNotEmpty) {
+        // Only fetch from users collection if displayName is not stored
+        if (uid.isNotEmpty && (storedDisplayName == null || storedDisplayName.isEmpty)) {
           uidsToFetch.add(uid);
         }
       }
 
-      // Batch fetch display names
+      // Batch fetch display names only for members without stored displayName
       if (uidsToFetch.isNotEmpty) {
         final displayNames = await batchFetchUserDisplayNamesByUids(
           firestore,
           uidsToFetch,
         );
-        
+
         // Update org members list with display names
         for (var member in orgMembers) {
           final uid = member['uid'] as String? ?? '';
-          if (uid.isNotEmpty && displayNames.containsKey(uid)) {
+          if (uid.isNotEmpty && displayNames.containsKey(uid) &&
+              (member['displayName'] == null || member['displayName'].isEmpty)) {
             member['displayName'] = displayNames[uid];
           }
         }
@@ -258,6 +264,17 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
         // ignore and fallback
       }
 
+      // Get display name for this email if available
+      String? memberDisplayName;
+      try {
+        memberDisplayName = await fetchUserDisplayNameByEmail(
+          firestore,
+          email,
+        );
+      } catch (e) {
+        // Ignore errors, displayName will be null
+      }
+
       String docId = uid ?? email;
       await firestore
           .collection('organisations')
@@ -269,6 +286,7 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
           .set({
             'email': email,
             'role': 'member',
+            'displayName': memberDisplayName,
             'status': 'active',
             'addedAt': FieldValue.serverTimestamp(),
             'addedBy': auth.currentUser?.uid,
