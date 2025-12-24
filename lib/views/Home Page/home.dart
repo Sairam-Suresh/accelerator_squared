@@ -206,8 +206,9 @@ class _HomePageState extends State<HomePage> {
       paddingFocus: 24,
       alignSkip: Alignment.topRight,
       opacityShadow: 0.5,
-      onFinish: () {
+      onFinish: () async {
         print("finish");
+        await _saveTutorialFlag();
       },
       onClickTarget: (target) async {
         final id = target.identify;
@@ -252,6 +253,7 @@ class _HomePageState extends State<HomePage> {
       },
       onSkip: () {
         print("skip");
+        _saveTutorialFlag(); // Fire and forget
         return true;
       },
     );
@@ -265,8 +267,9 @@ class _HomePageState extends State<HomePage> {
       paddingFocus: 24,
       alignSkip: Alignment.topRight,
       opacityShadow: 0.5,
-      onFinish: () {
+      onFinish: () async {
         print("finish");
+        await _saveTutorialFlag();
       },
       onClickTarget: (target) async {
         final id = target.identify;
@@ -307,6 +310,7 @@ class _HomePageState extends State<HomePage> {
       },
       onSkip: () {
         print("skip");
+        _saveTutorialFlag(); // Fire and forget
         return true;
       },
     );
@@ -505,16 +509,65 @@ class _HomePageState extends State<HomePage> {
       // Show tutorial only on first visit (web) and only check once per session
       if (!_tutorialChecked) {
         _tutorialChecked = true;
-        () async {
-          final prefs = await SharedPreferences.getInstance();
-          final hasSeen = prefs.getBool('has_seen_tutorial') ?? false;
-          if (!hasSeen) {
-            showTutorial();
-            await prefs.setBool('has_seen_tutorial', true);
-          }
-        }();
+        _checkAndShowTutorial();
       }
     });
+  }
+
+  Future<void> _saveTutorialFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_seen_tutorial', true);
+    } catch (e) {
+      // Fallback to localStorage on web
+      try {
+        html.window.localStorage['flutter.has_seen_tutorial'] = 'true';
+      } catch (_) {
+        // If both fail, log but continue
+        print('Failed to save tutorial flag: $e');
+      }
+    }
+  }
+
+  Future<void> _checkAndShowTutorial() async {
+    try {
+      // Add a small delay to ensure widget tree is fully built and keys are available
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!mounted) return;
+
+      bool hasSeen = false;
+
+      // Try SharedPreferences first
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        hasSeen = prefs.getBool('has_seen_tutorial') ?? false;
+      } catch (e) {
+        // If SharedPreferences fails, use localStorage directly (web fallback)
+        // SharedPreferences on web stores keys with "flutter." prefix
+        try {
+          final stored = html.window.localStorage['flutter.has_seen_tutorial'];
+          hasSeen = stored == 'true';
+        } catch (_) {
+          // If both fail, default to showing tutorial
+          hasSeen = false;
+        }
+      }
+
+      if (!hasSeen && mounted) {
+        // Add another small delay to ensure all keys are ready
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        if (mounted) {
+          showTutorial();
+          // Save the flag after showing tutorial dialog
+          await _saveTutorialFlag();
+        }
+      }
+    } catch (e) {
+      // Log error but don't crash the app
+      print('Error checking tutorial: $e');
+    }
   }
 
   void showMobileAlertIfNeeded() {

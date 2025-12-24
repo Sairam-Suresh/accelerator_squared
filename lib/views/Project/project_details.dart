@@ -41,6 +41,8 @@ class _ProjectDetailsState extends State<ProjectDetails> {
   bool showingCompletedMilestones = true;
   bool _projectTutorialChecked = false;
   late TutorialCoachMark _projectTutorial;
+  final GlobalKey _addLinksButtonKey = GlobalKey();
+  final GlobalKey _milestonesHeaderKey = GlobalKey();
 
   @override
   void initState() {
@@ -525,6 +527,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                                 children: [
                                   Expanded(
                                     child: ElevatedButton.icon(
+                                      key: _addLinksButtonKey,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
                                             Theme.of(
@@ -660,6 +663,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
                           child: Column(
                             children: [
                               Row(
+                                key: _milestonesHeaderKey,
                                 children: [
                                   Text(
                                     "Milestones",
@@ -1430,15 +1434,14 @@ class _ProjectDetailsState extends State<ProjectDetails> {
     final hasSeen = prefs.getBool('has_seen_project_tutorial') ?? false;
     if (hasSeen) return;
 
-    final size = MediaQuery.of(context).size;
-    final leftMidY = size.height / 2;
+    // Add a small delay to ensure widget tree is fully built and keys are available
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    if (!mounted) return;
 
     final addLinksFocus = TargetFocus(
       identify: 'proj_add_links',
-      targetPosition: TargetPosition(
-        const Size(220, 60),
-        Offset(60, leftMidY + 180),
-      ),
+      keyTarget: _addLinksButtonKey,
       shape: ShapeLightFocus.RRect,
       radius: 12,
       paddingFocus: 16,
@@ -1465,12 +1468,9 @@ class _ProjectDetailsState extends State<ProjectDetails> {
 
     final milestonesFocus = TargetFocus(
       identify: 'proj_milestones',
-      targetPosition: TargetPosition(
-        const Size(200, 60),
-        Offset(size.width / 2 + 40, 120),
-      ),
+      keyTarget: _milestonesHeaderKey,
       shape: ShapeLightFocus.RRect,
-      radius: 12,
+      radius: 8,
       paddingFocus: 16,
       contents: [
         TargetContent(
