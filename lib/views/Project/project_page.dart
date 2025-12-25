@@ -554,7 +554,7 @@ class _ProjectsPageState extends State<ProjectsPage>
                                       topRight: Radius.circular(12),
                                       bottomLeft: Radius.circular(12),
                                     ),
-                                    child: Container(
+                                    child: Card(
                                       color:
                                           Theme.of(context).colorScheme.surface,
                                       child: Align(

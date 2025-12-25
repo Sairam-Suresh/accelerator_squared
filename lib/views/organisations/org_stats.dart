@@ -84,6 +84,40 @@ class _OrgStatisticsState extends State<OrgStatistics> {
   }
 
   Widget _buildContent(List<ProjectWithDetails> projects) {
+    // Check if there are no projects
+    if (projects.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.bar_chart_outlined,
+              size: 64,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No projects found',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'There are no projects in this organisation yet.\nStatistics will be available once projects are created.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
     // Get organization-wide milestones (milestones that exist in ALL projects)
     final orgWideMilestones = _getOrganizationWideMilestones(projects);
 

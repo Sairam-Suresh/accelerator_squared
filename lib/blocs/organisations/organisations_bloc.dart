@@ -224,13 +224,37 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
         // Wait for the member document to be readable to ensure it's fully written
         await orgRef.collection('members').doc(uid).get();
 
-        add(FetchOrganisationsEvent());
+        // Create the new organization object
+        Organisation newOrganisation = Organisation(
+          id: orgId,
+          name: event.name,
+          description: event.description,
+          students: [], // Will be populated by streams
+          projects: [], // Will be populated by streams
+          projectRequests: [], // Will be populated by streams
+          milestoneReviewRequests: [], // Will be populated by streams
+          memberCount: 1 + event.memberEmails.length, // Creator + invited members
+          userRole: 'teacher',
+          joinCode: joinCode,
+        );
+
+        // If we have existing state, add the new organization to it
+        if (state is OrganisationsLoaded) {
+          final loadedState = state as OrganisationsLoaded;
+          final updatedOrganisations = [...loadedState.organisations, newOrganisation];
+          emit(OrganisationsLoaded(updatedOrganisations));
+        } else {
+          // Fallback to fetch
+          add(FetchOrganisationsEvent());
+        }
       } catch (e) {
         emit(OrganisationsError(e.toString()));
       }
     });
 
     on<JoinOrganisationEvent>((event, emit) async {
+      // Capture the previous state before emitting loading
+      final previousState = state;
       emit(OrganisationsLoading());
       try {
         String uid = auth.currentUser?.uid ?? '';
@@ -252,7 +276,30 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
           'addedBy': uid,
         });
 
-        add(FetchOrganisationsEvent());
+        // Load the organization data
+        String userEmail = auth.currentUser?.email ?? '';
+        Organisation? joinedOrganisation = await loadOrganisationDataById(
+          firestore,
+          event.organisationId,
+          uid,
+          userEmail,
+        );
+
+        // If we have existing state and successfully loaded the org, add it
+        if (previousState is OrganisationsLoaded && joinedOrganisation != null) {
+          // Check if organization is already in the list (avoid duplicates)
+          final existingIndex = previousState.organisations.indexWhere((org) => org.id == event.organisationId);
+          final updatedOrganisations = List<Organisation>.from(previousState.organisations);
+          if (existingIndex >= 0) {
+            updatedOrganisations[existingIndex] = joinedOrganisation;
+          } else {
+            updatedOrganisations.add(joinedOrganisation);
+          }
+          emit(OrganisationsLoaded(updatedOrganisations));
+        } else {
+          // Fallback to fetch
+          add(FetchOrganisationsEvent());
+        }
       } catch (e) {
         emit(OrganisationsError(e.toString()));
       }
@@ -355,7 +402,29 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
               'addedBy': uid,
             });
 
-        add(FetchOrganisationsEvent());
+        // Load the organization data
+        Organisation? joinedOrganisation = await loadOrganisationDataById(
+          firestore,
+          orgId,
+          uid,
+          userEmail,
+        );
+
+        // If we have existing state and successfully loaded the org, add it
+        if (previousState is OrganisationsLoaded && joinedOrganisation != null) {
+          // Check if organization is already in the list (avoid duplicates)
+          final existingIndex = previousState.organisations.indexWhere((org) => org.id == orgId);
+          final updatedOrganisations = List<Organisation>.from(previousState.organisations);
+          if (existingIndex >= 0) {
+            updatedOrganisations[existingIndex] = joinedOrganisation;
+          } else {
+            updatedOrganisations.add(joinedOrganisation);
+          }
+          emit(OrganisationsLoaded(updatedOrganisations));
+        } else {
+          // Fallback to fetch
+          add(FetchOrganisationsEvent());
+        }
       } catch (e) {
         emit(OrganisationsError(e.toString()));
       }
@@ -422,7 +491,17 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .doc(event.organisationId)
             .delete();
 
-        add(FetchOrganisationsEvent());
+        // If we have existing state, remove the organization from it
+        if (state is OrganisationsLoaded) {
+          final loadedState = state as OrganisationsLoaded;
+          final updatedOrganisations = loadedState.organisations
+              .where((org) => org.id != event.organisationId)
+              .toList();
+          emit(OrganisationsLoaded(updatedOrganisations));
+        } else {
+          // Fallback to fetch
+          add(FetchOrganisationsEvent());
+        }
       } catch (e) {
         emit(OrganisationsError(e.toString()));
       }
@@ -522,7 +601,16 @@ class OrganisationsBloc extends Bloc<OrganisationsEvent, OrganisationsState> {
             .doc(userMemberId)
             .delete();
 
-        add(FetchOrganisationsEvent());
+        // If we have existing state, remove the organization from it
+        if (previousState is OrganisationsLoaded) {
+          final updatedOrganisations = previousState.organisations
+              .where((org) => org.id != event.organisationId)
+              .toList();
+          emit(OrganisationsLoaded(updatedOrganisations));
+        } else {
+          // Fallback to fetch
+          add(FetchOrganisationsEvent());
+        }
       } catch (e) {
         // Restore previous state on error
         if (previousState is OrganisationsLoaded) {

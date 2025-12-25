@@ -2,10 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
-import 'package:accelerator_squared/util/util.dart';
 import 'package:intl/intl.dart';
 
-class CommentsSheet extends StatefulWidget {
+class CommentsSheet extends StatelessWidget {
   final String organisationId;
   final String projectId;
   final String commentId;
@@ -16,74 +15,15 @@ class CommentsSheet extends StatefulWidget {
     required this.commentId,
   });
 
-  @override
-  State<CommentsSheet> createState() => _CommentsSheetState();
-}
-
-class _CommentsSheetState extends State<CommentsSheet> {
-  String? _currentDisplayName;
-  bool _isLoadingDisplayName = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchDisplayName();
-  }
-
-  Future<void> _fetchDisplayName() async {
-    if (_isLoadingDisplayName) return;
-
-    setState(() {
-      _isLoadingDisplayName = true;
-    });
-
-    try {
-      final comment = await _fetchComment();
-      if (comment != null) {
-        final authorEmail = comment['authorEmail'] as String?;
-        if (authorEmail != null && authorEmail.isNotEmpty) {
-          final displayName = await fetchUserDisplayNameByEmail(
-            FirebaseFirestore.instance,
-            authorEmail,
-          );
-          if (mounted) {
-            setState(() {
-              _currentDisplayName = displayName;
-              _isLoadingDisplayName = false;
-            });
-          }
-        } else {
-          if (mounted) {
-            setState(() {
-              _isLoadingDisplayName = false;
-            });
-          }
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isLoadingDisplayName = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingDisplayName = false;
-        });
-      }
-    }
-  }
-
   Future<Map<String, dynamic>?> _fetchComment() async {
     final doc =
         await FirebaseFirestore.instance
             .collection('organisations')
-            .doc(widget.organisationId)
+            .doc(organisationId)
             .collection('projects')
-            .doc(widget.projectId)
+            .doc(projectId)
             .collection('comments')
-            .doc(widget.commentId)
+            .doc(commentId)
             .get();
     return doc.data();
   }
@@ -109,10 +49,10 @@ class _CommentsSheetState extends State<CommentsSheet> {
               final state = context.read<ProjectsBloc>().state;
               if (state is ProjectsLoaded) {
                 final project = state.projects.firstWhere(
-                  (p) => p.id == widget.projectId,
+                  (p) => p.id == projectId,
                   orElse:
                       () => ProjectWithDetails(
-                        id: widget.projectId,
+                        id: projectId,
                         data: {},
                         milestones: [],
                         comments: [],
@@ -180,11 +120,9 @@ class _CommentsSheetState extends State<CommentsSheet> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                _currentDisplayName != null && _currentDisplayName!.isNotEmpty
-                                    ? '$_currentDisplayName (${comment['authorEmail'] ?? 'Unknown'})'
-                                    : comment['authorDisplayName'] != null && (comment['authorDisplayName'] as String).isNotEmpty
-                                        ? '${comment['authorDisplayName']} (${comment['authorEmail'] ?? 'Unknown'})'
-                                        : comment['authorEmail'] ?? 'Unknown author',
+                                comment['authorDisplayName'] != null && (comment['authorDisplayName'] as String).isNotEmpty
+                                    ? '${comment['authorDisplayName']} (${comment['authorEmail'] ?? 'Unknown'})'
+                                    : comment['authorEmail'] ?? 'Unknown author',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Theme.of(context).colorScheme.primary,

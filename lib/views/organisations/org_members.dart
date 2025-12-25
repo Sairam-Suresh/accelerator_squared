@@ -72,7 +72,8 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
             }
 
             // Only fetch from users collection if displayName is not stored
-            if (uid.isNotEmpty && (storedDisplayName == null || storedDisplayName.isEmpty)) {
+            if (uid.isNotEmpty &&
+                (storedDisplayName == null || storedDisplayName.isEmpty)) {
               uidsToFetch.add(uid);
             }
           }
@@ -87,8 +88,10 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
             // Update members list with display names
             for (var member in membersList) {
               final uid = member['uid'] as String? ?? '';
-              if (uid.isNotEmpty && displayNames.containsKey(uid) &&
-                  (member['displayName'] == null || member['displayName'].isEmpty)) {
+              if (uid.isNotEmpty &&
+                  displayNames.containsKey(uid) &&
+                  (member['displayName'] == null ||
+                      member['displayName'].isEmpty)) {
                 member['displayName'] = displayNames[uid];
               }
             }
@@ -138,7 +141,8 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         }
 
         // Only fetch from users collection if displayName is not stored
-        if (uid.isNotEmpty && (storedDisplayName == null || storedDisplayName.isEmpty)) {
+        if (uid.isNotEmpty &&
+            (storedDisplayName == null || storedDisplayName.isEmpty)) {
           uidsToFetch.add(uid);
         }
       }
@@ -153,8 +157,10 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
         // Update members list with display names
         for (var member in membersList) {
           final uid = member['uid'] as String? ?? '';
-          if (uid.isNotEmpty && displayNames.containsKey(uid) &&
-              (member['displayName'] == null || member['displayName'].isEmpty)) {
+          if (uid.isNotEmpty &&
+              displayNames.containsKey(uid) &&
+              (member['displayName'] == null ||
+                  member['displayName'].isEmpty)) {
             member['displayName'] = displayNames[uid];
           }
         }
@@ -224,10 +230,7 @@ class _OrganisationMembersDialogState extends State<OrgMembers> {
       // Get display name for this email if available
       String? memberDisplayName;
       try {
-        memberDisplayName = await fetchUserDisplayNameByEmail(
-          firestore,
-          email,
-        );
+        memberDisplayName = await fetchUserDisplayNameByEmail(firestore, email);
       } catch (e) {
         // Ignore errors, displayName will be null
       }

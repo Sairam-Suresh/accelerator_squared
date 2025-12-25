@@ -7,7 +7,6 @@ import 'package:accelerator_squared/blocs/projects/projects_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:accelerator_squared/util/snackbar_helper.dart';
-import 'package:accelerator_squared/util/util.dart';
 import 'dart:async';
 
 class ProjectRequests extends StatefulWidget {
@@ -29,8 +28,6 @@ class _RequestDialogState extends State<ProjectRequests> {
   bool isRejecting = false;
   String? currentRequestId;
   List<ProjectRequest> currentRequests = [];
-  Map<String, String?> _displayNames = {}; // Cache for display names by email
-  bool _isLoadingDisplayNames = false;
   bool isAcceptingMilestone = false;
   String? currentMilestoneKey; // format: projectId|milestoneId
   bool isRefreshing = false;
@@ -51,73 +48,12 @@ class _RequestDialogState extends State<ProjectRequests> {
     currentRequests = List.from(widget.projectRequests);
     // Start real-time listeners
     _startRealTimeListeners();
-    // Fetch display names for requesters
-    _fetchDisplayNames();
     // Ensure this page has fresh data when opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<OrganisationsBloc>().add(FetchOrganisationsEvent());
       }
     });
-  }
-
-  @override
-  void didUpdateWidget(ProjectRequests oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.projectRequests != oldWidget.projectRequests) {
-      currentRequests = List.from(widget.projectRequests);
-      _fetchDisplayNames();
-    }
-  }
-
-  Future<void> _fetchDisplayNames() async {
-    if (_isLoadingDisplayNames) return;
-
-    setState(() {
-      _isLoadingDisplayNames = true;
-    });
-
-    try {
-      // Get unique emails from requests
-      final emails = currentRequests
-          .map((request) => request.requesterEmail)
-          .where((email) => email.isNotEmpty)
-          .toSet()
-          .toList();
-
-      if (emails.isEmpty) {
-        setState(() {
-          _isLoadingDisplayNames = false;
-        });
-        return;
-      }
-
-      // Fetch display names for all emails
-      final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      final newDisplayNames = <String, String?>{};
-
-      for (final email in emails) {
-        try {
-          final displayName = await fetchUserDisplayNameByEmail(firestore, email);
-          newDisplayNames[email] = displayName;
-        } catch (e) {
-          newDisplayNames[email] = null;
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _displayNames = newDisplayNames;
-          _isLoadingDisplayNames = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingDisplayNames = false;
-        });
-      }
-    }
   }
 
   @override
@@ -288,7 +224,6 @@ class _RequestDialogState extends State<ProjectRequests> {
     return _milestoneNamesCache[cacheKey] ?? 'Loading...';
   }
 
-
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -444,36 +379,14 @@ class _RequestDialogState extends State<ProjectRequests> {
                                               ),
                                             ),
                                             SizedBox(height: 4),
-                                            Builder(
-                                              builder: (context) {
-                                                final currentDisplayName = _displayNames[request.requesterEmail];
-                                                if (currentDisplayName != null && currentDisplayName.isNotEmpty) {
-                                                  return Text(
-                                                    'Requested by: $currentDisplayName (${request.requesterEmail})',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.grey.shade600,
-                                                    ),
-                                                  );
-                                                } else if (request.requestedBy.isNotEmpty) {
-                                                  // Fallback to stored display name
-                                                  return Text(
-                                                    'Requested by: ${request.requestedBy} (${request.requesterEmail})',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.grey.shade600,
-                                                    ),
-                                                  );
-                                                } else {
-                                                  return Text(
-                                                    'Requested by: ${request.requesterEmail}',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.grey.shade600,
-                                                    ),
-                                                  );
-                                                }
-                                              },
+                                            Text(
+                                              request.requestedBy.isNotEmpty
+                                                  ? 'Requested by: ${request.requestedBy} (${request.requesterEmail})'
+                                                  : 'Requested by: ${request.requesterEmail}',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey.shade600,
+                                              ),
                                             ),
                                             SizedBox(height: 4),
                                             Text(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:accelerator_squared/util/snackbar_helper.dart';
-import 'package:accelerator_squared/util/util.dart';
 import 'dart:math' as math;
 
 class ProjectMembersDialog extends StatefulWidget {
@@ -62,66 +61,17 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
               .collection('members')
               .get();
       List<Map<String, dynamic>> membersList = [];
-      List<String> uidsToFetch = [];
-      
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
-        final uid = memberData['uid'] as String? ?? '';
-        final storedDisplayName = memberData['displayName'] as String?;
         membersList.add({
           'id': doc.id,
           'email': memberData['email'] ?? 'Unknown',
           'role': memberData['role'] ?? 'member',
-          'uid': uid,
-          'displayName': storedDisplayName, // Use stored displayName first
         });
 
         if (memberData['uid'] == auth.currentUser?.uid ||
             memberData['email'] == auth.currentUser?.email) {
           currentUserRole = memberData['role'] ?? 'member';
-        }
-
-        // Only fetch from users collection if displayName is not stored
-        if (uid.isNotEmpty && (storedDisplayName == null || storedDisplayName.isEmpty)) {
-          uidsToFetch.add(uid);
-        }
-      }
-
-      // Batch fetch display names by UID only for members without stored displayName
-      if (uidsToFetch.isNotEmpty) {
-        final displayNames = await batchFetchUserDisplayNamesByUids(
-          firestore,
-          uidsToFetch,
-        );
-
-        // Update members list with display names from UID lookup
-        for (var member in membersList) {
-          final uid = member['uid'] as String? ?? '';
-          if (uid.isNotEmpty && displayNames.containsKey(uid) &&
-              (member['displayName'] == null || member['displayName'].isEmpty)) {
-            member['displayName'] = displayNames[uid];
-          }
-        }
-      }
-
-      // Fetch display names by email for members without display names (fallback)
-      for (var member in membersList) {
-        final email = member['email'] as String? ?? '';
-        final currentDisplayName = member['displayName'] as String?;
-        
-        // Fetch by email if no display name found yet (either no UID or UID lookup failed)
-        if (email.isNotEmpty && (currentDisplayName == null || currentDisplayName.isEmpty)) {
-          try {
-            final displayName = await fetchUserDisplayNameByEmail(
-              firestore,
-              email,
-            );
-            if (displayName != null && displayName.isNotEmpty) {
-              member['displayName'] = displayName;
-            }
-          } catch (e) {
-            // Ignore errors, continue with email fallback
-          }
         }
       }
 
@@ -152,40 +102,12 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
               .get();
 
       List<Map<String, dynamic>> orgMembers = [];
-      List<String> uidsToFetch = [];
-      
       for (var doc in membersSnapshot.docs) {
         Map<String, dynamic> memberData = doc.data() as Map<String, dynamic>;
-        final uid = memberData['uid'] as String? ?? '';
-        final storedDisplayName = memberData['displayName'] as String?;
         orgMembers.add({
           'email': memberData['email'] ?? '',
           'role': memberData['role'] ?? 'member',
-          'uid': uid,
-          'displayName': storedDisplayName, // Use stored displayName first
         });
-
-        // Only fetch from users collection if displayName is not stored
-        if (uid.isNotEmpty && (storedDisplayName == null || storedDisplayName.isEmpty)) {
-          uidsToFetch.add(uid);
-        }
-      }
-
-      // Batch fetch display names only for members without stored displayName
-      if (uidsToFetch.isNotEmpty) {
-        final displayNames = await batchFetchUserDisplayNamesByUids(
-          firestore,
-          uidsToFetch,
-        );
-
-        // Update org members list with display names
-        for (var member in orgMembers) {
-          final uid = member['uid'] as String? ?? '';
-          if (uid.isNotEmpty && displayNames.containsKey(uid) &&
-              (member['displayName'] == null || member['displayName'].isEmpty)) {
-            member['displayName'] = displayNames[uid];
-          }
-        }
       }
 
       if (mounted) {
@@ -246,51 +168,19 @@ class _ProjectMembersDialogState extends State<ProjectMembersDialog> {
         isAddingMember = true;
       });
 
-      String? uid;
-      try {
-        final methods = await auth.fetchSignInMethodsForEmail(email);
-        if (methods.isNotEmpty) {
-          final userQuery =
-              await firestore
-                  .collection('users')
-                  .where('email', isEqualTo: email)
-                  .limit(1)
-                  .get();
-          if (userQuery.docs.isNotEmpty) {
-            uid = userQuery.docs.first.id;
-          }
-        }
-      } catch (e) {
-        // ignore and fallback
-      }
-
-      // Get display name for this email if available
-      String? memberDisplayName;
-      try {
-        memberDisplayName = await fetchUserDisplayNameByEmail(
-          firestore,
-          email,
-        );
-      } catch (e) {
-        // Ignore errors, displayName will be null
-      }
-
-      String docId = uid ?? email;
       await firestore
           .collection('organisations')
           .doc(widget.organisationId)
           .collection('projects')
           .doc(widget.projectId)
           .collection('members')
-          .doc(docId)
+          .doc(email)
           .set({
             'email': email,
             'role': 'member',
-            'displayName': memberDisplayName,
             'status': 'active',
             'addedAt': FieldValue.serverTimestamp(),
             'addedBy': auth.currentUser?.uid,
-            if (uid != null) 'uid': uid,
           });
 
       await fetchMembers();
