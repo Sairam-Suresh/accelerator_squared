@@ -83,17 +83,32 @@ class _ProjectsPageState extends State<ProjectsPage>
       paddingFocus: 16,
       contents: [
         TargetContent(
-          align: ContentAlign.bottom,
+          align: ContentAlign.right,
           builder:
-              (context, controller) => Center(
+              (context, controller) => Padding(
+                padding: const EdgeInsets.only(top: 200),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 260),
                   child: Material(
                     color: Colors.transparent,
-                    child: Text(
-                      'Use these tabs to navigate organisation sections.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'Use these tabs to navigate organisation sections.',
+                        textAlign: TextAlign.start,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                     ),
                   ),
                 ),

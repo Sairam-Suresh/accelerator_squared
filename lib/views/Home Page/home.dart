@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> {
   bool _dialogShown = false;
   bool _tutorialChecked = false;
   final Set<String> _shownErrorMessages = {};
+  bool _menuOpenedForTutorial = false;
 
   late TutorialCoachMark studentTutorialCoachMark;
   late TutorialCoachMark teacherTutorialCoachMark;
@@ -138,6 +139,12 @@ class _HomePageState extends State<HomePage> {
                           ),
                           onPressed: () {
                             Navigator.of(context).pop();
+                            // Reset menu flag and ensure we're on Organisations tab
+                            _menuOpenedForTutorial = false;
+                            setState(() {
+                              _selectedIndex = 0;
+                            });
+                            setPageTitle('${_getPageTitle()}');
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               studentTutorialCoachMark.show(context: context);
                             });
@@ -173,6 +180,12 @@ class _HomePageState extends State<HomePage> {
                           ),
                           onPressed: () {
                             Navigator.of(context).pop();
+                            // Reset menu flag and ensure we're on Organisations tab
+                            _menuOpenedForTutorial = false;
+                            setState(() {
+                              _selectedIndex = 0;
+                            });
+                            setPageTitle('${_getPageTitle()}');
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               teacherTutorialCoachMark.show(context: context);
                             });
@@ -198,6 +211,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _ensureMenuOpen() {
+    final ctx = expandableFabKey.currentContext;
+    if (ctx != null) {
+      // Only toggle if we haven't already opened it for the tutorial
+      // This prevents closing the menu if it's already open
+      if (!_menuOpenedForTutorial) {
+        ExpandableFab.of(ctx).toggle();
+        _menuOpenedForTutorial = true;
+      }
+    }
+  }
+
   void createStudentTutorial() {
     studentTutorialCoachMark = TutorialCoachMark(
       targets: _createStudentTargets(),
@@ -208,15 +233,14 @@ class _HomePageState extends State<HomePage> {
       opacityShadow: 0.5,
       onFinish: () async {
         print("finish");
+        _menuOpenedForTutorial = false; // Reset flag when tutorial finishes
         await _saveTutorialFlag();
       },
       onClickTarget: (target) async {
         final id = target.identify;
         if (id == 'orgButton') {
-          final ctx = expandableFabKey.currentContext;
-          if (ctx != null) {
-            ExpandableFab.of(ctx).toggle();
-          }
+          // Ensure menu is open (don't toggle, just open)
+          _ensureMenuOpen();
         } else if (id == 'navOrganisations') {
           setState(() {
             _selectedIndex = 0;
@@ -233,13 +257,52 @@ class _HomePageState extends State<HomePage> {
           });
           setPageTitle('${_getPageTitle()}');
         } else if (id == 'joinOrgButton') {
+          // Ensure menu is open and we're on Organisations tab before showing this target
+          setState(() {
+            _selectedIndex = 0;
+          });
+          setPageTitle('${_getPageTitle()}');
+          _ensureMenuOpen();
+          // Wait a bit for the menu to open before proceeding
+          await Future.delayed(const Duration(milliseconds: 300));
           // Dismiss tutorial before opening dialog
           studentTutorialCoachMark.skip();
           await _handleJoinOrganisationPressed();
         } else if (id == 'createOrgButton') {
+          // Ensure menu is open and we're on Organisations tab before showing this target
+          setState(() {
+            _selectedIndex = 0;
+          });
+          setPageTitle('${_getPageTitle()}');
+          _ensureMenuOpen();
+          // Wait a bit for the menu to open before proceeding
+          await Future.delayed(const Duration(milliseconds: 300));
           // Dismiss tutorial before opening dialog
           studentTutorialCoachMark.skip();
           await _handleCreateOrganisationPressed();
+        }
+      },
+      onClickOverlay: (target) {
+        print('onClickOverlay: $target');
+        // When overlay is shown (user is viewing a target), ensure menu is open for org buttons
+        final id = target.identify;
+        if (id == 'orgButton') {
+          // Ensure menu is open when orgButton target is shown
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _ensureMenuOpen();
+          });
+        } else if (id == 'joinOrgButton' || id == 'createOrgButton') {
+          // Ensure we're on Organisations tab
+          if (_selectedIndex != 0) {
+            setState(() {
+              _selectedIndex = 0;
+            });
+            setPageTitle('${_getPageTitle()}');
+          }
+          // Ensure menu is open
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _ensureMenuOpen();
+          });
         }
       },
       onClickTargetWithTapPosition: (target, tapDetails) {
@@ -248,11 +311,9 @@ class _HomePageState extends State<HomePage> {
           "clicked at position local: ${tapDetails.localPosition} - global: ${tapDetails.globalPosition}",
         );
       },
-      onClickOverlay: (target) {
-        print('onClickOverlay: $target');
-      },
       onSkip: () {
         print("skip");
+        _menuOpenedForTutorial = false; // Reset flag when tutorial is skipped
         _saveTutorialFlag(); // Fire and forget
         return true;
       },
@@ -269,15 +330,14 @@ class _HomePageState extends State<HomePage> {
       opacityShadow: 0.5,
       onFinish: () async {
         print("finish");
+        _menuOpenedForTutorial = false; // Reset flag when tutorial finishes
         await _saveTutorialFlag();
       },
       onClickTarget: (target) async {
         final id = target.identify;
         if (id == 'orgButton') {
-          final ctx = expandableFabKey.currentContext;
-          if (ctx != null) {
-            ExpandableFab.of(ctx).toggle();
-          }
+          // Ensure menu is open (don't toggle, just open)
+          _ensureMenuOpen();
         } else if (id == 'navOrganisations') {
           setState(() {
             _selectedIndex = 0;
@@ -294,9 +354,40 @@ class _HomePageState extends State<HomePage> {
           });
           setPageTitle('${_getPageTitle()}');
         } else if (id == 'createOrgButton') {
+          // Ensure menu is open and we're on Organisations tab before showing this target
+          setState(() {
+            _selectedIndex = 0;
+          });
+          setPageTitle('${_getPageTitle()}');
+          _ensureMenuOpen();
+          // Wait a bit for the menu to open before proceeding
+          await Future.delayed(const Duration(milliseconds: 300));
           // Dismiss tutorial before opening dialog
           teacherTutorialCoachMark.skip();
           await _handleCreateOrganisationPressed();
+        }
+      },
+      onClickOverlay: (target) {
+        print('onClickOverlay: $target');
+        // When overlay is shown (user is viewing a target), ensure menu is open for org buttons
+        final id = target.identify;
+        if (id == 'orgButton') {
+          // Ensure menu is open when orgButton target is shown
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _ensureMenuOpen();
+          });
+        } else if (id == 'joinOrgButton' || id == 'createOrgButton') {
+          // Ensure we're on Organisations tab
+          if (_selectedIndex != 0) {
+            setState(() {
+              _selectedIndex = 0;
+            });
+            setPageTitle('${_getPageTitle()}');
+          }
+          // Ensure menu is open
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _ensureMenuOpen();
+          });
         }
       },
       onClickTargetWithTapPosition: (target, tapDetails) {
@@ -305,11 +396,9 @@ class _HomePageState extends State<HomePage> {
           "clicked at position local: ${tapDetails.localPosition} - global: ${tapDetails.globalPosition}",
         );
       },
-      onClickOverlay: (target) {
-        print('onClickOverlay: $target');
-      },
       onSkip: () {
         print("skip");
+        _menuOpenedForTutorial = false; // Reset flag when tutorial is skipped
         _saveTutorialFlag(); // Fire and forget
         return true;
       },
@@ -379,7 +468,7 @@ class _HomePageState extends State<HomePage> {
         radius: 28,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.right,
             builder:
                 (context, controller) =>
                     _coachText("Click here to open the organisations menu"),
@@ -397,7 +486,7 @@ class _HomePageState extends State<HomePage> {
         radius: 28,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.right,
             builder:
                 (context, controller) =>
                     _coachText("Click here to join an organisation"),
@@ -471,7 +560,7 @@ class _HomePageState extends State<HomePage> {
         radius: 28,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.right,
             builder:
                 (context, controller) =>
                     _coachText("Click here to open the organisations menu"),
@@ -489,7 +578,7 @@ class _HomePageState extends State<HomePage> {
         radius: 28,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.right,
             builder:
                 (context, controller) =>
                     _coachText("Click here to create an organisation"),

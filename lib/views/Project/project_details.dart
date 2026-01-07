@@ -1436,7 +1436,7 @@ class _ProjectDetailsState extends State<ProjectDetails> {
 
     // Add a small delay to ensure widget tree is fully built and keys are available
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     if (!mounted) return;
 
     final addLinksFocus = TargetFocus(
@@ -1447,16 +1447,28 @@ class _ProjectDetailsState extends State<ProjectDetails> {
       paddingFocus: 16,
       contents: [
         TargetContent(
-          align: ContentAlign.top,
+          align: ContentAlign.right,
           builder:
-              (context, controller) => Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 260),
-                  child: Material(
-                    color: Colors.transparent,
+              (context, controller) => ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 260),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
                     child: Text(
                       'Add links and resources to your project here.',
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.start,
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
@@ -1474,16 +1486,28 @@ class _ProjectDetailsState extends State<ProjectDetails> {
       paddingFocus: 16,
       contents: [
         TargetContent(
-          align: ContentAlign.bottom,
+          align: ContentAlign.left,
           builder:
-              (context, controller) => Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 280),
-                  child: Material(
-                    color: Colors.transparent,
+              (context, controller) => ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 280, minWidth: 0),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
                     child: Text(
                       'Track milestones and progress on the right.',
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.start,
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
